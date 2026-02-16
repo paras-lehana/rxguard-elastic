@@ -1,0 +1,321 @@
+📱 MOBILE APP API INTEGRATION REQUEST
+
+We need to update all API endpoints in the mobile app to use our production PharmaSafe APIs. Below is the complete integration specification.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🌐 BASE URL: https://medical.lehana.in/ncert
+
+═══════════════════════════════════════════════════════════════════════════════
+
+API 1: SEARCH MEDICINE STATUS (PRIMARY FEATURE)
+══════════════════════════════════════════════
+
+Endpoint: POST /api/search
+
+Request Body:
+{
+  "query": "Is paracetamol banned in India?",
+  "sessionId": "mobile-session-12345"
+}
+
+Response Structure:
+{
+  "query": "dolo 650",
+  "medicine_searched": "Paracetamol (active ingredient in Dolo 650)",
+  "current_status": "open",
+  "results": {
+    "summary": "Paracetamol is not banned...",
+    "drug_category": "single_drug",
+    "schedule_classification": "Not Scheduled",
+    "controlled_status": "Not controlled",
+    "source_authority": "CDSCO",
+    "date_of_ban": "N/A",
+    "date_of_uplift": "N/A",
+    "gazette_id": "N/A",
+    "act_reference": "N/A"
+  },
+  "sessionId": "mobile-session-12345"
+}
+
+🎨 CRITICAL UI/UX REQUIREMENTS FOR RESULTS SCREEN:
+
+1. MEDICINE NAME (Header - Bold, Large)
+   Display: medicine_searched
+   Example: "Paracetamol (active ingredient in Dolo 650)"
+
+2. STATUS BADGE (Most Prominent Visual)
+   Display: current_status
+   
+   Color-coded badges:
+   • current_status = "open" → Green badge "✅ ALLOWED"
+   • current_status = "banned" → Red badge "🚫 BANNED"  
+   • current_status = "restricted" → Orange badge "⚠️ RESTRICTED"
+
+3. SUMMARY (Primary Answer - Most Important)
+   Display: results.summary
+   This field contains the complete answer in plain English
+   Show in prominent card/section with good readability
+   This is the MAIN CONTENT users need to see
+
+4. REGULATORY DETAILS (Secondary - Expandable)
+   Display these fields ONLY if value is NOT "N/A" or "Not specified in documents":
+   • results.drug_category → "Drug Category"
+   • results.schedule_classification → "Schedule Class"
+   • results.controlled_status → "Controlled Status"
+   • results.source_authority → "Authority"
+   • results.date_of_ban → "Ban Date"
+   • results.date_of_uplift → "Uplift Date"
+   • results.gazette_id → "Gazette ID"
+   • results.act_reference → "Act Reference"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+API 2: UPLOAD & INDEX DOCUMENT
+═══════════════════════════════
+
+Endpoint: POST /api/index
+Content-Type: multipart/form-data
+
+Form Fields:
+- file: PDF file (required)
+- metadata: JSON string (optional)
+
+Example metadata:
+{
+  "source": "CDSCO",
+  "type": "banned_drugs_list",
+  "year": "2024"
+}
+
+Response:
+{
+  "message": "Document indexed successfully",
+  "result": {
+    "done": true,
+    "response": {
+      "documentName": "fileSearchStores/abc123/documents/xyz789"
+    }
+  }
+}
+
+UI Display:
+- Show upload progress indicator
+- Display success message: "Document uploaded and indexed successfully"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+API 3: LIST ALL DOCUMENTS
+══════════════════════════
+
+Endpoint: GET /api/documents
+
+Response:
+{
+  "documents": [
+    {
+      "name": "fileSearchStores/.../xyz789",
+      "displayName": "banned-drugs-cdsco-2024.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 34703,
+      "createTime": "2026-02-16T10:30:00Z",
+      "updateTime": "2026-02-16T10:30:00Z",
+      "metadata": [
+        {"key": "source", "stringValue": "CDSCO"},
+        {"key": "type", "stringValue": "banned_drugs_list"}
+      ],
+      "state": "ACTIVE"
+    }
+  ],
+  "total": 1
+}
+
+UI Display for Each Document:
+1. File Name: displayName
+2. File Size: Convert sizeBytes to KB/MB (e.g., "34.7 KB")
+3. Upload Date: Format createTime as readable date
+4. Source: Extract from metadata array (key: "source")
+5. Status: state (ACTIVE = green badge)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+API 4: DELETE SINGLE DOCUMENT
+══════════════════════════════
+
+Endpoint: POST /api/documents/delete
+
+Request Body:
+{
+  "documentId": "fileSearchStores/abc123/documents/xyz789"
+}
+
+Response:
+{
+  "message": "Document deleted successfully",
+  "document": {
+    "name": "fileSearchStores/abc123/documents/xyz789",
+    "displayName": "banned-drugs-cdsco-2024.pdf"
+  }
+}
+
+UI Requirements:
+- Show confirmation dialog before delete
+- Display success message after deletion
+- Refresh document list
+
+═══════════════════════════════════════════════════════════════════════════════
+
+API 5: DELETE ALL DOCUMENTS
+════════════════════════════
+
+Endpoint: DELETE /api/documents/all
+
+Response:
+{
+  "message": "All documents deleted",
+  "geminiDeleted": 3,
+  "geminiFailed": 0,
+  "details": [...]
+}
+
+UI Requirements:
+- Strong warning dialog: "⚠️ This will delete ALL documents. Cannot be undone!"
+- Require double confirmation
+- Show deletion summary
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 COLOR SCHEME FOR STATUS BADGES:
+
+• Green (#10b981): Allowed/Open medicines
+• Red (#dc2626): Banned medicines  
+• Orange (#f59e0b): Restricted medicines
+• Gray (#6b7280): N/A or inactive
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 SAMPLE QUERIES TO TEST:
+
+1. "Is paracetamol banned in India?"
+2. "Check dolo 650 status"
+3. "Is nimesulide allowed?"
+4. "Tell me about phenylpropanolamine ban"
+5. "Is tramadol a controlled substance?"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚡ EXPECTED RESPONSE TIME:
+- Search API: 2-5 seconds
+- Upload API: 3-10 seconds  
+- List/Delete APIs: < 1 second
+
+Show loading indicators for all API calls.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ ERROR HANDLING:
+
+HTTP Status Codes:
+- 200: Success
+- 400: Bad request
+- 404: Not found
+- 500: Server error
+
+Error Response Format:
+{
+  "error": "Error message",
+  "status": "error"
+}
+
+User-friendly error messages:
+- Network error → "Unable to connect. Check your internet connection"
+- 500 error → "Service temporarily unavailable. Try again later"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTATION CHECKLIST:
+
+□ Update base URL to: https://medical.lehana.in/ncert
+□ Change search request format to: {query, sessionId}
+□ Parse response fields: medicine_searched, current_status, results.summary
+□ Implement status badge with color coding
+□ Display summary prominently (most important field)
+□ Hide N/A values in regulatory details
+□ Document list shows: displayName, sizeBytes, createTime, metadata
+□ Upload shows progress indicator
+□ Delete operations require confirmation
+□ Error messages are user-friendly
+□ Loading states implemented for all APIs
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 QUICK START CODE (JavaScript/TypeScript):
+
+const searchMedicine = async (query) => {
+  const response = await fetch('https://medical.lehana.in/ncert/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: query,
+      sessionId: 'mobile-' + Date.now()
+    })
+  });
+  
+  const data = await response.json();
+  
+  return {
+    medicineName: data.medicine_searched,
+    status: data.current_status,        // "open", "banned", "restricted"
+    summary: data.results.summary,      // MOST IMPORTANT - show prominently
+    details: data.results                // All regulatory details
+  };
+};
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📱 REQUIRED SCREENS:
+
+1. SEARCH SCREEN
+   - Search input for medicine name
+   - Quick search suggestions
+   - Search button
+
+2. RESULTS SCREEN (Layout Priority)
+   ┌─────────────────────────────────┐
+   │  [Medicine Name - Bold, Large]  │
+   │  ┌───────────────────────────┐  │
+   │  │  [STATUS BADGE]           │  │ ← Green/Red/Orange based on status
+   │  └───────────────────────────┘  │
+   │                                 │
+   │  📋 Summary                     │
+   │  ┌───────────────────────────┐  │
+   │  │  [Summary text from API]  │  │ ← MOST IMPORTANT - prominent display
+   │  │  Full paragraph answer    │  │
+   │  └───────────────────────────┘  │
+   │                                 │
+   │  📊 Regulatory Details ▼        │ ← Expandable section
+   │  • Drug Category: ...           │
+   │  • Schedule: ...                │
+   │  • Authority: ...               │
+   └─────────────────────────────────┘
+
+3. DOCUMENT MANAGEMENT SCREEN
+   - List of uploaded documents
+   - Upload button
+   - Delete buttons
+   - Refresh button
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔐 AUTHENTICATION: 
+Currently open (no auth required). Include sessionId for tracking.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📞 SUPPORT:
+Test all endpoints with provided examples. Refer to full documentation if needed.
+
+Base URL: https://medical.lehana.in/ncert
+Last Updated: February 17, 2026
+
+═══════════════════════════════════════════════════════════════════════════════

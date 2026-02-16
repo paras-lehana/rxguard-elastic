@@ -21,17 +21,18 @@ ALLOWED_EXTENSIONS = {'pdf'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def call_search_api(query):
+def call_search_api(query, session_id="pharma-session-001"):
     """
     Real API function to call the external search API
-    API Endpoint: http://82.112.235.26:8001/v1/pw_ai_answer
-    Format: {"prompt": "query text"}
+    API Endpoint: https://medical.lehana.in/ncert/api/search
+    Format: {"query": "query text", "sessionId": "session-id"}
     """
-    api_url = "http://82.112.235.26:8001/v1/pw_ai_answer"
+    api_url = "https://medical.lehana.in/ncert/api/search"
     
-    # Prepare the request data with the exact format from curl
+    # Prepare the request data with the exact format from new API
     request_data = {
-        "prompt": query
+        "query": query,
+        "sessionId": session_id
     }
     
     headers = {
@@ -40,8 +41,8 @@ def call_search_api(query):
     
     print(f"\n🚀 === BACKEND: Flask → External API ===")
     print(f"🎯 External API URL: {api_url}")
-    print(f"🔑 Key: 'prompt'")
-    print(f"📝 Value: '{query}'")
+    print(f"🔑 Query: '{query}'")
+    print(f"📝 Session ID: '{session_id}'")
     print(f"📡 Making external API call...")
     
     try:
@@ -64,10 +65,14 @@ def call_search_api(query):
         if response.status_code == 200:
             response_data = response.json()
             print(f"✅ API Response: {json.dumps(response_data, indent=2)}")
+            
+            # The new API returns direct JSON (not wrapped in 'text' field)
+            # Just pass it through as-is
             return {
                 "status": "success",
-                "prompt": query,
-                "api_response": response_data,
+                "query": query,
+                "data": response_data,  # Direct data access
+                "api_response": response_data,  # Keep for backward compatibility
                 "api_url": api_url,
                 "processing_time": "API call completed"
             }
@@ -106,32 +111,53 @@ def call_search_api(query):
             "api_url": api_url
         }
 
-def call_document_analysis_api(file_paths):
+def call_document_index_api(file_path, metadata=None):
     """
-    Dummy function for document analysis - REPLACE THIS WITH YOUR UPLOAD API
-    When you get the real upload API, just replace this function
+    Upload and index a document using the new API
+    API Endpoint: https://medical.lehana.in/ncert/api/index
     """
-    # Simulate processing delay
-    time.sleep(2)
+    api_url = "https://medical.lehana.in/ncert/api/index"
     
-    print(f"\n📄 === DUMMY UPLOAD API (Replace with real API) ===")
-    print(f"📁 Files to process: {[os.path.basename(path) for path in file_paths]}")
-    print(f"📊 Processing {len(file_paths)} documents...")
+    if metadata is None:
+        metadata = {
+            "source": "CDSCO",
+            "type": "pharmaceutical_document",
+            "year": str(time.localtime().tm_year)
+        }
     
-    # Dummy response structure
-    response = {
-        "status": "success",
-        "documents_processed": len(file_paths),
-        "files": [os.path.basename(path) for path in file_paths],
-        "safety_analysis": "Document analysis completed. No banned substances detected.",
-        "regulatory_status": "All mentioned medications comply with FDA regulations.",
-        "risk_assessment": "Low to moderate risk profile identified.",
-        "recommendations": "Follow standard pharmaceutical protocols.",
-        "processing_time": "2.3 seconds"
-    }
+    print(f"\n📄 === UPLOAD & INDEX API ===")
+    print(f"📁 File: {os.path.basename(file_path)}")
+    print(f"📊 Metadata: {metadata}")
+    print(f"🎯 API URL: {api_url}")
     
-    print(f"✅ Dummy Response: {json.dumps(response, indent=2)}")
-    return response
+    try:
+        with open(file_path, 'rb') as file:
+            files = {'file': (os.path.basename(file_path), file, 'application/pdf')}
+            data = {'metadata': json.dumps(metadata)}
+            
+            response = requests.post(api_url, files=files, data=data, timeout=120)
+            
+            print(f"✅ Response Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                print(f"✅ API Response: {json.dumps(response_data, indent=2)}")
+                return {
+                    "status": "success",
+                    "response": response_data
+                }
+            else:
+                print(f"❌ API Error: {response.status_code}")
+                return {
+                    "status": "error",
+                    "error": f"API returned status {response.status_code}"
+                }
+    except Exception as e:
+        print(f"❌ Upload Error: {str(e)}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 # Load HTML templates
 def load_template(template_name):
@@ -213,18 +239,22 @@ def upload_files():
         if not uploaded_files:
             return jsonify({'error': 'No valid PDF files uploaded'}), 400
         
-        # Call dummy document analysis API
-        api_response = call_document_analysis_api(uploaded_files)
-        
-        # Clean up uploaded files (optional - remove if you want to keep them)
+        # Call new document index API for each file
+        index_results = []
         for file_path in uploaded_files:
+            api_response = call_document_index_api(file_path)
+            index_results.append({
+                'file': os.path.basename(file_path),
+                'result': api_response
+            })
+            # Clean up uploaded file after indexing
             try:
                 os.remove(file_path)
             except OSError:
                 pass
         
         # Redirect to results page with upload type
-        query_param = f"Document Analysis: {len(uploaded_files)} files processed"
+        query_param = f"Document Analysis: {len(uploaded_files)} files indexed"
         return redirect(f'/analyze?query={query_param}&type=upload')
         
     except Exception as e:
@@ -280,13 +310,29 @@ def api_upload_files():
                 'message': 'No valid PDF files uploaded'
             }), 400
         
+        # Call new document index API for each file
+        index_results = []
+        for file_path in uploaded_files:
+            api_response = call_document_index_api(file_path)
+            index_results.append({
+                'file': os.path.basename(file_path),
+                'indexed': api_response.get('status') == 'success'
+            })
+            # Clean up uploaded file after indexing
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+        
         # Return success response
+        successful = sum(1 for r in index_results if r['indexed'])
         return jsonify({
-            'success': True,
-            'message': f'Successfully uploaded {len(uploaded_files)} file(s)',
+            'success': successful > 0,
+            'message': f'Successfully indexed {successful}/{len(uploaded_files)} file(s)',
             'files': uploaded_file_names,
             'count': len(uploaded_files),
-            'upload_path': os.path.abspath(app.config['UPLOAD_FOLDER'])
+            'indexed': successful,
+            'results': index_results
         })
         
     except Exception as e:
@@ -302,13 +348,17 @@ def api_search():
     """API endpoint for search queries"""
     try:
         data = request.get_json()
-        if not data or 'prompt' not in data:
-            return jsonify({'error': 'No prompt provided'}), 400
+        # Accept both 'query' (new format) and 'prompt' (old format) for backward compatibility
+        query = data.get('query') or data.get('prompt')
+        session_id = data.get('sessionId', 'pharma-session-001')
         
-        query = data['prompt']
-        print(f"📥 Received prompt from frontend: {query}")
+        if not query:
+            return jsonify({'error': 'No query provided'}), 400
         
-        response = call_search_api(query)
+        print(f"📥 Received query from frontend: {query}")
+        print(f"📥 Session ID: {session_id}")
+        
+        response = call_search_api(query, session_id)
         
         print(f"📤 Sending response to frontend: {json.dumps(response, indent=2)}")
         return jsonify(response)
@@ -360,8 +410,98 @@ def api_analyze_documents():
         print(f"❌ Upload API Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/pharmai/api/list-documents', methods=['POST', 'OPTIONS'])
-@app.route('/api/list-documents', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
+@app.route('/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
+def delete_document():
+    """Delete a specific document by ID"""
+    
+    # Handle CORS preflight request
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'CORS preflight'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, DELETE')
+        return response
+    
+    try:
+        data = request.get_json()
+        if not data or 'documentId' not in data:
+            return jsonify({'error': 'No documentId provided'}), 400
+        
+        document_id = data['documentId']
+        api_url = "https://medical.lehana.in/ncert/api/documents/delete"
+        
+        print(f"[DELETE] Deleting document: {document_id}")
+        
+        response = requests.post(
+            api_url,
+            json={'documentId': document_id},
+            headers={'Content-Type': 'application/json'},
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"[DELETE] Document deleted successfully")
+            resp = jsonify(result)
+            resp.headers.add('Access-Control-Allow-Origin', '*')
+            return resp
+        else:
+            error_response = jsonify({
+                'error': f'Delete API returned status {response.status_code}',
+                'status': 'error'
+            })
+            error_response.headers.add('Access-Control-Allow-Origin', '*')
+            return error_response, response.status_code
+            
+    except Exception as e:
+        print(f"[DELETE] Error: {str(e)}")
+        error_response = jsonify({'error': str(e), 'status': 'error'})
+        error_response.headers.add('Access-Control-Allow-Origin', '*')
+        return error_response, 500
+
+@app.route('/pharmai/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
+@app.route('/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
+def delete_all_documents():
+    """Delete all documents"""
+    
+    # Handle CORS preflight request
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'CORS preflight'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'DELETE, POST')
+        return response
+    
+    try:
+        api_url = "https://medical.lehana.in/ncert/api/documents/all"
+        
+        print(f"[DELETE ALL] Deleting all documents")
+        
+        response = requests.delete(api_url, timeout=60)
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"[DELETE ALL] All documents deleted successfully")
+            resp = jsonify(result)
+            resp.headers.add('Access-Control-Allow-Origin', '*')
+            return resp
+        else:
+            error_response = jsonify({
+                'error': f'Delete all API returned status {response.status_code}',
+                'status': 'error'
+            })
+            error_response.headers.add('Access-Control-Allow-Origin', '*')
+            return error_response, response.status_code
+            
+    except Exception as e:
+        print(f"[DELETE ALL] Error: {str(e)}")
+        error_response = jsonify({'error': str(e), 'status': 'error'})
+        error_response.headers.add('Access-Control-Allow-Origin', '*')
+        return error_response, 500
+
+@app.route('/pharmai/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
 def list_documents():
     """Fetch list of documents from the RAG database"""
     
@@ -370,7 +510,7 @@ def list_documents():
         response = jsonify({'message': 'CORS preflight'})
         response.headers.add('Access-Control-Allow-Origin', '*')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'POST')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST')
         return response
     
     try:
@@ -379,11 +519,11 @@ def list_documents():
         print(f"[DOCUMENTS] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Make API call to get document list
-        api_url = "http://api.lehana.in:8001/v1/pw_list_documents"
+        api_url = "https://medical.lehana.in/ncert/api/documents"
         
         print(f"[DOCUMENTS] Calling API: {api_url}")
         
-        response = requests.post(
+        response = requests.get(
             api_url,
             headers={'Content-Type': 'application/json'},
             timeout=30
@@ -392,14 +532,15 @@ def list_documents():
         print(f"[DOCUMENTS] API Response Status: {response.status_code}")
         
         if response.status_code == 200:
-            documents = response.json()
+            documents_data = response.json()
+            documents = documents_data.get('documents', [])
             print(f"[DOCUMENTS] Retrieved {len(documents)} documents")
             
             # Add CORS headers to response
             resp = jsonify(documents)
             resp.headers.add('Access-Control-Allow-Origin', '*')
             resp.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-            resp.headers.add('Access-Control-Allow-Methods', 'POST')
+            resp.headers.add('Access-Control-Allow-Methods', 'POST, GET')
             
             return resp
         else:

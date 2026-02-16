@@ -17,6 +17,10 @@
         box-sizing: border-box;
     }
 
+    html {
+        scroll-behavior: smooth;
+    }
+
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
@@ -520,7 +524,7 @@
         width: 100%;
         position: relative;
         z-index: 1;
-        pointer-events: none;
+        /* Allow pointer events to pass through to parent card */
     }
 
     .template-icon {
@@ -537,13 +541,11 @@
         overflow: hidden;
         font-size: 1.8rem;
         color: white;
-        pointer-events: none;
         user-select: none;
     }
 
     .template-text {
         flex: 1;
-        pointer-events: none;
         user-select: none;
     }
 
@@ -701,6 +703,8 @@
         -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
         -webkit-mask-composite: xor;
         animation: borderFlow 2s linear infinite;
+        pointer-events: none;
+        z-index: 1;
     }
 
     @keyframes borderFlow {
@@ -764,7 +768,8 @@
         box-shadow:
             0 8px 25px rgba(59, 130, 246, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        z-index: 10;
+        z-index: 100;
+        pointer-events: auto;
     }
 
     .search-btn:hover {
@@ -815,6 +820,8 @@
         -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
         -webkit-mask-composite: xor;
         animation: borderFlow 3s linear infinite;
+        pointer-events: none;
+        z-index: 1;
     }
 
     .upload-title {
@@ -861,8 +868,8 @@
     .upload-content {
         position: relative;
         z-index: 1;
-        pointer-events: none; /* Let clicks pass through to parent */
         width: 100%;
+        /* Allow clicks to pass through to parent label */
     }
 
     .upload-icon {
@@ -1022,6 +1029,9 @@
         box-sizing: border-box;
         text-align: center;
         outline: none;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
     }
 
     .tab-button:hover {
@@ -1093,7 +1103,9 @@
         justify-content: center;
         align-items: center;
         margin: 2rem auto;
-        max-width: 600px;
+        max-width: 800px;
+        position: relative;
+        z-index: 10;
     }
 
     .document-search-input {
@@ -1127,11 +1139,41 @@
         font-weight: 600;
         transition: all 0.3s ease;
         white-space: nowrap;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
     }
 
     .refresh-docs-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+    }
+
+    .delete-all-btn {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.5));
+        border: 1px solid rgba(220, 38, 38, 0.5);
+        border-radius: 15px;
+        color: #fca5a5;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
+        outline: none;
+    }
+
+    .delete-all-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.7));
+        color: #fecaca;
+    }
+
+    .delete-all-btn:active {
+        transform: translateY(0);
     }
 
     .documents-loading {
@@ -1160,7 +1202,8 @@
         backdrop-filter: blur(40px);
         transition: all 0.4s ease;
         position: relative;
-        overflow: hidden;
+        overflow: visible;
+        z-index: 1;
     }
 
     .document-card:hover {
@@ -1217,6 +1260,23 @@
         font-size: 0.9rem;
         color: #e2e8f0;
         font-weight: 600;
+    }
+
+    .delete-doc-btn {
+        min-height: 42px;
+        font-size: 0.95rem;
+        user-select: none;
+    }
+
+    .delete-doc-btn:hover {
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.7)) !important;
+        color: #fecaca !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4) !important;
+    }
+
+    .delete-doc-btn:active {
+        transform: translateY(0) !important;
     }
 
     .no-documents {
@@ -1735,6 +1795,7 @@
                 <div class="document-search-container">
                     <input type="text" id="documentSearchInput" placeholder="Search documents by name..." class="document-search-input">
                     <button type="button" id="refreshDocsBtn" class="refresh-docs-btn">🔄 Refresh</button>
+                    <button type="button" onclick="window.deleteAllDocuments()" class="delete-all-btn">🗑️ Delete All</button>
                 </div>
             </div>
 
@@ -1774,18 +1835,44 @@ class DescopeAuth {
         try {
             this.sdk = Descope({ projectId: 'P32OxoFpY0ihVvncEbabQARqzw8I' });
             
-            // Check if user is already logged in
+            // First, check localStorage for saved user (persists across page navigation)
+            const savedUser = localStorage.getItem('pharma_user');
+            if (savedUser) {
+                try {
+                    this.user = JSON.parse(savedUser);
+                    this.isLoggedIn = true;
+                    console.log('Restored user from localStorage:', this.user);
+                    this.updateUI();
+                    return; // User already logged in from previous session
+                } catch (e) {
+                    console.log('Failed to parse saved user, checking session token');
+                }
+            }
+            
+            // Check if user is already logged in via session token
             const sessionToken = this.sdk.getSessionToken();
             if (sessionToken) {
                 const userInfo = await this.sdk.me();
                 if (userInfo) {
                     this.user = userInfo;
                     this.isLoggedIn = true;
+                    localStorage.setItem('pharma_user', JSON.stringify(this.user));
                     this.updateUI();
                 }
             }
         } catch (error) {
-            console.log('Descope SDK not available, using fallback auth');
+            console.log('Descope SDK not available, checking localStorage for user');
+            // Even if SDK fails, check localStorage
+            const savedUser = localStorage.getItem('pharma_user');
+            if (savedUser) {
+                try {
+                    this.user = JSON.parse(savedUser);
+                    this.isLoggedIn = true;
+                    this.updateUI();
+                } catch (e) {
+                    console.log('Failed to restore user from localStorage');
+                }
+            }
         }
 
         this.setupEventListeners();
@@ -2287,12 +2374,15 @@ async function makeSearchAPICall(query) {
     
     try {
         console.log('\n🌟 === FRONTEND: Browser → Flask Backend ===');
-        console.log('📤 Prompt:', query);
-        console.log('� Backend URL: /api/search');
+        console.log('📤 Query:', query);
+        console.log('🌐 Backend URL: /api/search');
         console.log('⏰ Time:', new Date().toISOString());
         
-        const requestData = { prompt: query };
-        console.log('� Sending to Flask backend...');
+        const requestData = { 
+            query: query,
+            sessionId: 'pharma-session-' + Date.now()
+        };
+        console.log('📦 Sending to Flask backend...');
         
         // Create abort controller for 2 minute timeout
         const controller = new AbortController();
@@ -2735,19 +2825,22 @@ document.addEventListener('DOMContentLoaded', function() {
         noDocsEl.style.display = 'none';
         
         gridEl.innerHTML = documents.map(doc => {
-            const fileName = doc.path.split('/').pop();
-            const fileSize = formatFileSize(doc.size);
-            const createdDate = formatDate(doc.created_at);
-            const modifiedDate = formatDate(doc.modified_at);
+            // Handle both old and new API formats
+            const fileName = doc.displayName || doc.path?.split('/').pop() || 'Unknown';
+            const fileSize = formatFileSize(doc.sizeBytes || doc.size || 0);
+            const createdDate = doc.createTime ? formatDateISO(doc.createTime) : formatDate(doc.created_at || 0);
+            const modifiedDate = doc.updateTime ? formatDateISO(doc.updateTime) : formatDate(doc.modified_at || 0);
+            const documentId = doc.name || doc.id || '';
+            const owner = doc.metadata?.find(m => m.key === 'source')?.stringValue || doc.owner || 'System';
             
             return `
-                <div class="document-card">
+                <div class="document-card" data-doc-id="${documentId}">
                     <div class="document-name">${fileName}</div>
                     
                     <div class="document-info">
                         <div class="info-chip">📄 ${getFileType(fileName)}</div>
                         <div class="info-chip">💾 ${fileSize}</div>
-                        <div class="info-chip">👤 ${doc.owner}</div>
+                        <div class="info-chip">👤 ${owner}</div>
                     </div>
                     
                     <div class="document-meta">
@@ -2756,9 +2849,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="meta-value">${createdDate}</div>
                         </div>
                         <div class="meta-item">
-                            <div class="meta-label">Modified</div>
-                            <div class="meta-value">${modifiedDate}</div>
+                            <div class="meta-label">Status</div>
+                            <div class="meta-value">${doc.state || 'ACTIVE'}</div>
                         </div>
+                    </div>
+                    
+                    <div class="document-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; position: relative; z-index: 1000;">
+                        <button class="delete-doc-btn" onclick="deleteDocument('${documentId}')" 
+                            style="flex: 1; padding: 0.75rem 1rem; background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.5)); 
+                            border: 1px solid rgba(220, 38, 38, 0.5); color: #fca5a5; border-radius: 10px; cursor: pointer; 
+                            font-weight: 700; transition: all 0.3s; font-size: 0.95rem; position: relative; z-index: 1001; pointer-events: auto;
+                            display: flex; align-items: center; justify-content: center; gap: 0.5rem; outline: none;">
+                            🗑️ Delete
+                        </button>
                     </div>
                 </div>
             `;
@@ -2773,8 +2876,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const filtered = allDocuments.filter(doc => {
-            const fileName = doc.path.split('/').pop().toLowerCase();
-            return fileName.includes(searchTerm) || doc.owner.toLowerCase().includes(searchTerm);
+            // Handle both old and new API formats
+            const fileName = (doc.displayName || doc.path?.split('/').pop() || '').toLowerCase();
+            const owner = (doc.metadata?.find(m => m.key === 'source')?.stringValue || doc.owner || '').toLowerCase();
+            return fileName.includes(searchTerm) || owner.includes(searchTerm);
         });
         
         displayDocuments(filtered);
@@ -2796,6 +2901,112 @@ document.addEventListener('DOMContentLoaded', function() {
             day: 'numeric'
         });
     }
+    
+    function formatDateISO(isoString) {
+        return new Date(isoString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    // Delete a single document
+    window.deleteDocument = async function(documentId) {
+        if (!confirm('Are you sure you want to delete this document?')) {
+            return;
+        }
+        
+        try {
+            const deleteApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/delete-document' : 
+                window.location.pathname + '/api/delete-document';
+            
+            console.log('[DELETE] Deleting document:', documentId);
+            console.log('[DELETE] API URL:', deleteApiUrl);
+            
+            const response = await fetch(deleteApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ documentId: documentId })
+            });
+            
+            console.log('[DELETE] Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('[DELETE] Error response:', errorData);
+                throw new Error(`Failed to delete document: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('[DELETE] Document deleted:', result);
+            
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Document deleted successfully', 'success');
+            } else {
+                alert('Document deleted successfully');
+            }
+            loadDocuments(); // Reload the document list
+            
+        } catch (error) {
+            console.error('[DELETE] Error deleting document:', error);
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Failed to delete document: ' + error.message, 'error');
+            } else {
+                alert('Failed to delete document: ' + error.message);
+            }
+        }
+    };
+    
+    // Delete all documents
+    window.deleteAllDocuments = async function() {
+        if (!confirm('Are you sure you want to delete ALL documents? This action cannot be undone!')) {
+            return;
+        }
+        
+        try {
+            const deleteAllApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/delete-all-documents' : 
+                window.location.pathname + '/api/delete-all-documents';
+            
+            console.log('[DELETE ALL] API URL:', deleteAllApiUrl);
+            
+            const response = await fetch(deleteAllApiUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('[DELETE ALL] Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('[DELETE ALL] Error response:', errorData);
+                throw new Error(`Failed to delete documents: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('[DELETE ALL] All documents deleted:', result);
+            
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification(result.message || 'All documents deleted successfully', 'success');
+            } else {
+                alert(result.message || 'All documents deleted successfully');
+            }
+            loadDocuments(); // Reload the document list
+            
+        } catch (error) {
+            console.error('[DELETE ALL] Error deleting all documents:', error);
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Failed to delete documents: ' + error.message, 'error');
+            } else {
+                alert('Failed to delete documents: ' + error.message);
+            }
+        }
+    };
     
     function getFileType(fileName) {
         const extension = fileName.split('.').pop().toUpperCase();

@@ -12,6 +12,10 @@
             box-sizing: border-box;
         }
         
+        html {
+            scroll-behavior: smooth;
+        }
+        
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg,
@@ -52,6 +56,7 @@
                 radial-gradient(ellipse at 85% 75%, rgba(99, 102, 241, 0.2) 0%, transparent 60%);
             animation: backgroundPulse 40s ease-in-out infinite;
             z-index: 0;
+            pointer-events: none;
         }
 
         @keyframes backgroundPulse {
@@ -94,6 +99,7 @@
             backdrop-filter: blur(10px);
             text-decoration: none;
             z-index: 100;
+            pointer-events: auto;
         }
 
         .back-button:hover {
@@ -634,10 +640,10 @@
                     console.log('📊 Data.status:', data.status);
                     console.log('📊 Data.api_response:', data.api_response);
                     console.log('📊 Data.response:', data.response);
-                    console.log('📊 Data.prompt:', data.prompt);
+                    console.log('📊 Data.query:', data.query);
                     
-                    // Check if we have any meaningful data - check nested structure first
-                    if (data.status === 'success' && (data.api_response?.response || data.response || data.prompt || data.output)) {
+                    // Check if we have any meaningful data - check new API format (parsed_data, text) or old format
+                    if (data.status === 'success' && (data.api_response?.parsed_data || data.api_response?.text || data.api_response?.response || data.response || data.query || data.output)) {
                         // We have real API results, show them immediately
                         console.log('✅ Real API results found, displaying immediately...');
                         showRealResults(data);
@@ -698,36 +704,53 @@
 
         function updateContentWithAPIData(data) {
             console.log('🔍 API Data received:', data);
+            console.log('🔍 Full data structure:', JSON.stringify(data, null, 2));
             
             // Extract the response from the API data structure
-            let apiResponse = 'Analysis completed successfully.';
+            let apiResponse = null;
             
-            // Check for the actual response structure - API response is nested
-            if (data && data.api_response && data.api_response.response) {
-                // The actual API response is nested in data.api_response.response
-                apiResponse = data.api_response.response;
+            // NEW FORMAT: Direct JSON response in 'data' field
+            if (data && data.data) {
+                console.log('✅ Using direct data field from new API format');
+                apiResponse = data.data;
+            }
+            // NEW FORMAT: Direct JSON response in 'api_response' field
+            else if (data && data.api_response && typeof data.api_response === 'object' && !data.api_response.text && !data.api_response.parsed_data) {
+                console.log('✅ Using direct api_response object');
+                apiResponse = data.api_response;
+            }
+            // OLD FORMAT: parsed_data or text field
+            else if (data && data.api_response && data.api_response.parsed_data) {
+                console.log('✅ Using parsed_data from API format');
+                apiResponse = data.api_response.parsed_data;
+            } else if (data && data.api_response && data.api_response.text) {
+                console.log('✅ Using text field from API format');
+                try {
+                    apiResponse = JSON.parse(data.api_response.text);
+                } catch (e) {
+                    console.log('⚠️ Could not parse text as JSON, using raw text');
+                    apiResponse = data.api_response.text;
+                }
             } else if (data && data.response) {
-                // Fallback to direct response field
                 apiResponse = data.response;
-            } else if (data && data.prompt) {
-                // Fallback to prompt field
-                apiResponse = data.prompt;
-            } else if (data && data.output) {
-                // Fallback to output field
-                apiResponse = data.output;
+            } else if (data && typeof data === 'object') {
+                // Direct object
+                apiResponse = data;
             } else if (data && typeof data === 'string') {
-                // Direct string response
                 apiResponse = data;
             }
             
             console.log('📝 Final API Response:', apiResponse);
             console.log('📝 API Response Type:', typeof apiResponse);
-            console.log('📝 API Response Length:', apiResponse ? apiResponse.length : 0);
+            
+            if (!apiResponse) {
+                apiResponse = 'No information found.';
+            }
             
             // Format the response for better display
             const formattedResponse = formatAPIResponse(apiResponse);
             
-            console.log('🎨 Formatted Response:', formattedResponse);
+            console.log('🎨 Formatted Response preview:', formattedResponse.substring(0, 200));
             
             // Update only the API response section
             const apiResponseElement = document.getElementById('apiResponseContent');
@@ -740,12 +763,115 @@
         }
 
         function formatAPIResponse(response) {
+            console.log('🎨 Formatting response:', response);
+            
             if (!response || response === 'No information found.' || response === 'Analysis completed successfully.') {
                 return '<p style="color: #fbbf24; font-style: italic;">No information found for this query.</p>';
             }
             
+            // If it's an object (parsed JSON), format it nicely
+            if (typeof response === 'object') {
+                let formatted = '<div style="font-size: 1rem; line-height: 1.8;">';
+                
+                // Display medicine information if available
+                if (response.medicine_searched) {
+                    formatted += `<h3 style="color: #ef4444; margin-bottom: 1rem; font-size: 1.4rem;">🔍 Medicine: ${response.medicine_searched}</h3>`;
+                }
+                
+                // Display status with color coding
+                if (response.current_status) {
+                    let statusColor, statusBg, statusText;
+                    if (response.current_status.toLowerCase() === 'banned') {
+                        statusColor = '#dc2626';
+                        statusBg = 'rgba(220, 38, 38, 0.1)';
+                        statusText = '🚫 BANNED';
+                    } else if (response.current_status.toLowerCase() === 'open' || response.current_status.toLowerCase() === 'allowed') {
+                        statusColor = '#10b981';
+                        statusBg = 'rgba(16, 185, 129, 0.1)';
+                        statusText = '✅ ALLOWED / OPEN';
+                    } else {
+                        statusColor = '#f59e0b';
+                        statusBg = 'rgba(245, 158, 11, 0.1)';
+                        statusText = '⚠️ ' + response.current_status.toUpperCase();
+                    }
+                    formatted += `<div style="background: ${statusBg}; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid ${statusColor};">
+                        <p style="color: ${statusColor}; font-weight: 700; font-size: 1.2rem; margin: 0;">${statusText}</p>
+                    </div>`;
+                }
+                
+                // Handle summary - check both top level and inside results object
+                let summary = response.summary;
+                if (!summary && response.results && typeof response.results === 'object') {
+                    summary = response.results.summary;
+                }
+                
+                // Display summary prominently if available
+                if (summary && summary !== 'N/A') {
+                    formatted += `<div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.1)); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);">
+                        <h4 style="color: #60a5fa; margin: 0 0 1rem 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.3rem;">📋</span> Summary
+                        </h4>
+                        <p style="color: #e2e8f0; margin: 0; font-size: 1.05rem; line-height: 1.7;">${summary}</p>
+                    </div>`;
+                }
+                
+                // Handle results - can be either an object or an array
+                if (response.results) {
+                    // If results is an OBJECT (new format)
+                    if (typeof response.results === 'object' && !Array.isArray(response.results)) {
+                        formatted += '<div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">';
+                        formatted += '<h4 style="color: #f59e0b; margin: 0 0 1rem 0; font-size: 1.1rem;">📊 Regulatory Details:</h4>';
+                        formatted += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+                        
+                        for (const [key, value] of Object.entries(response.results)) {
+                            // Skip summary as it's already displayed
+                            if (key === 'summary') continue;
+                            
+                            // Only show non-N/A values
+                            if (value && value !== 'N/A' && value !== 'Not specified in documents') {
+                                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                formatted += `<div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem; border-radius: 8px;">
+                                    <div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">${label}</div>
+                                    <div style="color: #e2e8f0; font-size: 0.95rem;">${value}</div>
+                                </div>`;
+                            }
+                        }
+                        
+                        formatted += '</div></div>';
+                    }
+                    // If results is an ARRAY (old format)
+                    else if (Array.isArray(response.results)) {
+                        formatted += '<h4 style="color: #f59e0b; margin-top: 1.5rem; margin-bottom: 1rem;">📋 Detailed Results:</h4>';
+                        response.results.forEach((result, index) => {
+                            formatted += `<div style="background: rgba(30, 41, 59, 0.5); padding: 1.25rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">`;
+                            formatted += `<h5 style="color: #60a5fa; margin: 0 0 0.75rem 0;">Result ${index + 1}</h5>`;
+                            
+                            for (const [key, value] of Object.entries(result)) {
+                                if (value && value !== 'N/A' && value !== 'Not specified in documents') {
+                                    const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    formatted += `<p style="margin: 0.5rem 0;"><strong style="color: #94a3b8;">${label}:</strong> <span style="color: #e2e8f0;">${value}</span></p>`;
+                                }
+                            }
+                            
+                            formatted += '</div>';
+                        });
+                    }
+                }
+                
+                // Display disclaimer if available
+                if (response.disclaimer && response.disclaimer !== 'N/A') {
+                    formatted += `<div style="background: rgba(220, 38, 38, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid #dc2626;">
+                        <strong style="color: #fca5a5;">⚠️ Disclaimer:</strong><br>
+                        <small style="color: #cbd5e1;">${response.disclaimer}</small>
+                    </div>`;
+                }
+                
+                formatted += '</div>';
+                return formatted;
+            }
+            
             // Convert to string if it's not already
-            let responseStr = typeof response === 'string' ? response : JSON.stringify(response);
+            let responseStr = typeof response === 'string' ? response : JSON.stringify(response, null, 2);
             
             // Simple formatting - just convert line breaks to HTML
             let formatted = responseStr.replace(/\n/g, '<br>');
