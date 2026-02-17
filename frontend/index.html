@@ -2497,17 +2497,8 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadDropZone.addEventListener('dragleave', handleDragLeave);
     uploadDropZone.addEventListener('drop', handleDrop);
     fileInput.addEventListener('change', handleFileSelect);
-    // Multiple event listeners for better click detection
+    // Single click event listener to avoid duplicate uploads
     analyzeBtn.addEventListener('click', handleAnalyzeClick);
-    analyzeBtn.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-    analyzeBtn.addEventListener('mouseup', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleAnalyzeClick(e);
-    });
     
     function handleAnalyzeClick(e) {
         e.preventDefault();
