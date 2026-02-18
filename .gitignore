@@ -99,3 +99,4 @@ dmypy.json.venv/
 .next/
 selenium-profile/
 *.pyc
+.venv/
