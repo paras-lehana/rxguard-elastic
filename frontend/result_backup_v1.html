@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmai - Analysis Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg,
+                #0f172a 0%,
+                #1e293b 20%,
+                #334155 40%,
+                #475569 60%,
+                #334155 80%,
+                #1e293b 100%);
+            background-size: 400% 400%;
+            animation: backgroundMove 25s ease infinite;
+            color: #f1f5f9;
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+            background-attachment: fixed;
+        }
+
+        @keyframes backgroundMove {
+            0%, 100% { background-position: 0% 50%; }
+            25% { background-position: 100% 25%; }
+            50% { background-position: 50% 100%; }
+            75% { background-position: 25% 75%; }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 25% 25%, rgba(59, 130, 246, 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse at 75% 35%, rgba(139, 92, 246, 0.25) 0%, transparent 65%),
+                radial-gradient(ellipse at 45% 85%, rgba(16, 185, 129, 0.2) 0%, transparent 75%),
+                radial-gradient(ellipse at 85% 75%, rgba(99, 102, 241, 0.2) 0%, transparent 60%);
+            animation: backgroundPulse 40s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { opacity: 0.8; transform: scale(1) rotate(0deg); }
+            20% { opacity: 1; transform: scale(1.1) rotate(2deg); }
+            40% { opacity: 0.85; transform: scale(0.95) rotate(-1.5deg); }
+            60% { opacity: 1; transform: scale(1.05) rotate(1.8deg); }
+            80% { opacity: 0.9; transform: scale(1.02) rotate(-0.8deg); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: linear-gradient(135deg,
+                rgba(220, 38, 38, 0.2) 0%,
+                rgba(220, 38, 38, 0.4) 100%);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            color: #fca5a5;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg,
+                rgba(220, 38, 38, 0.4) 0%,
+                rgba(220, 38, 38, 0.6) 100%);
+            color: #fecaca;
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: fadeInDown 1.2s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 35%, #b91c1c 70%, #7f1d1d 100%);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientFlow 4s ease-in-out infinite;
+            margin-bottom: 0.8rem;
+            text-shadow: 0 0 40px rgba(220, 38, 38, 0.3);
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .query-display {
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.9) 0%, 
+                rgba(30, 41, 59, 0.8) 100%);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .query-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, 
+                rgba(220, 38, 38, 0.8), 
+                rgba(239, 68, 68, 0.8), 
+                rgba(185, 28, 28, 0.8),
+                rgba(220, 38, 38, 0.8));
+            background-size: 300% 100%;
+            animation: borderFlow 4s linear infinite;
+        }
+
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        .query-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .query-text {
+            font-size: 1.2rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        .results-container {
+            flex: 1;
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.95) 0%, 
+                rgba(30, 41, 59, 0.85) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 24px;
+            backdrop-filter: blur(30px);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1.2s ease-out 0.3s both;
+            position: relative;
+        }
+
+        .results-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                rgba(220, 38, 38, 0.9), 
+                rgba(239, 68, 68, 0.9), 
+                rgba(185, 28, 28, 0.9),
+                rgba(220, 38, 38, 0.9));
+            background-size: 400% 100%;
+            animation: borderFlow 5s linear infinite;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-content {
+            padding: 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .analysis-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .analysis-title {
+            color: #dc2626;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.2));
+            color: #fca5a5;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.success {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2));
+            color: #6ee7b7;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2));
+            color: #fcd34d;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .analysis-section {
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 15px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .section-title {
+            color: #f1f5f9;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .section-content {
+            color: #cbd5e1;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(185, 28, 28, 0.1));
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-title {
+            color: #fca5a5;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .highlight-text {
+            color: #e2e8f0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            gap: 1.5rem;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(220, 38, 38, 0.2);
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .loading-facts {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .fact-title {
+            color: #fca5a5;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .fact-text {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            color: #fca5a5;
+        }
+
+        .error-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.2rem; }
+            .container { padding: 1.5rem; }
+            .results-content { padding: 1.5rem; }
+            .back-button { position: relative; top: 0; left: 0; margin-bottom: 1rem; }
+            .status-badges { justify-content: center; }
+            .analysis-section { padding: 1.5rem; }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.3); }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(220, 38, 38, 0.6); 
+            border-radius: 4px; 
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(220, 38, 38, 0.8); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/pharmai" class="back-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5"/>
+                <path d="M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Home
+        </a>
+
+        <header class="header">
+            <h1>Analysis Results</h1>
+            <p>Pharmaceutical Safety Assessment Report</p>
+        </header>
+
+        <div class="query-display">
+            <div class="query-label">
+                🔍 ANALYZED QUERY
+            </div>
+            <div id="queryText" class="query-text">Loading your query...</div>
+        </div>
+
+        <div class="results-container">
+            <div id="resultsContent" class="results-content">
+                <!-- Loading State -->
+                <div id="loadingContainer" class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Processing pharmaceutical safety analysis...</div>
+                    <div class="loading-facts">
+                        <div class="fact-title">💡 Did You Know?</div>
+                        <div id="loadingFactText" class="fact-text">Loading pharmaceutical safety facts...</div>
+                    </div>
+                </div>
+
+                <!-- Results Content -->
+                <div id="actualResults" style="display: none;">
+                    <div class="analysis-section">
+                        <div class="section-title">
+                            📋 API Response
+                        </div>
+                        <div id="apiResponseContent" class="section-content">
+                            Loading API response...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorContainer" class="error-container" style="display: none;">
+                    <div class="error-message">
+                        <div class="error-title">Analysis Unavailable</div>
+                        <p>Unable to complete pharmaceutical safety analysis. Please try again or contact support for assistance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pharmaceutical safety facts for loading screen
+        const pharmaFacts = [
+            "The FDA approves approximately 40-50 new drugs each year after rigorous testing phases.",
+            "It takes an average of 10-15 years and $1-3 billion to develop a single new medication.",
+            "Over 2,800 pharmaceutical substances are currently on various banned or restricted lists globally.",
+            "Drug interactions cause over 125,000 deaths annually in the United States alone.",
+            "Modern pharmacovigilance systems monitor safety data from over 150 countries worldwide.",
+            "AI-powered drug safety analysis can reduce detection time from months to mere minutes.",
+            "The average prescription drug undergoes testing on over 3,000 people before approval.",
+            "Counterfeit drugs represent approximately 10% of the global pharmaceutical market.",
+            "Pharmaceutical safety databases contain over 20 million adverse event reports globally.",
+            "Clinical trials for new drugs have a success rate of only about 12% from start to approval."
+        ];
+
+        let currentFactIndex = 0;
+        let factRotationInterval;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we came from a page with active processing dialog
+            const wasProcessingActive = localStorage.getItem('processingDialogActive');
+            if (wasProcessingActive === 'true') {
+                console.log('🔄 Processing dialog was active on previous page, hiding it now');
+                localStorage.removeItem('processingDialogActive');
+                
+                // Hide the processing dialog with a small delay to ensure smooth transition
+                setTimeout(() => {
+                    hideProcessingDialog();
+                }, 100);
+            }
+            
+            displayQuery();
+            startFactRotation();
+            
+            // Start analysis immediately with a tiny delay to show the loading screen briefly
+            setTimeout(() => {
+                simulateAnalysis();
+            }, 500); // Just 500ms to show loading
+        });
+
+        function hideProcessingDialog() {
+            // Hide processing dialog that might still be visible from the previous page
+            try {
+                // Method 1: Hide via CSS - this affects all processing dialogs globally
+                const style = document.createElement('style');
+                style.textContent = `
+                    .processing-overlay,
+                    #processingOverlay,
+                    .processing-dialog {
+                        display: none !important;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                console.log('✅ Added global CSS to hide processing dialogs');
+                
+                // Method 2: Try to find and hide elements directly
+                const selectors = ['.processing-overlay', '#processingOverlay', '.processing-dialog'];
+                
+                selectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        element.style.display = 'none';
+                        element.style.opacity = '0';
+                        element.style.visibility = 'hidden';
+                        console.log('✅ Hidden processing dialog:', selector);
+                    });
+                });
+                
+                // Method 3: Use postMessage to communicate with parent/opener windows
+                try {
+                    const message = { type: 'hideProcessingDialog' };
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.postMessage(message, '*');
+                        console.log('📤 Sent hide message to opener window');
+                    }
+                    if (window.parent !== window) {
+                        window.parent.postMessage(message, '*');
+                        console.log('📤 Sent hide message to parent window');
+                    }
+                } catch (e) {
+                    console.log('Could not send postMessage');
+                }
+                
+            } catch (error) {
+                console.log('No processing dialog to hide:', error.message);
+            }
+        }
+
+        function displayQuery() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let query = urlParams.get('query');
+            
+            // Also try to get query from sessionStorage
+            if (!query) {
+                try {
+                    const storedQuery = sessionStorage.getItem('currentQuery');
+                    if (storedQuery) {
+                        query = storedQuery;
+                    }
+                } catch (error) {
+                    console.log('No stored query found');
+                }
+            }
+            
+            query = query || 'Pharmaceutical safety analysis request';
+            document.getElementById('queryText').textContent = query;
+            console.log('🔍 Displaying query:', query);
+        }
+
+        function startFactRotation() {
+            const factText = document.getElementById('loadingFactText');
+            
+            function rotateFact() {
+                factText.style.opacity = '0.5';
+                setTimeout(() => {
+                    factText.textContent = pharmaFacts[currentFactIndex];
+                    factText.style.opacity = '1';
+                    currentFactIndex = (currentFactIndex + 1) % pharmaFacts.length;
+                }, 300);
+            }
+            
+            // Show first fact immediately
+            rotateFact();
+            
+            // Rotate facts every 3 seconds
+            factRotationInterval = setInterval(rotateFact, 3000);
+        }
+
+        function simulateAnalysis() {
+            console.log('🚀 Starting analysis simulation...');
+            
+            // Check if we have real API results from sessionStorage
+            try {
+                const searchResults = sessionStorage.getItem('searchResults');
+                console.log('💾 SessionStorage searchResults:', searchResults);
+                
+                if (searchResults) {
+                    const data = JSON.parse(searchResults);
+                    console.log('📊 Parsed search data:', data);
+                    console.log('📊 Data keys:', Object.keys(data));
+                    console.log('📊 Data.status:', data.status);
+                    console.log('📊 Data.api_response:', data.api_response);
+                    console.log('📊 Data.response:', data.response);
+                    console.log('📊 Data.query:', data.query);
+                    
+                    // Check if we have any meaningful data - check new API format (parsed_data, text) or old format
+                    if (data.status === 'success' && (data.api_response?.parsed_data || data.api_response?.text || data.api_response?.response || data.response || data.query || data.output)) {
+                        // We have real API results, show them immediately
+                        console.log('✅ Real API results found, displaying immediately...');
+                        showRealResults(data);
+                        return;
+                    } else if (data.status === 'error') {
+                        console.log('❌ API error found:', data.message);
+                        showError(data.message || 'An error occurred during analysis');
+                        return;
+                    } else {
+                        console.log('⚠️ Data found but no valid response detected');
+                        console.log('⚠️ Falling back to simulation due to invalid data structure');
+                    }
+                } else {
+                    console.log('📭 No search results in sessionStorage');
+                }
+            } catch (error) {
+                console.error('🚨 Error parsing sessionStorage:', error);
+            }
+
+            console.log('🎭 Using fallback simulation...');
+            // Fallback to simulated results immediately
+            showResults();
+        }
+
+        function showRealResults(apiData) {
+            // Clear fact rotation
+            if (factRotationInterval) {
+                clearInterval(factRotationInterval);
+            }
+
+            // Hide any remaining processing dialog
+            hideProcessingDialog();
+
+            // Hide loading, show results
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('actualResults').style.display = 'block';
+
+            // Update content with real API response
+            updateContentWithAPIData(apiData);
+        }
+
+        function showResults() {
+            // Clear fact rotation
+            if (factRotationInterval) {
+                clearInterval(factRotationInterval);
+            }
+
+            // Hide any remaining processing dialog
+            hideProcessingDialog();
+
+            // Hide loading, show results
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('actualResults').style.display = 'block';
+
+            // Update content based on query (fallback)
+            updateResultsBasedOnQuery();
+        }
+
+        function updateContentWithAPIData(data) {
+            console.log('🔍 API Data received:', data);
+            console.log('🔍 Full data structure:', JSON.stringify(data, null, 2));
+            
+            // Extract the response from the API data structure
+            let apiResponse = null;
+            
+            // NEW FORMAT: Direct JSON response in 'data' field
+            if (data && data.data) {
+                console.log('✅ Using direct data field from new API format');
+                apiResponse = data.data;
+            }
+            // NEW FORMAT: Direct JSON response in 'api_response' field
+            else if (data && data.api_response && typeof data.api_response === 'object' && !data.api_response.text && !data.api_response.parsed_data) {
+                console.log('✅ Using direct api_response object');
+                apiResponse = data.api_response;
+            }
+            // OLD FORMAT: parsed_data or text field
+            else if (data && data.api_response && data.api_response.parsed_data) {
+                console.log('✅ Using parsed_data from API format');
+                apiResponse = data.api_response.parsed_data;
+            } else if (data && data.api_response && data.api_response.text) {
+                console.log('✅ Using text field from API format');
+                try {
+                    apiResponse = JSON.parse(data.api_response.text);
+                } catch (e) {
+                    console.log('⚠️ Could not parse text as JSON, using raw text');
+                    apiResponse = data.api_response.text;
+                }
+            } else if (data && data.response) {
+                apiResponse = data.response;
+            } else if (data && typeof data === 'object') {
+                // Direct object
+                apiResponse = data;
+            } else if (data && typeof data === 'string') {
+                apiResponse = data;
+            }
+            
+            console.log('📝 Final API Response:', apiResponse);
+            console.log('📝 API Response Type:', typeof apiResponse);
+            
+            if (!apiResponse) {
+                apiResponse = 'No information found.';
+            }
+            
+            // Format the response for better display
+            const formattedResponse = formatAPIResponse(apiResponse);
+            
+            console.log('🎨 Formatted Response preview:', formattedResponse.substring(0, 200));
+            
+            // Update only the API response section
+            const apiResponseElement = document.getElementById('apiResponseContent');
+            if (apiResponseElement) {
+                apiResponseElement.innerHTML = formattedResponse;
+                console.log('✅ API Response section updated successfully');
+            } else {
+                console.error('❌ Could not find apiResponseContent element');
+            }
+        }
+
+        function extractRegulatoryDetailsFromText(text) {
+            if (!text || typeof text !== 'string') return [];
+
+            const details = [];
+            const normalizedText = text.trim();
+
+            if (/\bnot\s+banned\b/i.test(normalizedText)) {
+                details.push({ label: 'Current Status', value: 'Not Banned' });
+            } else if (/\bbanned\b/i.test(normalizedText)) {
+                details.push({ label: 'Current Status', value: 'Banned' });
+            }
+
+            const scheduleMatch = normalizedText.match(/\bSchedule\s+[A-Z0-9-]+\b/i);
+            if (scheduleMatch) {
+                details.push({ label: 'Schedule Classification', value: scheduleMatch[0] });
+            }
+
+            const authorityMatch = normalizedText.match(/\b(CDSCO|Central Drugs Standard Control Organisation|DCGI|FSSAI|NPPA)\b/i);
+            if (authorityMatch) {
+                details.push({ label: 'Regulatory Authority', value: authorityMatch[0] });
+            }
+
+            const legalBasisMatch = normalizedText.match(/\b(Drugs\s*(?:and|&)\s*Cosmetics\s*Act,?\s*1940|Drugs\s*Rules,?\s*1945)\b/i);
+            if (legalBasisMatch) {
+                details.push({ label: 'Legal Basis', value: legalBasisMatch[0] });
+            }
+
+            if (/\brequires?\s+(?:a\s+)?prescription\b|\bprescription\s+required\b/i.test(normalizedText)) {
+                details.push({ label: 'Prescription Requirement', value: 'Prescription Required' });
+            } else if (/\bover-the-counter\b|\botc\b/i.test(normalizedText)) {
+                details.push({ label: 'Prescription Requirement', value: 'Over-the-Counter (OTC)' });
+            }
+
+            return details;
+        }
+
+        function formatRegulatoryDetailsBlock(details) {
+            if (!Array.isArray(details) || details.length === 0) return '';
+
+            let html = '<div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">';
+            html += '<h4 style="color: #f59e0b; margin: 0 0 1rem 0; font-size: 1.1rem;">📊 Regulatory Details:</h4>';
+            html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+
+            details.forEach((item) => {
+                html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem; border-radius: 8px;">
+                    <div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">${item.label}</div>
+                    <div style="color: #e2e8f0; font-size: 0.95rem;">${item.value}</div>
+                </div>`;
+            });
+
+            html += '</div></div>';
+            return html;
+        }
+
+        function formatAPIResponse(response) {
+            console.log('🎨 Formatting response:', response);
+            
+            if (!response || response === 'No information found.' || response === 'Analysis completed successfully.') {
+                return '<p style="color: #fbbf24; font-style: italic;">No information found for this query.</p>';
+            }
+            
+            // If it's an object (parsed JSON), format it nicely
+            if (typeof response === 'object') {
+                let formatted = '<div style="font-size: 1rem; line-height: 1.8;">';
+
+                // If API returns both narrative text and structured fields,
+                // show BOTH (text summary + regulatory details).
+                const hasStructuredDetails = !!(
+                    response.medicine_searched ||
+                    response.current_status ||
+                    response.results ||
+                    response.summary ||
+                    response.disclaimer
+                );
+
+                if (typeof response.text === 'string' && response.text.trim()) {
+                    if (!hasStructuredDetails) {
+                        const extractedDetails = extractRegulatoryDetailsFromText(response.text);
+                        return `<div style="font-size: 1rem; line-height: 1.8; color: #e2e8f0; margin-bottom: 1rem;">${response.text.replace(/\n/g, '<br>')}</div>${formatRegulatoryDetailsBlock(extractedDetails)}`;
+                    }
+
+                    formatted += `<div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.08)); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; border: 1px solid rgba(59, 130, 246, 0.25);">
+                        <h4 style="color: #60a5fa; margin: 0 0 0.75rem 0; font-size: 1.05rem;">📝 Search Summary</h4>
+                        <p style="color: #e2e8f0; margin: 0; line-height: 1.75;">${response.text.replace(/\n/g, '<br>')}</p>
+                    </div>`;
+
+                    const extractedDetails = extractRegulatoryDetailsFromText(response.text);
+                    if (extractedDetails.length > 0 && !response.results) {
+                        formatted += formatRegulatoryDetailsBlock(extractedDetails);
+                    }
+                }
+                
+                // Display medicine information if available
+                if (response.medicine_searched) {
+                    formatted += `<h3 style="color: #ef4444; margin-bottom: 1rem; font-size: 1.4rem;">🔍 Medicine: ${response.medicine_searched}</h3>`;
+                }
+                
+                // Display status with color coding
+                if (response.current_status) {
+                    let statusColor, statusBg, statusText;
+                    if (response.current_status.toLowerCase() === 'banned') {
+                        statusColor = '#dc2626';
+                        statusBg = 'rgba(220, 38, 38, 0.1)';
+                        statusText = '🚫 BANNED';
+                    } else if (response.current_status.toLowerCase() === 'open' || response.current_status.toLowerCase() === 'allowed') {
+                        statusColor = '#10b981';
+                        statusBg = 'rgba(16, 185, 129, 0.1)';
+                        statusText = '✅ ALLOWED / OPEN';
+                    } else {
+                        statusColor = '#f59e0b';
+                        statusBg = 'rgba(245, 158, 11, 0.1)';
+                        statusText = '⚠️ ' + response.current_status.toUpperCase();
+                    }
+                    formatted += `<div style="background: ${statusBg}; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid ${statusColor};">
+                        <p style="color: ${statusColor}; font-weight: 700; font-size: 1.2rem; margin: 0;">${statusText}</p>
+                    </div>`;
+                }
+                
+                // Handle summary - check both top level and inside results object
+                let summary = response.summary;
+                if (!summary && response.results && typeof response.results === 'object') {
+                    summary = response.results.summary;
+                }
+                
+                // Display summary prominently if available
+                if (summary && summary !== 'N/A') {
+                    formatted += `<div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(99, 102, 241, 0.1)); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);">
+                        <h4 style="color: #60a5fa; margin: 0 0 1rem 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.3rem;">📋</span> Summary
+                        </h4>
+                        <p style="color: #e2e8f0; margin: 0; font-size: 1.05rem; line-height: 1.7;">${summary}</p>
+                    </div>`;
+                }
+                
+                // Handle results - can be either an object or an array
+                if (response.results) {
+                    // If results is an OBJECT (new format)
+                    if (typeof response.results === 'object' && !Array.isArray(response.results)) {
+                        formatted += '<div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">';
+                        formatted += '<h4 style="color: #f59e0b; margin: 0 0 1rem 0; font-size: 1.1rem;">📊 Regulatory Details:</h4>';
+                        formatted += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+                        
+                        for (const [key, value] of Object.entries(response.results)) {
+                            // Skip summary as it's already displayed
+                            if (key === 'summary') continue;
+                            
+                            // Only show non-N/A values
+                            if (value && value !== 'N/A' && value !== 'Not specified in documents') {
+                                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                formatted += `<div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem; border-radius: 8px;">
+                                    <div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">${label}</div>
+                                    <div style="color: #e2e8f0; font-size: 0.95rem;">${value}</div>
+                                </div>`;
+                            }
+                        }
+                        
+                        formatted += '</div></div>';
+                    }
+                    // If results is an ARRAY (old format)
+                    else if (Array.isArray(response.results)) {
+                        formatted += '<h4 style="color: #f59e0b; margin-top: 1.5rem; margin-bottom: 1rem;">📋 Detailed Results:</h4>';
+                        response.results.forEach((result, index) => {
+                            formatted += `<div style="background: rgba(30, 41, 59, 0.5); padding: 1.25rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">`;
+                            formatted += `<h5 style="color: #60a5fa; margin: 0 0 0.75rem 0;">Result ${index + 1}</h5>`;
+                            
+                            for (const [key, value] of Object.entries(result)) {
+                                if (value && value !== 'N/A' && value !== 'Not specified in documents') {
+                                    const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    formatted += `<p style="margin: 0.5rem 0;"><strong style="color: #94a3b8;">${label}:</strong> <span style="color: #e2e8f0;">${value}</span></p>`;
+                                }
+                            }
+                            
+                            formatted += '</div>';
+                        });
+                    }
+                }
+                
+                // Display disclaimer if available
+                if (response.disclaimer && response.disclaimer !== 'N/A') {
+                    formatted += `<div style="background: rgba(220, 38, 38, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1.5rem; border-left: 4px solid #dc2626;">
+                        <strong style="color: #fca5a5;">⚠️ Disclaimer:</strong><br>
+                        <small style="color: #cbd5e1;">${response.disclaimer}</small>
+                    </div>`;
+                }
+                
+                formatted += '</div>';
+                return formatted;
+            }
+            
+            // Convert to string if it's not already
+            let responseStr = typeof response === 'string' ? response : JSON.stringify(response, null, 2);
+
+            const extractedDetails = extractRegulatoryDetailsFromText(responseStr);
+            const extractedDetailsHtml = formatRegulatoryDetailsBlock(extractedDetails);
+            
+            // Simple formatting - just convert line breaks to HTML
+            let formatted = responseStr.replace(/\n/g, '<br>');
+            
+            // Basic formatting for readability
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            return `${formatted}${extractedDetailsHtml}`;
+        }
+
+        function updateResultsBasedOnQuery() {
+            // Simple fallback - just show that no real API data was available
+            const apiResponseElement = document.getElementById('apiResponseContent');
+            if (apiResponseElement) {
+                apiResponseElement.innerHTML = '<p style="color: #fbbf24; font-style: italic;">No real API data available. Please try again.</p>';
+            }
+        }
+
+        function updatePediatricContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Pediatric safety analysis completed. The medication profile shows specific considerations for children under 12 years. Dosage adjustments and monitoring protocols have been verified against pediatric clinical guidelines.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Clinical data indicates appropriate safety margins for pediatric use when administered according to age-appropriate dosing schedules. No significant adverse events reported in pediatric populations under standard care protocols.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Special attention required for pediatric dosing. Always verify weight-based calculations and consult pediatric specialists for complex cases. Age-appropriate formulations recommended.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Use pediatric-specific dosing charts. Monitor for developmental considerations. Ensure parent/guardian education on administration and monitoring protocols.";
+        }
+
+        function updatePregnancyContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Pregnancy safety evaluation complete. The analyzed medication has been assessed for teratogenic risks and pregnancy category classification according to current FDA guidelines and international safety standards.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Risk assessment indicates careful consideration required during pregnancy. Benefit-risk evaluation shows potential for safe use under specific clinical supervision and monitoring protocols.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Pregnancy category verification essential. Consider alternative therapies during first trimester. Monitor for fetal development impacts and maternal safety parameters.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Consult maternal-fetal medicine specialists. Implement enhanced monitoring protocols. Consider lactation safety for postpartum use planning.";
+        }
+
+        function updateGeriatricContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Geriatric population safety analysis indicates modified pharmacokinetics requiring dosage adjustments. Age-related physiological changes have been factored into the safety assessment.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Elderly patients may require reduced dosages due to altered metabolism and clearance rates. Increased monitoring recommended for potential adverse effects and drug accumulation.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Enhanced fall risk assessment required. Monitor for cognitive impacts and drug interactions with common geriatric medications. Regular renal function monitoring essential.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Implement 'start low, go slow' dosing strategy. Regular medication reviews and polypharmacy assessments. Monitor for functional decline indicators.";
+        }
+
+        function updateInteractionContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Comprehensive drug interaction analysis completed. The system has evaluated potential interactions with commonly prescribed medications and identified key areas requiring clinical attention.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Interaction profile analysis shows moderate risk for specific drug combinations. CYP enzyme pathway interactions have been mapped with recommendations for therapeutic drug monitoring.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Critical interaction alerts identified for specific medication classes. Monitor therapeutic levels closely when used with enzyme inducers or inhibitors.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Conduct thorough medication reconciliation. Implement interaction screening protocols. Consider timing modifications and therapeutic drug monitoring.";
+        }
+
+        function updateRegulatoryContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "FDA approval status verified through official regulatory databases. Current approval status, indication-specific approvals, and any regulatory actions have been documented and cross-referenced.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Regulatory compliance confirmed across multiple jurisdictions. Post-market surveillance data reviewed with no outstanding safety signals requiring immediate action.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Full FDA approval confirmed for specified indications. No current recalls or safety alerts. Prescribing information current as of latest regulatory review.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Follow FDA-approved prescribing guidelines. Monitor for regulatory updates and safety communications. Ensure indication-appropriate use only.";
+        }
+
+        function updateControlledContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Controlled substance classification verified through DEA scheduling databases. Current scheduling status, abuse potential, and prescribing restrictions have been documented.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Schedule classification requires specific prescribing protocols and monitoring systems. Abuse liability assessment indicates need for patient screening and monitoring programs.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Controlled substance protocols required. Implement abuse screening assessments. Monitor for signs of dependence or diversion. State-specific regulations may apply.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Follow DEA prescribing requirements. Implement controlled substance agreements. Regular monitoring for abuse patterns and therapeutic effectiveness.";
+        }
+
+        function updateGeneralContent() {
+            document.getElementById('summarySectionContent').innerHTML = 
+                "Comprehensive pharmaceutical safety analysis completed successfully. The medication profile demonstrates acceptable risk-benefit ratios under standard clinical conditions with appropriate monitoring protocols.";
+            
+            document.getElementById('clinicalSectionContent').innerHTML = 
+                "Safety evaluation indicates compliance with current regulatory standards. Clinical monitoring recommendations align with established pharmaceutical safety guidelines and best practice protocols.";
+            
+            document.getElementById('safetyHighlights').innerHTML = 
+                "Standard safety monitoring protocols recommended. Be aware of patient-specific risk factors and contraindications. Regular assessment of therapeutic response and adverse effects advised.";
+            
+            document.getElementById('recommendationsSectionContent').innerHTML = 
+                "Follow established clinical guidelines for the specific therapeutic class. Implement appropriate monitoring schedules based on patient risk factors and medication characteristics.";
+        }
+
+        function showError(message) {
+            if (factRotationInterval) {
+                clearInterval(factRotationInterval);
+            }
+            
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('actualResults').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'block';
+            
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.querySelector('.error-message p').textContent = message;
+        }
+
+        // Handle back button
+        document.querySelector('.back-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Add click animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 150);
+        });
+    </script>
+</body>
+</html>

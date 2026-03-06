@@ -1,634 +1,603 @@
-from flask import Flask, render_template_string, request, redirect, url_for, jsonify
+"""
+PharmAI Portal — Flask Backend v2.0
+====================================
+Serves the frontend and proxies all Sarvam AI / N8N API calls.
+Keeps API keys server-side (never exposed to browser).
+
+Endpoints:
+  GET  /                       → Main portal page
+  GET  /pharmai                → Same (Traefik compat)
+  GET  /analyze, /pharmai/analyze → Results page
+  POST /api/search             → 2-tier medicine search (N8N → Sarvam)
+  POST /api/stt                → Speech-to-Text (Sarvam Saaras v3)
+  POST /api/tts                → Text-to-Speech (Sarvam Bulbul v3)
+  POST /api/translate          → Translation (Sarvam Mayura v1)
+  POST /api/ocr                → Document OCR (Sarvam parse/document)
+  POST /api/interaction        → Drug interaction check (Sarvam Chat)
+  POST /api/doc-analysis       → AI document analysis (Sarvam Chat)
+  POST /api/upload-files       → PDF upload & index
+  POST /api/list-documents     → List indexed documents
+  POST /api/delete-document    → Delete a document
+  DELETE /api/delete-all-documents → Delete all documents
+  GET  /health                 → Health check
+"""
+
+from flask import Flask, render_template_string, request, redirect, jsonify
 import os
 import requests
 import json
 from werkzeug.utils import secure_filename
 import time
 
+# ─── Load environment variables from .env ────────────────────────────────────
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, use OS env vars directly
+
+SARVAM_API_KEY = os.getenv('SARVAM_API_KEY', '')
+PHARMA_INSIGHT_URL = os.getenv('PHARMA_INSIGHT_URL', '')
+SARVAM_BASE = 'https://api.sarvam.ai'
+
+# ─── Flask App ───────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pharma-safe-secret-key-2024'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'pharmai-portal-secret-2026')
 app.config['UPLOAD_FOLDER'] = '../data'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-# Create upload directory if it doesn't exist
+# Create upload directory
 upload_path = os.path.abspath(app.config['UPLOAD_FOLDER'])
-if not os.path.exists(upload_path):
-    os.makedirs(upload_path)
+os.makedirs(upload_path, exist_ok=True)
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'webp'}
+
 
 def allowed_file(filename):
+    """Check if file extension is in the allowed set."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def call_search_api(query, session_id="pharma-session-001"):
-    """
-    Real API function to call the external search API
-    API Endpoint: https://api.lehana.in/ai/gemini-file-search
-    Format: {"query": "query text", "sessionId": "session-id"}
-    """
-    api_urls = [
-        "https://api.lehana.in/ai/gemini-file-search/api/search",
-        "https://medical.lehana.in/ncert/api/search"
-    ]
-    
-    # Prepare the request data with the exact format from new API
-    request_data = {
-        "query": query,
-        "sessionId": session_id
-    }
-    
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    
-    print(f"\n🚀 === BACKEND: Flask → External API ===")
-    print(f"🎯 External API URLs: {api_urls}")
-    print(f"🔑 Query: '{query}'")
-    print(f"📝 Session ID: '{session_id}'")
-    print(f"📡 Making external API call...")
-
-    last_error = None
-
-    for api_url in api_urls:
-        try:
-            # Make the API call with 2-minute timeout
-            print("📡 Sending request...")
-            print(f"🌐 URL: {api_url}")
-            print(f"📦 Headers: {headers}")
-            print(f"📝 JSON Body: {json.dumps(request_data, indent=2)}")
-
-            response = requests.post(
-                api_url,
-                json=request_data,
-                headers=headers,
-                timeout=120
-            )
-
-            print(f"✅ Response Status: {response.status_code}")
-            print(f"📋 Response Headers: {dict(response.headers)}")
-
-            if response.status_code == 200:
-                response_data = response.json()
-                print(f"✅ API Response: {json.dumps(response_data, indent=2)}")
-
-                return {
-                    "status": "success",
-                    "query": query,
-                    "data": response_data,
-                    "api_response": response_data,
-                    "api_url": api_url,
-                    "processing_time": "API call completed"
-                }
-
-            print(f"❌ API Error: Status {response.status_code}")
-            print(f"❌ Error Response: {response.text}")
-            last_error = {
-                "status": "error",
-                "error": f"API returned status {response.status_code}",
-                "prompt": query,
-                "api_url": api_url
-            }
-
-            # Fallback only for route-level failures on this endpoint.
-            if response.status_code in (404, 405):
-                print("↪️ Trying fallback API URL...")
-                continue
-
-            return last_error
-
-        except requests.exceptions.Timeout:
-            print(f"⏰ API call timed out for {api_url}")
-            last_error = {
-                "status": "error",
-                "error": "API request timed out after 2 minutes",
-                "prompt": query,
-                "api_url": api_url
-            }
-        except requests.exceptions.ConnectionError as e:
-            print(f"🌐 Connection Error for {api_url}: {str(e)}")
-            last_error = {
-                "status": "error",
-                "error": f"Connection error: {str(e)}",
-                "prompt": query,
-                "api_url": api_url
-            }
-        except Exception as e:
-            print(f"❌ Unexpected Error for {api_url}: {str(e)}")
-            last_error = {
-                "status": "error",
-                "error": str(e),
-                "prompt": query,
-                "api_url": api_url
-            }
-
-    return last_error or {
-        "status": "error",
-        "error": "All configured search APIs failed",
-        "prompt": query,
-        "api_url": api_urls[0]
+# ─── Sarvam API headers ─────────────────────────────────────────────────────
+def sarvam_headers(content_type='application/json'):
+    """Return standard Sarvam API headers with the subscription key."""
+    return {
+        'Content-Type': content_type,
+        'api-subscription-key': SARVAM_API_KEY,
     }
 
-def call_document_index_api(file_path, metadata=None):
+
+# ─── N8N Rejection Rule (CRITICAL) ──────────────────────────────────────────
+def is_useless_n8n_response(text):
     """
-    Upload and index a document using the new API
-    API Endpoint: https://medical.lehana.in/ncert/api/index
+    Detect N8N boilerplate 'give me more data' responses.
+    If HTTP 200 but text is short (<800 chars) and matches these patterns,
+    discard and fall through to Sarvam (Tier 2).
     """
-    api_url = "https://medical.lehana.in/ncert/api/index"
-    
-    if metadata is None:
-        metadata = {
-            "source": "CDSCO",
-            "type": "pharmaceutical_document",
-            "year": str(time.localtime().tm_year)
-        }
-    
-    print(f"\n📄 === UPLOAD & INDEX API ===")
-    print(f"📁 File: {os.path.basename(file_path)}")
-    print(f"📊 Metadata: {metadata}")
-    print(f"🎯 API URL: {api_url}")
-    
+    if not text or len(text) >= 800:
+        return False
+    t = text.lower()
+    return (
+        "haven't provided" in t
+        or "no specific drug" in t
+        or "need to analyze" in t
+        or "please provide" in t
+        or ("would need" in t and "drug" in t)
+    )
+
+
+# ─── System prompt for Sarvam Chat ──────────────────────────────────────────
+PHARMAI_SYSTEM_PROMPT = (
+    "You are PharmaAI, an expert Indian pharmaceutical assistant specialized "
+    "in drug safety. When given a medicine name, composition, or scanned text "
+    "from a medicine package, provide a comprehensive analysis:\n\n"
+    "**Status:** Whether it is BANNED / RESTRICTED / ALLOWED in India "
+    "(check CDSCO/FSSAI regulations)\n"
+    "**Safety:** Side effects, contraindications, drug interactions, warnings\n"
+    "**Usage:** What it is used for, dosage guidelines\n"
+    "**Regulatory:** CDSCO schedule classification, gazette notifications if banned\n"
+    "**Alternatives:** Safer alternatives if the medicine is banned or restricted\n\n"
+    "Be concise, accurate, and respond in the same language the user uses. "
+    "If the query is in Hindi or another Indian language, respond in that language. "
+    "Use Markdown bold (**text**) for section headers. Start your response with a "
+    "clear status indicator: ✅ ALLOWED, 🚫 BANNED, or ⚠️ RESTRICTED."
+)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SEARCH — 2-Tier Fallback (N8N RAG → Sarvam Chat)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def search_tier1_n8n(query, session_id):
+    """Tier 1 — N8N RAG Pipeline. Returns dict or None to fall through."""
+    if not PHARMA_INSIGHT_URL:
+        return None
     try:
-        with open(file_path, 'rb') as file:
-            files = {'file': (os.path.basename(file_path), file, 'application/pdf')}
-            data = {'metadata': json.dumps(metadata)}
-            
-            response = requests.post(api_url, files=files, data=data, timeout=120)
-            
-            print(f"✅ Response Status: {response.status_code}")
-            
-            if response.status_code == 200:
-                response_data = response.json()
-                print(f"✅ API Response: {json.dumps(response_data, indent=2)}")
+        res = requests.post(
+            PHARMA_INSIGHT_URL,
+            json={'query': query, 'sessionId': session_id},
+            headers={'Content-Type': 'application/json'},
+            timeout=38,
+        )
+        if res.status_code == 200:
+            data = res.json()
+            # PharmaSafe structured response
+            if data.get('medicine_searched'):
+                badges = {'open': '✅ ALLOWED', 'banned': '🚫 BANNED', 'restricted': '⚠️ RESTRICTED'}
+                status = data.get('current_status', 'unknown')
+                badge = badges.get(status, 'ℹ️ UNKNOWN')
+                summary = ''
+                if isinstance(data.get('results'), dict):
+                    summary = data['results'].get('summary', '')
+                elif isinstance(data.get('results'), str):
+                    summary = data['results']
                 return {
-                    "status": "success",
-                    "response": response_data
+                    'source': 'n8n',
+                    'answer': f"{badge}\n\n**Medicine:** {data['medicine_searched']}\n\n{summary}",
+                    'status': status,
+                    'medicine_name': data['medicine_searched'],
+                    'raw': data,
                 }
-            else:
-                print(f"❌ API Error: {response.status_code}")
-                return {
-                    "status": "error",
-                    "error": f"API returned status {response.status_code}"
-                }
+            # Plain text response
+            text = data.get('text') or data.get('output') or data.get('answer') or ''
+            if text and not is_useless_n8n_response(text):
+                return {'source': 'n8n', 'answer': text}
     except Exception as e:
-        print(f"❌ Upload Error: {str(e)}")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        print(f"[SEARCH T1] N8N error: {e}")
+    return None
 
-# Load HTML templates
-def load_template(template_name):
-    """Load HTML template from file"""
+
+def search_tier2_sarvam(query):
+    """Tier 2 — Sarvam AI Chat (sarvam-m). Returns dict or None."""
+    if not SARVAM_API_KEY:
+        return None
     try:
-        with open(template_name, 'r', encoding='utf-8') as file:
-            return file.read()
+        res = requests.post(
+            f'{SARVAM_BASE}/v1/chat/completions',
+            headers=sarvam_headers(),
+            json={
+                'model': 'sarvam-m',
+                'messages': [
+                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
+                    {'role': 'user', 'content': query},
+                ],
+                'temperature': 0.5,
+                'max_tokens': 1024,
+            },
+            timeout=45,
+        )
+        if res.status_code == 200:
+            data = res.json()
+            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+            if content:
+                return {'source': 'sarvam', 'answer': f"🤖 **AI Analysis (Sarvam-M)**\n\n{content}"}
+    except Exception as e:
+        print(f"[SEARCH T2] Sarvam error: {e}")
+    return None
+
+
+def search_medicine(query, session_id):
+    """Execute the full 2-tier search fallback chain."""
+    result = search_tier1_n8n(query, session_id)
+    if result:
+        return result
+    result = search_tier2_sarvam(query)
+    if result:
+        return result
+    return {
+        'source': 'error',
+        'answer': (
+            '❌ **Unable to reach medicine databases**\n\n'
+            'All sources are currently unreachable.\n\n'
+            '**Tip:** Try again in a moment or check your internet connection.'
+        ),
+    }
+
+
+# ─── Template loading ────────────────────────────────────────────────────────
+def load_template(name):
+    try:
+        with open(name, 'r', encoding='utf-8') as f:
+            return f.read()
     except FileNotFoundError:
-        return f"Template {template_name} not found"
+        return f"Template {name} not found"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Pages
+# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/')
-def root():
-    """Root route - serve the main pharma AI portal"""
-    try:
-        template = load_template('index.html')
-        return render_template_string(template)
-    except Exception as e:
-        return f"Error loading index page: {str(e)}", 500
-
 @app.route('/pharmai')
-def pharmai():
-    """Main pharma AI portal - same as root for Traefik compatibility"""
-    try:
-        template = load_template('index.html')
-        return render_template_string(template)
-    except Exception as e:
-        return f"Error loading index page: {str(e)}", 500
+def index():
+    return render_template_string(load_template('index.html'))
 
-@app.route('/pharmai/analyze')
+
 @app.route('/analyze')
+@app.route('/pharmai/analyze')
 def analyze():
-    """Analysis results page route"""
-    query = request.args.get('query', '')
-    analysis_type = request.args.get('type', 'search')
-    
-    if not query and analysis_type == 'search':
-        return redirect('/')
-    
-    try:
-        # Call API for search queries
-        if analysis_type == 'search':
-            api_response = call_search_api(query)
-        
-        template = load_template('result.html')
-        return render_template_string(template)
-    except Exception as e:
-        return f"Error loading results page: {str(e)}", 500
+    return render_template_string(load_template('result.html'))
 
-@app.route('/pharmai/esportal')
-@app.route('/esportal')
-def esportal():
-    """Redirect esportal to main page"""
-    return redirect('/')
 
-@app.route('/pharmai/upload', methods=['POST'])
-@app.route('/upload', methods=['POST'])
-def upload_files():
-    """Handle file upload and analysis"""
-    try:
-        if 'files' not in request.files:
-            return jsonify({'error': 'No files provided'}), 400
-        
-        files = request.files.getlist('files')
-        if not files or all(file.filename == '' for file in files):
-            return jsonify({'error': 'No files selected'}), 400
-        
-        uploaded_files = []
-        
-        for file in files:
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Add timestamp to avoid filename conflicts
-                timestamp = str(int(time.time()))
-                filename = f"{timestamp}_{filename}"
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                uploaded_files.append(file_path)
-        
-        if not uploaded_files:
-            return jsonify({'error': 'No valid PDF files uploaded'}), 400
-        
-        # Call new document index API for each file
-        index_results = []
-        for file_path in uploaded_files:
-            api_response = call_document_index_api(file_path)
-            index_results.append({
-                'file': os.path.basename(file_path),
-                'result': api_response
-            })
-            # Clean up uploaded file after indexing
-            try:
-                os.remove(file_path)
-            except OSError:
-                pass
-        
-        # Redirect to results page with upload type
-        query_param = f"Document Analysis: {len(uploaded_files)} files indexed"
-        return redirect(f'/analyze?query={query_param}&type=upload')
-        
-    except Exception as e:
-        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Search API (2-tier)
+# ══════════════════════════════════════════════════════════════════════════════
 
-@app.route('/pharmai/api/upload-files', methods=['POST'])
-@app.route('/api/upload-files', methods=['POST'])
-def api_upload_files():
-    """API endpoint for file upload with status notifications"""
-    try:
-        if 'files' not in request.files:
-            return jsonify({
-                'success': False,
-                'message': 'No files provided'
-            }), 400
-        
-        files = request.files.getlist('files')
-        if not files or all(file.filename == '' for file in files):
-            return jsonify({
-                'success': False,
-                'message': 'No files selected'
-            }), 400
-        
-        uploaded_files = []
-        uploaded_file_names = []
-        
-        # Process each file
-        for file in files:
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                
-                # Option 1: Direct file save (current implementation)
-                file_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                file.save(file_path)
-                uploaded_files.append(file_path)
-                uploaded_file_names.append(filename)
-                print(f"📁 File uploaded successfully: {filename} -> {file_path}")
-                
-                # Option 2: External API call (if you want to use an API instead)
-                # upload_api_url = "http://82.112.235.26:8001/v1/pw_upload_document"
-                # files_data = {'file': (filename, file.read(), 'application/pdf')}
-                # response = requests.post(upload_api_url, files=files_data, timeout=60)
-                # if response.status_code == 200:
-                #     uploaded_files.append(filename)
-                #     uploaded_file_names.append(filename)
-                #     print(f"📁 File uploaded via API: {filename}")
-                # else:
-                #     print(f"❌ API upload failed for {filename}: {response.status_code}")
-        
-        if not uploaded_files:
-            return jsonify({
-                'success': False,
-                'message': 'No valid PDF files uploaded'
-            }), 400
-        
-        # Call new document index API for each file
-        index_results = []
-        for file_path in uploaded_files:
-            api_response = call_document_index_api(file_path)
-            index_results.append({
-                'file': os.path.basename(file_path),
-                'indexed': api_response.get('status') == 'success'
-            })
-            # Clean up uploaded file after indexing
-            try:
-                os.remove(file_path)
-            except OSError:
-                pass
-        
-        # Return success response
-        successful = sum(1 for r in index_results if r['indexed'])
-        return jsonify({
-            'success': successful > 0,
-            'message': f'Successfully indexed {successful}/{len(uploaded_files)} file(s)',
-            'files': uploaded_file_names,
-            'count': len(uploaded_files),
-            'indexed': successful,
-            'results': index_results
-        })
-        
-    except Exception as e:
-        print(f"❌ Upload Error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Upload failed: {str(e)}'
-        }), 500
-
-@app.route('/pharmai/api/search', methods=['POST', 'OPTIONS'])
 @app.route('/api/search', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/search', methods=['POST', 'OPTIONS'])
 def api_search():
-    """API endpoint for search queries"""
-    try:
-        data = request.get_json()
-        # Accept both 'query' (new format) and 'prompt' (old format) for backward compatibility
-        query = data.get('query') or data.get('prompt')
-        session_id = data.get('sessionId', 'pharma-session-001')
-        
-        if not query:
-            return jsonify({'error': 'No query provided'}), 400
-        
-        print(f"📥 Received query from frontend: {query}")
-        print(f"📥 Session ID: {session_id}")
-        
-        response = call_search_api(query, session_id)
-        
-        print(f"📤 Sending response to frontend: {json.dumps(response, indent=2)}")
-        return jsonify(response)
-    except Exception as e:
-        print(f"❌ Backend API Error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/pharmai/api/analyze-documents', methods=['POST'])
-@app.route('/api/analyze-documents', methods=['POST'])
-def api_analyze_documents():
-    """API endpoint for document analysis - REPLACE WITH YOUR REAL API"""
-    try:
-        if 'files' not in request.files:
-            return jsonify({'error': 'No files provided'}), 400
-        
-        files = request.files.getlist('files')
-        if not files:
-            return jsonify({'error': 'No files uploaded'}), 400
-        
-        print(f"📄 === UPLOAD API CALL ===")
-        print(f"📁 Files received: {len(files)}")
-        
-        # Process files similar to upload route
-        file_paths = []
-        for file in files:
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = str(int(time.time()))
-                filename = f"{timestamp}_{filename}"
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-                file_paths.append(file_path)
-        
-        if not file_paths:
-            return jsonify({'error': 'No valid files processed'}), 400
-        
-        # Call dummy upload API (REPLACE THIS)
-        response = call_document_analysis_api(file_paths)
-        
-        # Clean up files
-        for file_path in file_paths:
-            try:
-                os.remove(file_path)
-            except OSError:
-                pass
-        
-        return jsonify(response)
-    except Exception as e:
-        print(f"❌ Upload API Error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/pharmai/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
-@app.route('/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
-def delete_document():
-    """Delete a specific document by ID"""
-    
-    # Handle CORS preflight request
     if request.method == 'OPTIONS':
-        response = jsonify({'message': 'CORS preflight'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, DELETE')
-        return response
-    
-    try:
-        data = request.get_json()
-        if not data or 'documentId' not in data:
-            return jsonify({'error': 'No documentId provided'}), 400
-        
-        document_id = data['documentId']
-        api_url = "https://medical.lehana.in/ncert/api/documents/delete"
-        
-        print(f"[DELETE] Deleting document: {document_id}")
-        
-        response = requests.post(
-            api_url,
-            json={'documentId': document_id},
-            headers={'Content-Type': 'application/json'},
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            print(f"[DELETE] Document deleted successfully")
-            resp = jsonify(result)
-            resp.headers.add('Access-Control-Allow-Origin', '*')
-            return resp
-        else:
-            error_response = jsonify({
-                'error': f'Delete API returned status {response.status_code}',
-                'status': 'error'
-            })
-            error_response.headers.add('Access-Control-Allow-Origin', '*')
-            return error_response, response.status_code
-            
-    except Exception as e:
-        print(f"[DELETE] Error: {str(e)}")
-        error_response = jsonify({'error': str(e), 'status': 'error'})
-        error_response.headers.add('Access-Control-Allow-Origin', '*')
-        return error_response, 500
-
-@app.route('/pharmai/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
-@app.route('/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
-def delete_all_documents():
-    """Delete all documents"""
-    
-    # Handle CORS preflight request
-    if request.method == 'OPTIONS':
-        response = jsonify({'message': 'CORS preflight'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'DELETE, POST')
-        return response
-    
-    try:
-        api_url = "https://medical.lehana.in/ncert/api/documents/all"
-        
-        print(f"[DELETE ALL] Deleting all documents")
-        
-        response = requests.delete(api_url, timeout=60)
-        
-        if response.status_code == 200:
-            result = response.json()
-            print(f"[DELETE ALL] All documents deleted successfully")
-            resp = jsonify(result)
-            resp.headers.add('Access-Control-Allow-Origin', '*')
-            return resp
-        else:
-            error_response = jsonify({
-                'error': f'Delete all API returned status {response.status_code}',
-                'status': 'error'
-            })
-            error_response.headers.add('Access-Control-Allow-Origin', '*')
-            return error_response, response.status_code
-            
-    except Exception as e:
-        print(f"[DELETE ALL] Error: {str(e)}")
-        error_response = jsonify({'error': str(e), 'status': 'error'})
-        error_response.headers.add('Access-Control-Allow-Origin', '*')
-        return error_response, 500
-
-@app.route('/pharmai/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/pharmai/api/documents', methods=['GET', 'POST', 'OPTIONS'])
-@app.route('/api/documents', methods=['GET', 'POST', 'OPTIONS'])
-def list_documents():
-    """Fetch list of documents from the RAG database"""
-    
-    # Handle CORS preflight request
-    if request.method == 'OPTIONS':
-        response = jsonify({'message': 'CORS preflight'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST')
-        return response
-    
-    try:
-        print(f"\n[DOCUMENTS] === FETCHING DOCUMENT LIST ===")
-        print(f"[DOCUMENTS] Request method: {request.method}")
-        print(f"[DOCUMENTS] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Make API call to get document list
-        api_url = "https://medical.lehana.in/ncert/api/documents"
-        
-        print(f"[DOCUMENTS] Calling API: {api_url}")
-        
-        response = requests.get(
-            api_url,
-            headers={'Content-Type': 'application/json'},
-            timeout=30
-        )
-        
-        print(f"[DOCUMENTS] API Response Status: {response.status_code}")
-        
-        if response.status_code == 200:
-            documents_data = response.json()
-            documents = documents_data.get('documents', [])
-            print(f"[DOCUMENTS] Retrieved {len(documents)} documents")
-            
-            # Add CORS headers to response
-            resp = jsonify(documents)
-            resp.headers.add('Access-Control-Allow-Origin', '*')
-            resp.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-            resp.headers.add('Access-Control-Allow-Methods', 'POST, GET')
-            
-            return resp
-        else:
-            print(f"[DOCUMENTS] API Error: {response.status_code}")
-            error_response = jsonify({
-                'error': f'Document API returned status {response.status_code}',
-                'status': 'error'
-            })
-            error_response.headers.add('Access-Control-Allow-Origin', '*')
-            return error_response, response.status_code
-            
-    except requests.exceptions.RequestException as e:
-        print(f"[DOCUMENTS] Connection Error: {str(e)}")
-        error_response = jsonify({
-            'error': f'Failed to connect to document API: {str(e)}',
-            'status': 'connection_error'
-        })
-        error_response.headers.add('Access-Control-Allow-Origin', '*')
-        return error_response, 503
-        
-    except Exception as e:
-        print(f"[DOCUMENTS] Unexpected Error: {str(e)}")
-        error_response = jsonify({
-            'error': f'Unexpected error: {str(e)}',
-            'status': 'error'
-        })
-        error_response.headers.add('Access-Control-Allow-Origin', '*')
-        return error_response, 500
-
-@app.route('/pharmai/health')
-@app.route('/health')
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'service': 'Pharmai API',
-        'version': '1.0.0',
-        'timestamp': time.time()
+        return _cors_preflight()
+    data = request.get_json(force=True)
+    query = data.get('query') or data.get('prompt', '')
+    session_id = data.get('sessionId', f'pharmai-web-{int(time.time())}')
+    if not query:
+        return jsonify({'status': 'error', 'error': 'No query provided'}), 400
+    print(f"[SEARCH] query='{query}' session={session_id}")
+    result = search_medicine(query, session_id)
+    return _cors_json({
+        'status': 'success' if result['source'] != 'error' else 'error',
+        **result,
     })
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Sarvam AI Features
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/stt', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/stt', methods=['POST', 'OPTIONS'])
+def api_stt():
+    """Speech-to-Text — Sarvam Saaras v3."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    if 'file' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+    audio = request.files['file']
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/speech-to-text',
+            headers={'api-subscription-key': SARVAM_API_KEY},
+            files={'file': (audio.filename or 'audio.wav', audio.stream, audio.content_type or 'audio/wav')},
+            data={'model': 'saaras:v3', 'mode': 'transcribe'},
+            timeout=30,
+        )
+        return _cors_json(res.json(), res.status_code)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/tts', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/tts', methods=['POST', 'OPTIONS'])
+def api_tts():
+    """Text-to-Speech — Sarvam Bulbul v3."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    data = request.get_json(force=True)
+    text = data.get('text', '')[:500]
+    lang = data.get('language', 'hi-IN')
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/text-to-speech',
+            headers=sarvam_headers(),
+            json={
+                'inputs': [text],
+                'target_language_code': lang,
+                'speaker': 'meera',
+                'model': 'bulbul:v3',
+                'enable_preprocessing': True,
+            },
+            timeout=30,
+        )
+        rj = res.json()
+        audio_b64 = rj.get('audios', [None])[0]
+        if audio_b64:
+            return _cors_json({'audio': audio_b64})
+        return _cors_json({'error': 'No audio generated'}, 500)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/translate', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/translate', methods=['POST', 'OPTIONS'])
+def api_translate():
+    """Translation — Sarvam Mayura v1."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    data = request.get_json(force=True)
+    text = data.get('text', '')
+    target = data.get('target', 'hi-IN')
+    source = data.get('source', 'en-IN')
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/translate',
+            headers=sarvam_headers(),
+            json={
+                'input': text,
+                'source_language_code': source,
+                'target_language_code': target,
+                'model': 'mayura:v1',
+                'enable_preprocessing': False,
+            },
+            timeout=30,
+        )
+        return _cors_json(res.json(), res.status_code)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/ocr', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/ocr', methods=['POST', 'OPTIONS'])
+def api_ocr():
+    """Document OCR — Sarvam parse/document."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    doc = request.files['file']
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/parse/document',
+            headers={'api-subscription-key': SARVAM_API_KEY},
+            files={'file': (doc.filename, doc.stream, doc.content_type or 'application/octet-stream')},
+            timeout=60,
+        )
+        rj = res.json()
+        extracted = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
+        if not extracted and isinstance(rj.get('pages'), list):
+            extracted = '\n'.join(p.get('text', '') for p in rj['pages'])
+        return _cors_json({'text': extracted, 'raw': rj})
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/interaction', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/interaction', methods=['POST', 'OPTIONS'])
+def api_interaction():
+    """Drug Interaction Checker — Sarvam Chat."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    data = request.get_json(force=True)
+    med_a = data.get('medicine_a', '').strip()
+    med_b = data.get('medicine_b', '').strip()
+    if not med_a or not med_b:
+        return jsonify({'error': 'Both medicine names required'}), 400
+    prompt = (
+        f"Are {med_a} and {med_b} safe to take together in India? "
+        "Provide: interaction type, severity (Safe/Caution/Dangerous), "
+        "mechanism, and recommendation. Use markdown."
+    )
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/v1/chat/completions',
+            headers=sarvam_headers(),
+            json={
+                'model': 'sarvam-m',
+                'messages': [
+                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
+                    {'role': 'user', 'content': prompt},
+                ],
+                'temperature': 0.5,
+                'max_tokens': 1024,
+            },
+            timeout=45,
+        )
+        rj = res.json()
+        content = rj.get('choices', [{}])[0].get('message', {}).get('content', '')
+        return _cors_json({'answer': content or 'No interaction data available.'})
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/doc-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/doc-analysis', methods=['POST', 'OPTIONS'])
+def api_doc_analysis():
+    """AI Document Analysis — OCR then Chat interpretation."""
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    doc = request.files['file']
+    # Step 1: OCR
+    ocr_text = ''
+    try:
+        ocr_res = requests.post(
+            f'{SARVAM_BASE}/parse/document',
+            headers={'api-subscription-key': SARVAM_API_KEY},
+            files={'file': (doc.filename, doc.stream, doc.content_type or 'application/octet-stream')},
+            timeout=60,
+        )
+        rj = ocr_res.json()
+        ocr_text = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
+        if not ocr_text and isinstance(rj.get('pages'), list):
+            ocr_text = '\n'.join(p.get('text', '') for p in rj['pages'])
+    except Exception as e:
+        return _cors_json({'error': f'OCR failed: {e}'}, 500)
+    if not ocr_text.strip():
+        return _cors_json({'error': 'Could not extract text from document.'}, 400)
+    # Step 2: AI Interpretation
+    analysis_prompt = (
+        f"I have a medical document with the following extracted text:\n\n"
+        f"---\n{ocr_text[:3000]}\n---\n\n"
+        "Please analyze this document and provide:\n"
+        "1. **Document Type** (prescription, blood test, X-ray report, etc.)\n"
+        "2. **Key Findings** from the document\n"
+        "3. **Medicines mentioned** and their safety status in India\n"
+        "4. **Recommendations** or flags for the patient\n"
+        "Use markdown formatting."
+    )
+    try:
+        res = requests.post(
+            f'{SARVAM_BASE}/v1/chat/completions',
+            headers=sarvam_headers(),
+            json={
+                'model': 'sarvam-m',
+                'messages': [
+                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
+                    {'role': 'user', 'content': analysis_prompt},
+                ],
+                'temperature': 0.5,
+                'max_tokens': 1024,
+            },
+            timeout=45,
+        )
+        rj = res.json()
+        analysis = rj.get('choices', [{}])[0].get('message', {}).get('content', '')
+        return _cors_json({
+            'ocr_text': ocr_text[:2000],
+            'analysis': analysis or 'Analysis could not be generated.',
+        })
+    except Exception as e:
+        return _cors_json({'error': f'Analysis failed: {e}'}, 500)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Document Upload & Management
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/upload-files', methods=['POST'])
+@app.route('/pharmai/api/upload-files', methods=['POST'])
+def api_upload_files():
+    if 'files' not in request.files:
+        return jsonify({'success': False, 'message': 'No files provided'}), 400
+    files = request.files.getlist('files')
+    if not files or all(f.filename == '' for f in files):
+        return jsonify({'success': False, 'message': 'No files selected'}), 400
+    uploaded = []
+    for f in files:
+        if f and f.filename and allowed_file(f.filename):
+            fname = secure_filename(f.filename)
+            fpath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+            f.save(fpath)
+            uploaded.append(fpath)
+    if not uploaded:
+        return jsonify({'success': False, 'message': 'No valid files uploaded'}), 400
+    index_results = []
+    for fpath in uploaded:
+        try:
+            with open(fpath, 'rb') as fp:
+                res = requests.post(
+                    'https://medical.lehana.in/ncert/api/index',
+                    files={'file': (os.path.basename(fpath), fp, 'application/pdf')},
+                    data={'metadata': json.dumps({'source': 'CDSCO', 'type': 'pharmaceutical_document', 'year': str(time.localtime().tm_year)})},
+                    timeout=120,
+                )
+            index_results.append({'file': os.path.basename(fpath), 'indexed': res.status_code == 200})
+        except Exception as e:
+            index_results.append({'file': os.path.basename(fpath), 'indexed': False, 'error': str(e)})
+        finally:
+            try:
+                os.remove(fpath)
+            except OSError:
+                pass
+    ok = sum(1 for r in index_results if r['indexed'])
+    return jsonify({'success': ok > 0, 'message': f'Indexed {ok}/{len(uploaded)} file(s)', 'count': len(uploaded), 'results': index_results})
+
+
+@app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/pharmai/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/documents', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/pharmai/api/documents', methods=['GET', 'POST', 'OPTIONS'])
+def api_list_documents():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    try:
+        res = requests.get('https://medical.lehana.in/ncert/api/documents', timeout=30)
+        if res.status_code == 200:
+            return _cors_json(res.json().get('documents', []))
+        return _cors_json({'error': f'API status {res.status_code}'}, res.status_code)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 503)
+
+
+@app.route('/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
+@app.route('/pharmai/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
+def api_delete_document():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    data = request.get_json(force=True)
+    doc_id = data.get('documentId')
+    if not doc_id:
+        return jsonify({'error': 'No documentId'}), 400
+    try:
+        res = requests.post('https://medical.lehana.in/ncert/api/documents/delete', json={'documentId': doc_id}, timeout=30)
+        return _cors_json(res.json(), res.status_code)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+@app.route('/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
+@app.route('/pharmai/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
+def api_delete_all_documents():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    try:
+        res = requests.delete('https://medical.lehana.in/ncert/api/documents/all', timeout=60)
+        return _cors_json(res.json(), res.status_code)
+    except Exception as e:
+        return _cors_json({'error': str(e)}, 500)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  HEALTH
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/health')
+@app.route('/pharmai/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'service': 'PharmAI Portal',
+        'version': '2.0',
+        'timestamp': time.time(),
+        'features': ['2-tier-search', 'stt', 'tts', 'translate', 'ocr', 'interaction-check', 'doc-analysis'],
+    })
+
+
+# ─── Error handlers ─────────────────────────────────────────────────────────
+
 @app.errorhandler(404)
-def not_found(error):
-    """Handle 404 errors"""
-    return jsonify({'error': 'Endpoint not found'}), 404
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
 
 @app.errorhandler(413)
-def too_large(error):
-    """Handle file too large errors"""
-    return jsonify({'error': 'File too large. Maximum size is 16MB'}), 413
+def too_large(e):
+    return jsonify({'error': 'File too large (max 16MB)'}), 413
 
 @app.errorhandler(500)
-def internal_error(error):
-    """Handle internal server errors"""
+def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
+
+# ─── CORS helpers ────────────────────────────────────────────────────────────
+
+def _cors_preflight():
+    resp = jsonify({'ok': True})
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS'
+    return resp
+
+def _cors_json(data, status=200):
+    resp = jsonify(data)
+    resp.status_code = status
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MAIN
+# ══════════════════════════════════════════════════════════════════════════════
+
 if __name__ == '__main__':
-    print("🚀 Starting Pharmai Server...")
-    print("🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai")
-    print("📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)")
-    print("❤️ Health check: /health or /pharmai/health")
-    print("\n🔧 Dual routes configured for Traefik compatibility:")
-    print("   • Main app: / and /pharmai")
-    print("   • Analyze: /analyze and /pharmai/analyze")
-    print("   • APIs: /api/* and /pharmai/api/*")
-    print("\n🌐 Works with Traefik reverse proxy:")
-    print("   • medical.lehana.in/pharmai → Flask /")
-    print("   • medical.lehana.in/pharmai/api/search → Flask /api/search")
-    print("\n🎯 Starting development server on port 5000...")
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    print(f"🚀 PharmAI Portal v2.0 starting on port {port}")
+    print(f"   Features: 2-tier search, STT, TTS, Translate, OCR, Interaction Check, Doc Analysis")
+    print(f"   N8N: {'configured' if PHARMA_INSIGHT_URL else '⚠️  NOT configured'}")
+    print(f"   Sarvam: {'configured' if SARVAM_API_KEY else '⚠️  NOT configured'}")
+    app.run(debug=debug, host='0.0.0.0', port=port)

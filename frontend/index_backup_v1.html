@@ -1,0 +1,3137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmai - Drug & Medicine Validation Portal</title>
+<meta name="description" content="AI-powered pharmaceutical safety validation with banned drug detection" />
+
+<!-- Descope Web Component -->
+<script src="https://unpkg.com/@descope/web-component@latest/dist/index.js"></script>
+<script src="https://unpkg.com/@descope/web-js-sdk@latest/dist/index.umd.js"></script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        zoom: 0.8;
+    }
+
+
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+        z-index: 0;
+        pointer-events: none;
+        animation: pulseGlow 4s ease-in-out infinite alternate;
+    }
+
+    /* Dynamic Background Effects */
+    body::after {
+        content: '';
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: 
+            radial-gradient(circle at 20% 20%, rgba(220, 38, 38, 0.05) 0%, transparent 25%),
+            radial-gradient(circle at 80% 40%, rgba(59, 130, 246, 0.04) 0%, transparent 25%),
+            radial-gradient(circle at 40% 80%, rgba(168, 85, 247, 0.03) 0%, transparent 25%);
+        z-index: 0;
+        pointer-events: none;
+        animation: floatingBg 15s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+        0% { opacity: 0.8; transform: scale(1); }
+        100% { opacity: 1; transform: scale(1.05); }
+    }
+
+    @keyframes floatingBg {
+        0%, 100% { transform: rotate(0deg) translateX(0px) translateY(0px); }
+        25% { transform: rotate(90deg) translateX(10px) translateY(-5px); }
+        50% { transform: rotate(180deg) translateX(-5px) translateY(10px); }
+        75% { transform: rotate(270deg) translateX(-10px) translateY(-10px); }
+    }
+
+
+
+    /* Authentication Header */
+    .auth-header {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: linear-gradient(145deg,
+            rgba(17, 24, 39, 0.95) 0%,
+            rgba(30, 41, 59, 0.85) 100%);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        border-radius: 50px;
+        padding: 0.75rem 1.25rem;
+        backdrop-filter: blur(25px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.875rem;
+    }
+
+    .user-name {
+        color: #e2e8f0;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .auth-btn {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+    }
+
+    .auth-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+    }
+
+    .logout-btn {
+        background: linear-gradient(135deg, #7f1d1d, #991b1b);
+        box-shadow: 0 4px 15px rgba(127, 29, 29, 0.3);
+    }
+
+    .logout-btn:hover {
+        box-shadow: 0 8px 25px rgba(127, 29, 29, 0.4);
+    }
+
+    /* Login Modal Overlay */
+    .auth-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .auth-modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .auth-modal-content {
+        background: linear-gradient(145deg,
+            rgba(17, 24, 39, 0.95) 0%,
+            rgba(30, 41, 59, 0.90) 100%);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 450px;
+        width: 90vw;
+        backdrop-filter: blur(25px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        position: relative;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+
+    .auth-modal.active .auth-modal-content {
+        transform: scale(1);
+    }
+
+    .auth-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    .auth-modal-close:hover {
+        color: #e2e8f0;
+    }
+
+    .auth-modal-title {
+        color: #f1f5f9;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-align: center;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .auth-modal-description {
+        color: #94a3b8;
+        text-align: center;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .signup-link {
+        text-align: center;
+        margin-top: 1rem;
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
+
+    .signup-link a {
+        color: #dc2626;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+
+    .signup-link a:hover {
+        color: #ef4444;
+    }
+
+    .form-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        border-radius: 8px;
+        background: rgba(30, 41, 59, 0.5);
+        color: #f1f5f9;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: rgba(220, 38, 38, 0.6);
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: #64748b;
+    }
+
+    .main-container {
+        position: relative;
+        z-index: 10;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        padding-bottom: 120px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+
+
+    .title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        letter-spacing: -0.02em;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+
+
+    .subtitle {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .tagline {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin-bottom: 3rem;
+        height: 1.2em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        text-align: center;
+    }
+
+    .typewriter {
+        display: inline-block;
+        position: relative;
+    }
+
+    .typewriter::after {
+        content: '|';
+        color: #dc2626;
+        animation: blink 1s infinite;
+        font-weight: bold;
+    }
+
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
+
+    .stats-section {
+        max-width: 1200px;
+        margin: 0 auto 3rem auto;
+        width: 100%;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg,
+            rgba(15, 23, 42, 0.9) 0%,
+            rgba(30, 27, 75, 0.8) 100%);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        backdrop-filter: blur(25px);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 60px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(220, 38, 38, 0.9),
+            rgba(239, 68, 68, 0.9),
+            rgba(185, 28, 28, 0.9),
+            transparent);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .stat-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 25px 80px rgba(220, 38, 38, 0.4);
+        border-color: rgba(220, 38, 38, 0.6);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+        animation: countUp 2s ease-out;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: #e2e8f0;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .templates-section {
+        flex: 1;
+        max-width: 1400px;
+        margin: 0 auto 4rem auto;
+        width: 100%;
+        position: relative;
+        z-index: 15;
+    }
+
+
+
+    .templates-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 3rem;
+        font-weight: 700;
+        font-size: 2rem;
+        color: #f1f5f9;
+        justify-content: center;
+    }
+
+    .templates-title .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        box-shadow: 0 0 25px #dc2626;
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+        from { opacity: 0.8; transform: scale(1); }
+        to { opacity: 1; transform: scale(1.4); }
+    }
+
+    .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 2.5rem;
+        margin-bottom: 4rem;
+        align-items: stretch; /* Make all cards same height */
+    }
+
+    .template-card {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 16px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .template-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(220, 38, 38, 0.9),
+            rgba(239, 68, 68, 0.9),
+            transparent);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+    .template-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(59, 130, 246, 0.4);
+        background: rgba(30, 41, 59, 0.8);
+        box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2);
+    }
+
+    .template-card:active {
+        transform: translateY(-2px);
+        transition: all 0.1s ease;
+    }
+
+    .template-content {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+        /* Allow pointer events to pass through to parent card */
+    }
+
+    .template-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        position: relative;
+        overflow: hidden;
+        font-size: 1.8rem;
+        color: white;
+        user-select: none;
+    }
+
+    .template-text {
+        flex: 1;
+        user-select: none;
+    }
+
+    .template-category {
+        font-size: 0.85rem;
+        color: #f472b6;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .safety-tag {
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(239, 68, 68, 0.3));
+        color: #fca5a5;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border: 1px solid rgba(220, 38, 38, 0.4);
+    }
+
+    .template-title {
+        font-size: 1.3rem;
+        color: #f9fafb;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        line-height: 1.3;
+    }
+
+    .template-description {
+        font-size: 1rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+    }
+
+    .features-section {
+        max-width: 1200px;
+        margin: 0 auto 3rem auto;
+        width: 100%;
+        position: relative;
+        z-index: 15;
+    }
+
+    .features-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-bottom: 2.5rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .feature-card {
+        background: linear-gradient(145deg,
+            rgba(15, 23, 42, 0.9) 0%,
+            rgba(30, 27, 75, 0.8) 100%);
+        border: 1px solid rgba(220, 38, 38, 0.25);
+        border-radius: 24px;
+        padding: 2.5rem;
+        text-align: center;
+        backdrop-filter: blur(25px);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-12px) scale(1.03);
+        box-shadow: 0 30px 80px rgba(220, 38, 38, 0.35);
+        border-color: rgba(220, 38, 38, 0.6);
+    }
+
+    .feature-icon {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1.8rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        box-shadow: 0 12px 40px rgba(220, 38, 38, 0.4);
+        position: relative;
+        z-index: 1;
+        font-size: 2rem;
+        color: white;
+    }
+
+    .feature-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #f9fafb;
+        margin-bottom: 1.2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .feature-description {
+        color: #94a3b8;
+        line-height: 1.7;
+        position: relative;
+        z-index: 1;
+        font-size: 1rem;
+    }
+
+    .search-section {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(90vw, 800px);
+        z-index: 200;
+    }
+
+
+
+    .search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 50px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .search-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            rgba(220, 38, 38, 0.8),
+            rgba(239, 68, 68, 0.9),
+            rgba(185, 28, 28, 0.8),
+            rgba(220, 38, 38, 0.8));
+        background-size: 300% 100%;
+        border-radius: 50px;
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: xor;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        animation: borderFlow 2s linear infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    @keyframes borderFlow {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 300% 50%; }
+    }
+
+    .search-container:hover {
+        transform: translateY(-4px);
+        box-shadow:
+            0 25px 100px rgba(220, 38, 38, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2),
+            0 0 0 1px rgba(220, 38, 38, 0.5);
+    }
+
+    .search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #f1f5f9;
+        font-size: 1rem;
+        font-weight: 500;
+        padding: 1rem 1.25rem;
+        outline: none;
+        font-family: inherit;
+        line-height: 1.4;
+        transition: all 0.3s ease;
+        z-index: 10;
+        position: relative;
+    }
+
+    .search-input::placeholder {
+        color: #64748b;
+        font-size: 1rem;
+        font-weight: 400;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus::placeholder {
+        color: #475569;
+        transform: translateX(4px);
+    }
+
+    .search-btn {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border: none;
+        padding: 0.8rem;
+        margin: 0.4rem;
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+            0 8px 25px rgba(59, 130, 246, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        z-index: 100;
+        pointer-events: auto;
+    }
+
+    .search-btn:hover {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        box-shadow:
+            0 12px 35px rgba(59, 130, 246, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .search-btn:active {
+        transform: scale(1.05);
+        transition: all 0.1s ease;
+    }
+
+    .upload-section {
+        max-width: 1000px;
+        margin: 4rem auto 6rem auto;
+        position: relative;
+        z-index: 15;
+    }
+
+    .upload-container {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            rgba(220, 38, 38, 0.8),
+            rgba(239, 68, 68, 0.9),
+            rgba(185, 28, 28, 0.8),
+            rgba(220, 38, 38, 0.8));
+        background-size: 300% 100%;
+        border-radius: 30px;
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: xor;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        animation: borderFlow 3s linear infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .upload-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        color: #f1f5f9;
+        font-size: 1.5rem;
+        font-weight: 700;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .upload-dropzone {
+        border: 2px dashed rgba(59, 130, 246, 0.3);
+        border-radius: 12px;
+        padding: 2.5rem;
+        text-align: center;
+        background: rgba(59, 130, 246, 0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        user-select: none;
+        pointer-events: auto !important;
+        z-index: 10;
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .upload-dropzone:hover {
+        border-color: rgba(59, 130, 246, 0.6);
+        background: rgba(59, 130, 246, 0.1);
+        transform: scale(1.02);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+    }
+
+    .upload-dropzone:active {
+        transform: scale(0.98);
+    }
+
+    .upload-content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        /* Allow clicks to pass through to parent label */
+    }
+
+    .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        color: #dc2626;
+        display: block;
+    }
+
+    .upload-text {
+        color: #f1f5f9;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+    }
+
+    .upload-subtext {
+        color: #cbd5e1;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .upload-formats {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .file-list {
+        margin-top: 2rem;
+        display: none;
+    }
+
+    .file-list.active {
+        display: block;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: rgba(220, 38, 38, 0.1);
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .file-name {
+        color: #e2e8f0;
+        font-weight: 500;
+    }
+
+    .file-remove {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        cursor: pointer;
+        padding: 0.5rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .file-remove:hover {
+        background: rgba(239, 68, 68, 0.3);
+        color: #fecaca;
+    }
+
+    .analyze-btn {
+        width: 100%;
+        margin-top: 2rem;
+        padding: 1.2rem 2rem;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: block;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        pointer-events: auto !important;
+        z-index: 1000;
+        position: relative;
+        min-height: 56px;
+        line-height: 1.2;
+        text-align: center;
+        user-select: none;
+    }
+
+    .analyze-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(59, 130, 246, 0.4);
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: #dc2626;
+        font-weight: 600;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(220, 38, 38, 0.3);
+        border-top: 4px solid #dc2626;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.5rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin: 2rem auto;
+        max-width: 600px;
+        background: rgba(15, 25, 45, 0.8);
+        padding: 1rem;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+    .tab-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: rgba(220, 38, 38, 0.1);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+        border-radius: 15px;
+        color: #e2e8f0;
+        cursor: pointer;
+        transition: all 0.4s ease;
+        font-weight: 600;
+        min-width: 180px;
+        justify-content: center;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+        outline: none;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
+    }
+
+    .tab-button:hover {
+        background: rgba(220, 38, 38, 0.2);
+        border-color: rgba(220, 38, 38, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.2);
+    }
+
+    .tab-button:active {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+        transition: all 0.1s ease;
+    }
+
+    .tab-button.active {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border-color: #dc2626;
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+    }
+
+    .tab-icon {
+        font-size: 1.2rem;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .tab-text {
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .tab-content {
+        width: 100%;
+    }
+
+    .tab-panel {
+        display: none;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .tab-panel.active {
+        display: block;
+    }
+
+    /* Documents Tab Styles */
+    .documents-header {
+        text-align: center;
+        margin: 3rem auto;
+        max-width: 800px;
+    }
+
+    .documents-title h2 {
+        font-size: 2.5rem;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        font-weight: 800;
+    }
+
+    .documents-title p {
+        font-size: 1.2rem;
+        color: #94a3b8;
+        margin-bottom: 2rem;
+    }
+
+    .document-search-container {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        align-items: center;
+        margin: 2rem auto;
+        max-width: 800px;
+        position: relative;
+        z-index: 10;
+    }
+
+    .document-search-input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        background: rgba(15, 25, 45, 0.9);
+        border: 2px solid rgba(220, 38, 38, 0.4);
+        border-radius: 15px;
+        color: #e2e8f0;
+        font-size: 1rem;
+        backdrop-filter: blur(20px);
+    }
+
+    .document-search-input::placeholder {
+        color: #64748b;
+    }
+
+    .document-search-input:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+    }
+
+    .refresh-docs-btn {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border: none;
+        border-radius: 15px;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
+    }
+
+    .refresh-docs-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+    }
+
+    .delete-all-btn {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.5));
+        border: 1px solid rgba(220, 38, 38, 0.5);
+        border-radius: 15px;
+        color: #fca5a5;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        z-index: 100;
+        pointer-events: auto;
+        outline: none;
+    }
+
+    .delete-all-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.7));
+        color: #fecaca;
+    }
+
+    .delete-all-btn:active {
+        transform: translateY(0);
+    }
+
+    .documents-loading {
+        text-align: center;
+        margin: 4rem auto;
+        color: #94a3b8;
+    }
+
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin: 3rem auto;
+        padding: 0 2rem;
+    }
+
+    .document-card {
+        background: linear-gradient(145deg, 
+            rgba(15, 25, 45, 0.95) 0%, 
+            rgba(25, 35, 55, 0.9) 50%, 
+            rgba(15, 25, 45, 0.95) 100%);
+        border: 2px solid rgba(220, 38, 38, 0.3);
+        border-radius: 20px;
+        padding: 1.5rem;
+        backdrop-filter: blur(40px);
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: visible;
+        z-index: 1;
+    }
+
+    .document-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(220, 38, 38, 0.6);
+        box-shadow: 0 15px 40px rgba(220, 38, 38, 0.2);
+    }
+
+    .document-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin-bottom: 1rem;
+        word-break: break-word;
+    }
+
+    .document-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-chip {
+        padding: 0.4rem 0.8rem;
+        background: rgba(220, 38, 38, 0.2);
+        border: 1px solid rgba(220, 38, 38, 0.4);
+        border-radius: 10px;
+        font-size: 0.85rem;
+        color: #f8fafc;
+        font-weight: 500;
+    }
+
+    .document-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .meta-item {
+        text-align: center;
+    }
+
+    .meta-label {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 0.3rem;
+    }
+
+    .meta-value {
+        font-size: 0.9rem;
+        color: #e2e8f0;
+        font-weight: 600;
+    }
+
+    .delete-doc-btn {
+        min-height: 42px;
+        font-size: 0.95rem;
+        user-select: none;
+    }
+
+    .delete-doc-btn:hover {
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(220, 38, 38, 0.7)) !important;
+        color: #fecaca !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4) !important;
+    }
+
+    .delete-doc-btn:active {
+        transform: translateY(0) !important;
+    }
+
+    .no-documents {
+        text-align: center;
+        margin: 4rem auto;
+        color: #94a3b8;
+    }
+
+    .no-docs-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .no-documents h3 {
+        color: #e2e8f0;
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .nav-tabs {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .tab-button {
+            min-width: auto;
+        }
+        
+        .documents-grid {
+            grid-template-columns: 1fr;
+            padding: 0 1rem;
+        }
+        
+        .document-search-container {
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .title { font-size: 2.8rem; }
+        .main-container { padding: 1.5rem; padding-bottom: 140px; }
+        .templates-grid, .features-grid, .stats-grid { grid-template-columns: 1fr; gap: 2rem; }
+        .search-section { width: min(95vw, 900px); }
+        .template-content { gap: 1.5rem; }
+        .template-icon { width: 70px; height: 70px; }
+        .auth-header { position: fixed; top: 1rem; right: 1rem; flex-direction: column; gap: 0.5rem; }
+        .upload-container { padding: 2rem; }
+    }
+
+    /* Processing Dialog Styles */
+    .processing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(15px);
+        z-index: 3000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .processing-dialog {
+        background: linear-gradient(145deg,
+            rgba(15, 23, 42, 0.98) 0%,
+            rgba(30, 27, 75, 0.95) 100%);
+        border: 2px solid rgba(220, 38, 38, 0.4);
+        border-radius: 25px;
+        padding: 3rem;
+        max-width: 450px;
+        width: 90vw;
+        text-align: center;
+        backdrop-filter: blur(30px);
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .processing-dialog::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg,
+            rgba(220, 38, 38, 0.8),
+            rgba(239, 68, 68, 0.9),
+            rgba(185, 28, 28, 0.8));
+        background-size: 200% 100%;
+        animation: progressFlow 2s linear infinite;
+    }
+
+    @keyframes progressFlow {
+        0% { background-position: -200% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+
+    .processing-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        animation: processingPulse 2s ease-in-out infinite;
+        box-shadow: 0 15px 40px rgba(220, 38, 38, 0.4);
+    }
+
+    @keyframes processingPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 15px 40px rgba(220, 38, 38, 0.4); }
+        50% { transform: scale(1.1); box-shadow: 0 20px 60px rgba(220, 38, 38, 0.6); }
+    }
+
+    .processing-title {
+        color: #f1f5f9;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .processing-status {
+        color: #cbd5e1;
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .processing-progress {
+        width: 100%;
+        height: 8px;
+        background: rgba(30, 41, 59, 0.8);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg,
+            rgba(220, 38, 38, 0.8),
+            rgba(239, 68, 68, 1),
+            rgba(220, 38, 38, 0.8));
+        background-size: 200% 100%;
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.3s ease;
+        animation: shimmerProgress 2s ease-in-out infinite;
+        box-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+    }
+
+    @keyframes shimmerProgress {
+        0% { background-position: -200% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+
+    .processing-facts {
+        background: rgba(220, 38, 38, 0.1);
+        border: 1px solid rgba(220, 38, 38, 0.2);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .fact-title {
+        color: #fca5a5;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .fact-text {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        text-align: left;
+        font-style: italic;
+    }
+
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(30, 27, 75, 0.3); }
+    ::-webkit-scrollbar-thumb { 
+        background: rgba(220, 38, 38, 0.6); 
+        border-radius: 5px; 
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(220, 38, 38, 0.8); }
+
+    /* Descope Authentication Styles */
+    .descope-container {
+        width: 100%;
+        margin: 1rem 0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    descope-wc {
+        width: 100%;
+        border-radius: 12px;
+        background: transparent;
+    }
+</style>
+</head>
+<body>
+
+<!-- Authentication Header -->
+<div class="auth-header">
+    <div id="userInfo" class="user-info" style="display: none;">
+        <div id="userAvatar" class="user-avatar"></div>
+        <span id="userName" class="user-name"></span>
+        <button id="logoutBtn" class="auth-btn logout-btn">Logout</button>
+    </div>
+    <button id="loginBtn" class="auth-btn">Login / Sign Up</button>
+</div>
+
+<!-- Login Modal with Descope -->
+<div id="authModal" class="auth-modal">
+    <div class="auth-modal-content">
+        <button id="closeModal" class="auth-modal-close">&times;</button>
+        
+        <h2 class="auth-modal-title">Welcome to Pharmai</h2>
+        <p class="auth-modal-description">
+            Sign in to access advanced pharmaceutical safety validation and banned drug detection.
+        </p>
+        
+        <!-- Descope Authentication Component -->
+        <div id="descopeContainer" class="descope-container">
+            <descope-wc
+                project-id="P32OxoFpY0ihVvncEbabQARqzw8I"
+                flow-id="passwords-with-explicit-sign-up"
+                theme="light">
+            </descope-wc>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Dialog -->
+<div id="processingOverlay" class="processing-overlay">
+    <div class="processing-dialog">
+        <div id="processingIcon" class="processing-icon">🔬</div>
+        <div id="processingTitle" class="processing-title">Analyzing Your Request</div>
+        <div id="processingStatus" class="processing-status">Initializing pharmaceutical safety analysis...</div>
+        
+        <div class="processing-progress">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+        
+        <div class="processing-facts">
+            <div class="fact-title">💡 Did You Know?</div>
+            <div id="factText" class="fact-text">Loading interesting pharmaceutical facts...</div>
+        </div>
+    </div>
+</div>
+
+<div class="main-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="title">Pharmai</div>
+        <div class="subtitle">Advanced Drug & Medicine Safety Portal</div>
+        <div class="tagline">
+            <span id="typewriter" class="typewriter"></span>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="tab-button active" data-tab="search">
+            <span class="tab-icon">🔍</span>
+            <span class="tab-text">Safety Search</span>
+        </button>
+        <button class="tab-button" data-tab="documents">
+            <span class="tab-icon">📋</span>
+            <span class="tab-text">Document Database</span>
+        </button>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div class="tab-content">
+        <!-- Search Tab Content -->
+        <div id="searchTab" class="tab-panel active">
+            <!-- Statistics Section -->
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">50,000+</div>
+                <div class="stat-label">Drugs in Database</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">2,847</div>
+                <div class="stat-label">Banned Substances</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">99.7%</div>
+                <div class="stat-label">Safety Check Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">< 2sec</div>
+                <div class="stat-label">Response Time</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Section -->
+    <div class="templates-section">
+        <div class="templates-title">
+            <span class="dot"></span>
+            <span>Drug Safety Analysis Templates</span>
+        </div>
+
+        <div class="templates-grid">
+            <div class="template-card" data-query="Is terfenadine banned in a india">
+                <div class="template-content">
+                    <div class="template-icon">🚫</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Banned Drugs
+                            <span class="safety-tag">Critical</span>
+                        </div>
+                        <div class="template-title">Terfenadine - Ban Status India</div>
+                        <div class="template-description">Check if Terfenadine is banned in India according to CDSCO regulations.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card" data-query="composition of Paracetamol and Pentazocin is banned in india?">
+                <div class="template-content">
+                    <div class="template-icon">💊</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Drug Composition
+                            <span class="safety-tag">High Risk</span>
+                        </div>
+                        <div class="template-title">Paracetamol + Pentazocin Ban</div>
+                        <div class="template-description">Verify if the combination of Paracetamol and Pentazocin is banned in India.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card" data-query="Amidopyrine is banned in India?">
+                <div class="template-content">
+                    <div class="template-icon">⚠️</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Regulatory Status
+                            <span class="safety-tag">Essential</span>
+                        </div>
+                        <div class="template-title">Amidopyrine - Ban Status</div>
+                        <div class="template-description">Check if Amidopyrine is banned in India according to regulatory guidelines.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card" data-query="Does Warfarin have dangerous interactions with common drugs?">
+                <div class="template-content">
+                    <div class="template-icon">⚠️</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Drug Interactions
+                            <span class="safety-tag">Warning</span>
+                        </div>
+                        <div class="template-title">Warfarin - Interaction Risk</div>
+                        <div class="template-description">Identify potential dangerous interactions between Warfarin and common medications.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card" data-query="Is Fentanyl classified as controlled or narcotic substance?">
+                <div class="template-content">
+                    <div class="template-icon">🔒</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Controlled Substances
+                            <span class="safety-tag">Restricted</span>
+                        </div>
+                        <div class="template-title">Fentanyl - Control Status</div>
+                        <div class="template-description">Verify Fentanyl's controlled substance classification and legal restrictions.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="template-card" data-query="Check elderly patient safety for Digoxin dosage adjustments">
+                <div class="template-content">
+                    <div class="template-icon">👴</div>
+                    <div class="template-text">
+                        <div class="template-category">
+                            Geriatric Safety
+                            <span class="safety-tag">Special Care</span>
+                        </div>
+                        <div class="template-title">Digoxin - Elderly Safety</div>
+                        <div class="template-description">Assess Digoxin safety and required dosage adjustments for elderly patients.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section">
+        <div class="features-title">Advanced Safety Features</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">Banned Substance Detection</div>
+                <div class="feature-description">Real-time detection of banned drugs and controlled substances across global regulatory databases.</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <div class="feature-title">Regulatory Compliance</div>
+                <div class="feature-description">Comprehensive FDA, EMA, and international regulatory approval verification.</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚕️</div>
+                <div class="feature-title">Clinical Safety Analysis</div>
+                <div class="feature-description">Advanced analysis of drug interactions, contraindications, and patient-specific risks.</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Risk Assessment</div>
+                <div class="feature-description">Automated risk scoring and safety recommendations based on patient demographics.</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🏥</div>
+                <div class="feature-title">Healthcare Integration</div>
+                <div class="feature-description">Seamless integration with hospital systems and pharmacy management platforms.</div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <div class="feature-title">Research Database</div>
+                <div class="feature-description">Access to latest clinical research, adverse event reports, and safety studies.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <div class="upload-container">
+            <div class="upload-title">
+                📄 Upload Pharmaceutical Documents
+            </div>
+
+            <label for="fileInput" class="upload-dropzone" id="uploadZone">
+                <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                <div class="upload-content">
+                    <div class="upload-icon">📋</div>
+                    <div class="upload-text">Drop PDF documents here</div>
+                    <div class="upload-subtext">or click to browse files</div>
+                    <div class="upload-formats">Supported: PDF files only</div>
+                </div>
+            </label>
+
+            <div id="fileList" class="file-list">
+                <div style="color: #e2e8f0; font-size: 1rem; margin-bottom: 1rem; font-weight: 600;">
+                    Uploaded Documents (<span id="fileCount">0</span>)
+                </div>
+                <div id="filesContainer"></div>
+            </div>
+
+            <button id="analyzeBtn" class="analyze-btn">
+                🔬 Submit
+            </button>
+
+            <div id="uploadLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Processing pharmaceutical documents...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Section (Fixed Bottom) -->
+<div class="search-section">
+    <form id="searchForm">
+        <div class="search-container">
+            <input 
+                id="searchInput" 
+                class="search-input" 
+                type="text" 
+                placeholder="Ask about drug safety, interactions, or regulatory status..." 
+                autocomplete="off" 
+                required
+            />
+            <button id="searchBtn" type="submit" class="search-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13"/>
+                    <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+            </button>
+        </div>
+    </form>
+</div>
+
+        </div> <!-- End Search Tab -->
+
+        <!-- Documents Tab Content -->
+        <div id="documentsTab" class="tab-panel">
+            <div class="documents-header">
+                <div class="documents-title">
+                    <h2>📋 Document Database</h2>
+                    <p>Browse and search through our pharmaceutical regulatory document collection</p>
+                </div>
+                
+                <!-- Search Bar for Documents -->
+                <div class="document-search-container">
+                    <input type="text" id="documentSearchInput" placeholder="Search documents by name..." class="document-search-input">
+                    <button type="button" id="refreshDocsBtn" class="refresh-docs-btn">🔄 Refresh</button>
+                    <button type="button" onclick="window.deleteAllDocuments()" class="delete-all-btn">🗑️ Delete All</button>
+                </div>
+            </div>
+
+            <!-- Documents Loading -->
+            <div id="documentsLoading" class="documents-loading">
+                <div class="spinner"></div>
+                <p>Loading document database...</p>
+            </div>
+
+            <!-- Documents Grid -->
+            <div id="documentsGrid" class="documents-grid">
+                <!-- Documents will be populated here -->
+            </div>
+
+            <!-- No Documents Found -->
+            <div id="noDocuments" class="no-documents" style="display: none;">
+                <div class="no-docs-icon">📄</div>
+                <h3>No Documents Found</h3>
+                <p>No documents match your search criteria.</p>
+            </div>
+        </div>
+
+    </div> <!-- End Tab Content -->
+
+<script>
+// Descope Authentication System
+class DescopeAuth {
+    constructor() {
+        this.isLoggedIn = false;
+        this.user = null;
+        this.sdk = null;
+        this.init();
+    }
+
+    async init() {
+        // Initialize Descope SDK
+        try {
+            this.sdk = Descope({ projectId: 'P32OxoFpY0ihVvncEbabQARqzw8I' });
+            
+            // First, check localStorage for saved user (persists across page navigation)
+            const savedUser = localStorage.getItem('pharma_user');
+            if (savedUser) {
+                try {
+                    this.user = JSON.parse(savedUser);
+                    this.isLoggedIn = true;
+                    console.log('Restored user from localStorage:', this.user);
+                    this.updateUI();
+                    return; // User already logged in from previous session
+                } catch (e) {
+                    console.log('Failed to parse saved user, checking session token');
+                }
+            }
+            
+            // Check if user is already logged in via session token
+            const sessionToken = this.sdk.getSessionToken();
+            if (sessionToken) {
+                const userInfo = await this.sdk.me();
+                if (userInfo) {
+                    this.user = userInfo;
+                    this.isLoggedIn = true;
+                    localStorage.setItem('pharma_user', JSON.stringify(this.user));
+                    this.updateUI();
+                }
+            }
+        } catch (error) {
+            console.log('Descope SDK not available, checking localStorage for user');
+            // Even if SDK fails, check localStorage
+            const savedUser = localStorage.getItem('pharma_user');
+            if (savedUser) {
+                try {
+                    this.user = JSON.parse(savedUser);
+                    this.isLoggedIn = true;
+                    this.updateUI();
+                } catch (e) {
+                    console.log('Failed to restore user from localStorage');
+                }
+            }
+        }
+
+        this.setupEventListeners();
+        this.setupDescopeEvents();
+    }
+
+    setupEventListeners() {
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            this.showLoginModal();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.logout();
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            this.hideLoginModal();
+        });
+
+        document.getElementById('authModal').addEventListener('click', (e) => {
+            if (e.target.id === 'authModal') {
+                this.hideLoginModal();
+            }
+        });
+    }
+
+    setupDescopeEvents() {
+        // Listen for Descope authentication events
+        const descopeElement = document.querySelector('descope-wc');
+        if (descopeElement) {
+            descopeElement.addEventListener('success', (e) => {
+                console.log('Descope success:', e.detail);
+                this.handleDescopeSuccess(e.detail);
+            });
+
+            descopeElement.addEventListener('error', (e) => {
+                console.log('Descope error:', e.detail);
+                this.handleDescopeError(e.detail);
+            });
+        }
+    }
+
+    showLoginModal() {
+        document.getElementById('authModal').classList.add('active');
+    }
+
+    hideLoginModal() {
+        document.getElementById('authModal').classList.remove('active');
+    }
+
+    handleDescopeSuccess(detail) {
+        console.log('Authentication successful:', detail);
+        
+        if (detail.user) {
+            this.user = {
+                email: detail.user.email,
+                name: detail.user.name || detail.user.email.split('@')[0],
+                loginTime: Date.now(),
+                descopeUser: detail.user
+            };
+
+            this.isLoggedIn = true;
+            localStorage.setItem('pharma_user', JSON.stringify(this.user));
+            
+            this.updateUI();
+            this.hideLoginModal();
+            this.showNotification('Successfully signed in!', 'success');
+        } else {
+            this.showNotification('Authentication failed', 'error');
+        }
+    }
+
+    handleDescopeError(error) {
+        console.error('Descope authentication error:', error);
+        this.showNotification('Authentication failed: ' + (error.message || 'Unknown error'), 'error');
+    }
+
+    async logout() {
+        try {
+            if (this.sdk) {
+                await this.sdk.logout();
+            }
+        } catch (error) {
+            console.log('Descope logout error:', error);
+        }
+        
+        this.user = null;
+        this.isLoggedIn = false;
+        localStorage.removeItem('pharma_user');
+        this.updateUI();
+        this.showNotification('Signed out successfully', 'info');
+    }
+
+    updateUI() {
+        const userInfo = document.getElementById('userInfo');
+        const loginBtn = document.getElementById('loginBtn');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const uploadSection = document.querySelector('.upload-section');
+        const uploadDropZone = document.getElementById('uploadZone');
+        const uploadText = document.querySelector('.upload-text');
+        const uploadSubtext = document.querySelector('.upload-subtext');
+
+        if (this.isLoggedIn && this.user) {
+            userInfo.style.display = 'flex';
+            loginBtn.style.display = 'none';
+            
+            const initials = this.user.name.substring(0, 2).toUpperCase();
+            userAvatar.textContent = initials;
+            userName.textContent = this.user.name;
+            
+            // Enable upload section
+            if (uploadSection) uploadSection.style.opacity = '1';
+            if (uploadDropZone) {
+                uploadDropZone.style.opacity = '1';
+                uploadDropZone.style.pointerEvents = 'auto';
+            }
+            if (uploadText) uploadText.textContent = 'Drop PDF documents here';
+            if (uploadSubtext) uploadSubtext.textContent = 'or click to browse files';
+        } else {
+            userInfo.style.display = 'none';
+            loginBtn.style.display = 'inline-block';
+            
+            // Disable upload section
+            if (uploadSection) uploadSection.style.opacity = '0.5';
+            if (uploadDropZone) {
+                uploadDropZone.style.opacity = '0.5';
+                uploadDropZone.style.pointerEvents = 'auto'; // Keep clickable to show auth modal
+            }
+            if (uploadText) uploadText.textContent = 'Sign in to upload documents';
+            if (uploadSubtext) uploadSubtext.textContent = 'Authentication required for file uploads';
+        }
+    }
+
+    requireAuth(callback) {
+        if (this.isLoggedIn) {
+            callback();
+        } else {
+            this.showLoginModal();
+            this.showNotification('Please sign in to use this feature', 'warning');
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 
+                        type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 
+                        type === 'warning' ? 'linear-gradient(135deg, #f59e0b, #d97706)' :
+                        'linear-gradient(135deg, #3b82f6, #1d4ed8)'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            font-size: 0.9rem;
+            font-weight: 600;
+            max-width: 350px;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s ease;
+        `;
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100px)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
+    }
+}
+
+// Initialize authentication
+const auth = new DescopeAuth();
+
+// Typewriter Animation
+const phrases = [
+    "🔬 Advanced Drug Safety Analysis",
+    "⚕️ Banned Substance Detection", 
+    "📋 Regulatory Compliance Check",
+    "🚫 Pharmaceutical Risk Assessment",
+    "💊 Medicine Validation System",
+    "⚠️ Clinical Safety Monitoring"
+];
+
+let currentPhrase = 0, currentChar = 0, isDeleting = false;
+
+function typeWriter() {
+    const typewriterElement = document.getElementById('typewriter');
+    if (!typewriterElement) return;
+
+    const current = phrases[currentPhrase];
+
+    if (isDeleting) {
+        typewriterElement.textContent = current.substring(0, currentChar - 1);
+        currentChar--;
+    } else {
+        typewriterElement.textContent = current.substring(0, currentChar + 1);
+        currentChar++;
+    }
+
+    let typeSpeed = isDeleting ? 60 : 120;
+
+    if (!isDeleting && currentChar === current.length) {
+        typeSpeed = 2000;
+        isDeleting = true;
+    } else if (isDeleting && currentChar === 0) {
+        isDeleting = false;
+        currentPhrase = (currentPhrase + 1) % phrases.length;
+        typeSpeed = 500;
+    }
+
+    setTimeout(typeWriter, typeSpeed);
+}
+
+// Start typewriter
+setTimeout(typeWriter, 1000);
+
+// Processing Dialog System
+class ProcessingDialog {
+    constructor() {
+        this.overlay = document.getElementById('processingOverlay');
+        this.icon = document.getElementById('processingIcon');
+        this.title = document.getElementById('processingTitle');
+        this.status = document.getElementById('processingStatus');
+        this.progressBar = document.getElementById('progressBar');
+        this.factText = document.getElementById('factText');
+        
+        this.progress = 0;
+        this.isVisible = false;
+        this.factInterval = null;
+        this.progressInterval = null;
+        
+        this.facts = [
+            "The FDA approves approximately 40-50 new drugs each year after rigorous testing.",
+            "It takes an average of 10-15 years and $1-3 billion to develop a new drug.",
+            "Over 2,800 pharmaceutical substances are currently on various banned or restricted lists worldwide.",
+            "Drug interactions cause over 125,000 deaths annually in the United States.",
+            "The first recorded pharmaceutical regulation dates back to 1202 in England.",
+            "Modern drug safety monitoring systems process over 2 million adverse event reports yearly.",
+            "Pharmacovigilance databases contain safety data from over 150 countries.",
+            "AI-powered drug safety analysis can reduce detection time from months to minutes.",
+            "The average prescription drug has been tested on over 3,000 people before approval.",
+            "Counterfeit drugs make up approximately 10% of the global pharmaceutical market."
+        ];
+        
+        this.statusMessages = [
+            "Initializing pharmaceutical safety analysis...",
+            "Connecting to regulatory databases...", 
+            "Scanning banned substance lists...",
+            "Analyzing drug interaction profiles...",
+            "Checking FDA approval status...",
+            "Evaluating safety risk factors...",
+            "Cross-referencing clinical data...",
+            "Generating safety recommendations...",
+            "Finalizing comprehensive report..."
+        ];
+        
+        this.currentFactIndex = 0;
+        this.currentStatusIndex = 0;
+    }
+    
+    show(query = '') {
+        this.isVisible = true;
+        this.progress = 0;
+        this.currentFactIndex = 0;
+        this.currentStatusIndex = 0;
+        
+        // Update title based on query type
+        if (query.toLowerCase().includes('child') || query.toLowerCase().includes('pediatric')) {
+            this.title.textContent = 'Pediatric Safety Analysis';
+            this.icon.textContent = '👶';
+        } else if (query.toLowerCase().includes('pregnan')) {
+            this.title.textContent = 'Pregnancy Safety Check';
+            this.icon.textContent = '🤰';
+        } else if (query.toLowerCase().includes('elderly') || query.toLowerCase().includes('geriatric')) {
+            this.title.textContent = 'Geriatric Safety Review';
+            this.icon.textContent = '👴';
+        } else if (query.toLowerCase().includes('interaction')) {
+            this.title.textContent = 'Drug Interaction Analysis';
+            this.icon.textContent = '⚠️';
+        } else if (query.toLowerCase().includes('controlled') || query.toLowerCase().includes('narcotic')) {
+            this.title.textContent = 'Controlled Substance Check';
+            this.icon.textContent = '🔒';
+        } else if (query.toLowerCase().includes('fda') || query.toLowerCase().includes('approval')) {
+            this.title.textContent = 'FDA Approval Verification';
+            this.icon.textContent = '✅';
+        } else {
+            this.title.textContent = 'Pharmaceutical Safety Analysis';
+            this.icon.textContent = '🔬';
+        }
+        
+        this.overlay.style.display = 'flex';
+        this.updateProgress();
+        this.rotateFacts();
+        this.rotateStatus();
+    }
+    
+    hide() {
+        this.isVisible = false;
+        this.overlay.style.display = 'none';
+        
+        if (this.factInterval) {
+            clearInterval(this.factInterval);
+        }
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+        }
+    }
+    
+    updateProgress() {
+        this.progressInterval = setInterval(() => {
+            if (!this.isVisible) return;
+            
+            this.progress += Math.random() * 15 + 5; // Random increment between 5-20
+            
+            if (this.progress > 95) {
+                this.progress = 95; // Don't complete until we actually navigate
+            }
+            
+            this.progressBar.style.width = `${this.progress}%`;
+        }, 800);
+    }
+    
+    rotateFacts() {
+        // Show initial fact
+        this.factText.textContent = this.facts[this.currentFactIndex];
+        
+        this.factInterval = setInterval(() => {
+            if (!this.isVisible) return;
+            
+            this.currentFactIndex = (this.currentFactIndex + 1) % this.facts.length;
+            
+            // Fade effect
+            this.factText.style.opacity = '0.5';
+            setTimeout(() => {
+                this.factText.textContent = this.facts[this.currentFactIndex];
+                this.factText.style.opacity = '1';
+            }, 300);
+        }, 3000);
+    }
+    
+    rotateStatus() {
+        // Show initial status
+        this.status.textContent = this.statusMessages[this.currentStatusIndex];
+        
+        setInterval(() => {
+            if (!this.isVisible) return;
+            
+            this.currentStatusIndex = (this.currentStatusIndex + 1) % this.statusMessages.length;
+            
+            // Fade effect
+            this.status.style.opacity = '0.7';
+            setTimeout(() => {
+                this.status.textContent = this.statusMessages[this.currentStatusIndex];
+                this.status.style.opacity = '1';
+            }, 200);
+        }, 2500);
+    }
+    
+    complete() {
+        this.progress = 100;
+        this.progressBar.style.width = '100%';
+        this.status.textContent = 'Analysis complete! Loading results page...';
+        
+        // Don't auto-hide - let the result page hide it when ready
+        // The result.html page will handle hiding this dialog
+    }
+    
+    completeAndHide() {
+        // For cases where we want the old behavior
+        this.progress = 100;
+        this.progressBar.style.width = '100%';
+        this.status.textContent = 'Analysis complete!';
+        
+        setTimeout(() => {
+            this.hide();
+        }, 1000);
+    }
+}
+
+// Initialize processing dialog
+const processingDialog = new ProcessingDialog();
+
+// Listen for messages from result page to hide processing dialog
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'hideProcessingDialog') {
+        console.log('📨 Received hide processing dialog message');
+        processingDialog.hide();
+    }
+});
+
+// Add a global test to verify JavaScript is working
+console.log('🔥🔥🔥 JAVASCRIPT LOADED SUCCESSFULLY!');
+console.log('🔥 Current URL:', window.location.href);
+console.log('🔥 Page title:', document.title);
+
+// Global test function for manual API testing
+window.testAPICall = function(query = 'Test query') {
+    console.log('🔥 Manual API test called with:', query);
+    makeSearchAPICall(query);
+};
+
+console.log('🔥 Manual test function ready: call testAPICall("your query") in console');
+
+// Global error handler
+window.addEventListener('error', function(e) {
+    console.error('🔥 JAVASCRIPT ERROR:', e.error);
+    console.error('🔥 Error message:', e.message);
+    console.error('🔥 Error file:', e.filename);
+    console.error('🔥 Error line:', e.lineno);
+});
+
+// Template Card Click Handlers
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔥🔥🔥 DOM Content Loaded - Setting up event listeners');
+    
+    const templateCards = document.querySelectorAll('.template-card');
+    console.log('🔥 Found template cards:', templateCards.length);
+    
+    templateCards.forEach((card, index) => {
+        console.log(`🔥 Setting up click handler for card ${index + 1}`);
+        
+        card.addEventListener('click', function() {
+            const query = this.getAttribute('data-query');
+            console.log('🔥🔥🔥 TEMPLATE CARD CLICKED! Query:', query);
+            
+            // Fill the search input with the query
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = query;
+            
+            // Show processing dialog
+            processingDialog.show(query);
+            
+            // Show loading effect on card
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            
+            // Make API call to backend (no auth required for testing)
+            console.log('🔥🔥🔥 About to call makeSearchAPICall for:', query);
+            makeSearchAPICall(query);
+        });
+    });
+    
+    // Also set up the search form
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        console.log('🔥 Setting up search form handler');
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('🔥🔥🔥 SEARCH FORM SUBMITTED!');
+            
+            const query = document.getElementById('searchInput').value.trim();
+            console.log('🔥🔥🔥 Form query:', query);
+            
+            if (!query) {
+                console.log('❌ Empty query, showing notification');
+                alert('Please enter a pharmaceutical safety question');
+                return;
+            }
+
+            // Show processing dialog
+            processingDialog.show(query);
+            
+            // Make API call to backend (no auth required for testing)
+            console.log('🔥🔥🔥 About to call makeSearchAPICall for form:', query);
+            makeSearchAPICall(query);
+        });
+    } else {
+        console.error('❌ Search form not found!');
+    }
+    
+    // Initialize UI state based on authentication
+    auth.updateUI();
+});
+
+// Duplicate handler removed - now handled in DOMContentLoaded above
+
+// Function to make API call for search queries with 2 minute timeout and console logs
+async function makeSearchAPICall(query) {
+    console.log('🔥🔥🔥 makeSearchAPICall FUNCTION STARTED!');
+    console.log('🔥 Query received:', query);
+    
+    try {
+        console.log('\n🌟 === FRONTEND: Browser → Flask Backend ===');
+        console.log('📤 Query:', query);
+        console.log('🌐 Backend URL: /api/search');
+        console.log('⏰ Time:', new Date().toISOString());
+        
+        const requestData = { 
+            query: query,
+            sessionId: 'pharma-session-' + Date.now()
+        };
+        console.log('📦 Sending to Flask backend...');
+        
+        // Create abort controller for 2 minute timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.log('[FRONTEND] Request timed out after 2 minutes');
+            controller.abort();
+        }, 120000); // 2 minutes = 120000ms
+        
+        // Construct API URL relative to current path
+        const apiUrl = window.location.pathname.endsWith('/') ? 
+            window.location.pathname + 'api/search' : 
+            window.location.pathname + '/api/search';
+        
+        console.log('🚀 SENDING FETCH REQUEST NOW!');
+        console.log('📍 URL:', apiUrl);
+        console.log('📦 Body: ' + JSON.stringify(requestData));
+        
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
+            signal: controller.signal
+        });
+        
+        console.log('✅ FETCH RESPONSE RECEIVED!');
+
+        clearTimeout(timeoutId);
+        console.log('\n📊 === FRONTEND RESPONSE DETAILS ===');
+        console.log('🎯 Status Code:', response.status);
+        console.log('📥 Response Headers:', Object.fromEntries(response.headers));
+
+        const data = await response.json();
+        console.log('✅ Full Response Data:', JSON.stringify(data, null, 2));
+        
+        if (data.api_response) {
+            console.log('🔥 External API Response:', JSON.stringify(data.api_response, null, 2));
+        }
+        console.log('=' + '='.repeat(40));
+        
+        if (response.ok && data.status === 'success') {
+            console.log('[FRONTEND] API call successful, storing results');
+            // Store results for the result page
+            sessionStorage.setItem('searchResults', JSON.stringify(data));
+            sessionStorage.setItem('currentQuery', query);
+            
+            // Complete processing animation
+            processingDialog.complete();
+            
+            // Set flag for result page to know a dialog is active
+            localStorage.setItem('processingDialogActive', 'true');
+            
+            // Navigate to results page immediately - processing dialog will stay until result page loads
+            console.log('[FRONTEND] Navigating to results page');
+            window.location.href = `pharmai/analyze?query=${encodeURIComponent(query)}`;
+        } else {
+            console.error('[FRONTEND] API returned error:', data);
+            // Handle API error
+            processingDialog.hide();
+            const errorMessage = data.message || data.error || 'Failed to process your request';
+            alert('Error: ' + errorMessage);
+        }
+    } catch (error) {
+        console.log('\n❌ === FRONTEND ERROR DETAILS ===');
+        console.error('🔥 Error Type:', error.name);
+        console.error('📝 Error Message:', error.message);
+        console.error('🔍 Full Error Object:', error);
+        console.log('=' + '='.repeat(40));
+        
+        // Handle network/connection errors
+        processingDialog.hide();
+        
+        if (error.name === 'AbortError') {
+            alert('Request timed out after 2 minutes. Please try again.');
+        } else {
+            alert('Network error. Please check your connection and try again.');
+        }
+    }
+}
+
+// File Upload Functionality
+let uploadedFiles = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadDropZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const filesContainer = document.getElementById('filesContainer');
+    const fileCount = document.getElementById('fileCount');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const uploadLoading = document.getElementById('uploadLoading');
+
+    // Drag and drop handlers - require auth for upload
+    uploadDropZone.addEventListener('click', (e) => {
+        console.log('Upload zone clicked');
+        
+        // Check auth first - prevent file dialog if not authenticated
+        if (!auth.isLoggedIn) {
+            e.preventDefault();
+            e.stopPropagation();
+            auth.showLoginModal();
+            auth.showNotification('Please sign in to upload files', 'warning');
+            return false;
+        }
+        
+        console.log('User authenticated, allowing file dialog');
+        // Let the label handle the file input trigger naturally
+    });
+
+    uploadDropZone.addEventListener('dragover', handleDragOver);
+    uploadDropZone.addEventListener('dragleave', handleDragLeave);
+    uploadDropZone.addEventListener('drop', handleDrop);
+    fileInput.addEventListener('change', handleFileSelect);
+    // Single click event listener to avoid duplicate uploads
+    analyzeBtn.addEventListener('click', handleAnalyzeClick);
+    
+    function handleAnalyzeClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Analyze button clicked');
+        
+        auth.requireAuth(() => {
+            console.log('Auth successful, analyzing documents');
+            analyzeDocuments();
+        });
+    }
+    
+    function showUploadSuccessMessage(message) {
+        // Create or update success message element
+        let successMessage = document.getElementById('uploadSuccessMessage');
+        if (!successMessage) {
+            successMessage = document.createElement('div');
+            successMessage.id = 'uploadSuccessMessage';
+            successMessage.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #059669, #047857);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 10px;
+                box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4);
+                z-index: 10000;
+                font-weight: 600;
+                font-size: 14px;
+                opacity: 0;
+                transition: all 0.3s ease;
+            `;
+            document.body.appendChild(successMessage);
+        }
+        
+        successMessage.innerHTML = message;
+        successMessage.style.opacity = '1';
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            successMessage.style.opacity = '0';
+            setTimeout(() => {
+                if (successMessage.parentNode) {
+                    successMessage.parentNode.removeChild(successMessage);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        if (!auth.isLoggedIn) {
+            auth.showLoginModal();
+            return;
+        }
+        uploadDropZone.style.borderColor = '#dc2626';
+        uploadDropZone.style.background = 'rgba(220, 38, 38, 0.15)';
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault();
+        uploadDropZone.style.borderColor = 'rgba(220, 38, 38, 0.5)';
+        uploadDropZone.style.background = 'rgba(220, 38, 38, 0.08)';
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        handleDragLeave(e);
+        
+        auth.requireAuth(() => {
+            const files = Array.from(e.dataTransfer.files);
+            processFiles(files);
+        });
+    }
+
+    function handleFileSelect(e) {
+        auth.requireAuth(() => {
+            const files = Array.from(e.target.files);
+            processFiles(files);
+        });
+    }
+
+    function processFiles(files) {
+        const validFiles = files.filter(file => 
+            file.type === 'application/pdf' || 
+            file.name.toLowerCase().endsWith('.pdf')
+        );
+
+        if (validFiles.length === 0) {
+            auth.showNotification('Please upload PDF files only.', 'error');
+            return;
+        }
+
+        validFiles.forEach(file => {
+            if (!uploadedFiles.find(f => f.name === file.name)) {
+                uploadedFiles.push(file);
+            }
+        });
+
+        updateFilesList();
+        
+        // Don't show any success notification here - only show after submit
+        // Just silently add files to the list
+    }
+
+    function updateFilesList() {
+        if (uploadedFiles.length > 0) {
+            fileList.classList.add('active');
+            fileCount.textContent = uploadedFiles.length;
+            analyzeBtn.style.display = 'block';
+            
+            filesContainer.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-name">
+                        ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)
+                    </div>
+                    <button class="file-remove" onclick="removeFile(${index})">Remove</button>
+                </div>
+            `).join('');
+        } else {
+            fileList.classList.remove('active');
+            analyzeBtn.style.display = 'none';
+        }
+    }
+
+    window.removeFile = function(index) {
+        uploadedFiles.splice(index, 1);
+        updateFilesList();
+        
+        if (uploadedFiles.length === 0) {
+            auth.showNotification('All files removed', 'info');
+        }
+    };
+
+    async function analyzeDocuments() {
+        if (uploadedFiles.length === 0) return;
+        
+        console.log('[UPLOAD] Starting document upload for', uploadedFiles.length, 'files');
+        console.log('[UPLOAD] Files:', uploadedFiles.map(f => f.name));
+        console.log('[UPLOAD] Timestamp:', new Date().toISOString());
+        
+        // Show loading state
+        uploadLoading.style.display = 'block';
+        analyzeBtn.style.display = 'none';
+        
+        try {
+            // Create FormData for file upload
+            const formData = new FormData();
+            uploadedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            // Show initial success notification
+            auth.showNotification(`📤 Uploading ${uploadedFiles.length} file(s)...`, 'info');
+            
+            // Construct upload API URL relative to current path
+            const uploadApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/upload-files' : 
+                window.location.pathname + '/api/upload-files';
+            
+            // Upload files to data folder
+            console.log('[UPLOAD] Sending files to', uploadApiUrl);
+            const uploadResponse = await fetch(uploadApiUrl, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            console.log('[UPLOAD] Upload response:', uploadResult);
+            
+            if (uploadResult.success) {
+                // Show first notification: File uploaded successfully
+                auth.showNotification(`✅ ${uploadResult.count} file(s) uploaded successfully!`, 'success');
+                
+                // Wait 2 seconds, then show indexing started notification
+                setTimeout(() => {
+                    auth.showNotification(`🔄 Indexing has started for uploaded documents...`, 'info');
+                    
+                    // Wait another 3 seconds to show indexing completion
+                    setTimeout(() => {
+                        auth.showNotification(`🎉 Document indexing completed successfully!`, 'success');
+                    }, 3000);
+                }, 2000);
+                
+                // Reset upload state
+                uploadedFiles = [];
+                updateFilesList();
+                
+                // Hide loading state
+                uploadLoading.style.display = 'none';
+                analyzeBtn.style.display = 'none';
+                
+                console.log('[UPLOAD] Files uploaded successfully to:', uploadResult.upload_path);
+                
+            } else {
+                throw new Error(uploadResult.message || 'Upload failed');
+            }
+            
+        } catch (error) {
+            console.error('[UPLOAD] Upload error:', error);
+            
+            // Show failure notification
+            auth.showNotification(`❌ File upload failed: ${error.message}`, 'error');
+            
+            // Reset UI state
+            uploadLoading.style.display = 'none';
+            analyzeBtn.style.display = 'block';
+        }
+    }
+});
+
+// Tab System
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    // Tab switching functionality
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            // Remove active class from all tabs and panels
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanels.forEach(panel => panel.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding panel
+            button.classList.add('active');
+            document.getElementById(targetTab + 'Tab').classList.add('active');
+            
+            // Load documents when switching to documents tab
+            if (targetTab === 'documents') {
+                loadDocuments();
+            }
+        });
+    });
+    
+    // Document search functionality
+    const documentSearchInput = document.getElementById('documentSearchInput');
+    const refreshBtn = document.getElementById('refreshDocsBtn');
+    let allDocuments = [];
+    
+    documentSearchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        filterDocuments(searchTerm);
+    });
+    
+    refreshBtn.addEventListener('click', () => {
+        loadDocuments();
+    });
+    
+    // Load documents from API
+    async function loadDocuments() {
+        const loadingEl = document.getElementById('documentsLoading');
+        const gridEl = document.getElementById('documentsGrid');
+        const noDocsEl = document.getElementById('noDocuments');
+        
+        // Show loading
+        loadingEl.style.display = 'block';
+        gridEl.style.display = 'none';
+        noDocsEl.style.display = 'none';
+        
+        try {
+            // Construct documents API URL relative to current path
+            const documentsApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/list-documents' : 
+                window.location.pathname + '/api/list-documents';
+            
+            console.log('Fetching documents from API:', documentsApiUrl);
+            
+            const response = await fetch(documentsApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const documents = await response.json();
+            console.log('Documents loaded:', documents.length);
+            
+            allDocuments = documents;
+            displayDocuments(documents);
+            
+        } catch (error) {
+            console.error('Error loading documents:', error);
+
+            // Do not show mock/demo data when API fails.
+            // Keep behavior explicit so users immediately see backend issues.
+            allDocuments = [];
+            displayDocuments(allDocuments);
+
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Documents API unavailable. Please try again later.', 'error');
+            }
+        }
+        
+        loadingEl.style.display = 'none';
+    }
+    
+    // Display documents in grid
+    function displayDocuments(documents) {
+        const gridEl = document.getElementById('documentsGrid');
+        const noDocsEl = document.getElementById('noDocuments');
+        
+        if (documents.length === 0) {
+            gridEl.style.display = 'none';
+            noDocsEl.style.display = 'block';
+            return;
+        }
+        
+        gridEl.style.display = 'grid';
+        noDocsEl.style.display = 'none';
+        
+        gridEl.innerHTML = documents.map(doc => {
+            // Handle both old and new API formats
+            const fileName = doc.displayName || doc.path?.split('/').pop() || 'Unknown';
+            const fileSize = formatFileSize(doc.sizeBytes || doc.size || 0);
+            const createdDate = doc.createTime ? formatDateISO(doc.createTime) : formatDate(doc.created_at || 0);
+            const modifiedDate = doc.updateTime ? formatDateISO(doc.updateTime) : formatDate(doc.modified_at || 0);
+            const documentId = doc.name || doc.id || '';
+            const owner = doc.metadata?.find(m => m.key === 'source')?.stringValue || doc.owner || 'System';
+            
+            return `
+                <div class="document-card" data-doc-id="${documentId}">
+                    <div class="document-name">${fileName}</div>
+                    
+                    <div class="document-info">
+                        <div class="info-chip">📄 ${getFileType(fileName)}</div>
+                        <div class="info-chip">💾 ${fileSize}</div>
+                        <div class="info-chip">👤 ${owner}</div>
+                    </div>
+                    
+                    <div class="document-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Created</div>
+                            <div class="meta-value">${createdDate}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Status</div>
+                            <div class="meta-value">${doc.state || 'ACTIVE'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="document-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; position: relative; z-index: 1000;">
+                        <button class="delete-doc-btn" onclick="deleteDocument('${documentId}')" 
+                            style="flex: 1; padding: 0.75rem 1rem; background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.5)); 
+                            border: 1px solid rgba(220, 38, 38, 0.5); color: #fca5a5; border-radius: 10px; cursor: pointer; 
+                            font-weight: 700; transition: all 0.3s; font-size: 0.95rem; position: relative; z-index: 1001; pointer-events: auto;
+                            display: flex; align-items: center; justify-content: center; gap: 0.5rem; outline: none;">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Filter documents based on search term
+    function filterDocuments(searchTerm) {
+        if (!searchTerm) {
+            displayDocuments(allDocuments);
+            return;
+        }
+        
+        const filtered = allDocuments.filter(doc => {
+            // Handle both old and new API formats
+            const fileName = (doc.displayName || doc.path?.split('/').pop() || '').toLowerCase();
+            const owner = (doc.metadata?.find(m => m.key === 'source')?.stringValue || doc.owner || '').toLowerCase();
+            return fileName.includes(searchTerm) || owner.includes(searchTerm);
+        });
+        
+        displayDocuments(filtered);
+    }
+    
+    // Utility functions
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    function formatDate(timestamp) {
+        return new Date(timestamp * 1000).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    function formatDateISO(isoString) {
+        return new Date(isoString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    // Delete a single document
+    window.deleteDocument = async function(documentId) {
+        if (!confirm('Are you sure you want to delete this document?')) {
+            return;
+        }
+        
+        try {
+            const deleteApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/delete-document' : 
+                window.location.pathname + '/api/delete-document';
+            
+            console.log('[DELETE] Deleting document:', documentId);
+            console.log('[DELETE] API URL:', deleteApiUrl);
+            
+            const response = await fetch(deleteApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ documentId: documentId })
+            });
+            
+            console.log('[DELETE] Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('[DELETE] Error response:', errorData);
+                throw new Error(`Failed to delete document: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('[DELETE] Document deleted:', result);
+            
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Document deleted successfully', 'success');
+            } else {
+                alert('Document deleted successfully');
+            }
+            loadDocuments(); // Reload the document list
+            
+        } catch (error) {
+            console.error('[DELETE] Error deleting document:', error);
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Failed to delete document: ' + error.message, 'error');
+            } else {
+                alert('Failed to delete document: ' + error.message);
+            }
+        }
+    };
+    
+    // Delete all documents
+    window.deleteAllDocuments = async function() {
+        if (!confirm('Are you sure you want to delete ALL documents? This action cannot be undone!')) {
+            return;
+        }
+        
+        try {
+            const deleteAllApiUrl = window.location.pathname.endsWith('/') ? 
+                window.location.pathname + 'api/delete-all-documents' : 
+                window.location.pathname + '/api/delete-all-documents';
+            
+            console.log('[DELETE ALL] API URL:', deleteAllApiUrl);
+            
+            const response = await fetch(deleteAllApiUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('[DELETE ALL] Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('[DELETE ALL] Error response:', errorData);
+                throw new Error(`Failed to delete documents: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('[DELETE ALL] All documents deleted:', result);
+            
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification(result.message || 'All documents deleted successfully', 'success');
+            } else {
+                alert(result.message || 'All documents deleted successfully');
+            }
+            loadDocuments(); // Reload the document list
+            
+        } catch (error) {
+            console.error('[DELETE ALL] Error deleting all documents:', error);
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Failed to delete documents: ' + error.message, 'error');
+            } else {
+                alert('Failed to delete documents: ' + error.message);
+            }
+        }
+    };
+    
+    function getFileType(fileName) {
+        const extension = fileName.split('.').pop().toUpperCase();
+        const typeMap = {
+            'PDF': 'PDF Document',
+            'TXT': 'Text File',
+            'MD': 'Markdown',
+            'DOC': 'Word Document',
+            'DOCX': 'Word Document'
+        };
+        return typeMap[extension] || extension + ' File';
+    }
+    
+    // Demo documents for fallback
+    function getDemoDocuments() {
+        return [
+            {
+                "created_at": 1758823580,
+                "modified_at": 1758823593,
+                "owner": "root",
+                "path": "data/cdsco_banned_combined.pdf",
+                "size": 2578527,
+                "seen_at": 1759403157
+            },
+            {
+                "created_at": 1758823559,
+                "modified_at": 1758823560,
+                "owner": "root",
+                "path": "data/cdsco_banned_02Jun2023.pdf",
+                "size": 190381,
+                "seen_at": 1759403157
+            },
+            {
+                "created_at": 1758821342,
+                "modified_at": 1758821342,
+                "owner": "root",
+                "path": "data/cdsco_banned_01Jan2018.pdf",
+                "size": 504075,
+                "seen_at": 1759403157
+            },
+            {
+                "created_at": 1758823573,
+                "modified_at": 1758823575,
+                "owner": "root",
+                "path": "data/cdsco_banned_12Aug2024_2.pdf",
+                "size": 183230,
+                "seen_at": 1759403157
+            },
+            {
+                "created_at": 1758833702,
+                "modified_at": 1758834129,
+                "owner": "root",
+                "path": "data/README.md",
+                "size": 1376,
+                "seen_at": 1759403157
+            },
+            {
+                "created_at": 1758823599,
+                "modified_at": 1758823601,
+                "owner": "root",
+                "path": "data/delhi.pdf",
+                "size": 793602,
+                "seen_at": 1759403157
+            }
+        ];
+    }
+});
+
+// Create floating particles for dynamic background
+function createFloatingParticles() {
+    const particlesCount = 15;
+    const container = document.createElement('div');
+    container.className = 'floating-particles';
+    container.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+        overflow: hidden;
+    `;
+
+    for (let i = 0; i < particlesCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.cssText = `
+            position: absolute;
+            width: ${Math.random() * 4 + 2}px;
+            height: ${Math.random() * 4 + 2}px;
+            background: rgba(${Math.random() > 0.5 ? '59, 130, 246' : '220, 38, 38'}, ${Math.random() * 0.3 + 0.1});
+            border-radius: 50%;
+            animation: floatParticle ${Math.random() * 10 + 8}s linear infinite;
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            animation-delay: ${Math.random() * 5}s;
+        `;
+        container.appendChild(particle);
+    }
+
+    document.body.appendChild(container);
+}
+
+// Add particle animation CSS
+const particleStyle = document.createElement('style');
+particleStyle.textContent = `
+    @keyframes floatParticle {
+        0% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-100vh) translateX(50px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(particleStyle);
+
+// Initialize particles when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createFloatingParticles);
+} else {
+    createFloatingParticles();
+}
+</script>
+</body>
+</html>
