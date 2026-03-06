@@ -1,0 +1,50 @@
+# ==================================================================================
+# PHARMAI PORTAL - DOCKER DEPLOYMENT
+# ==================================================================================
+# This compose file runs the PharmAI Flask portal behind Traefik using Docker labels.
+# No host port publishing is used; Traefik forwards internally on root_default network.
+# ==================================================================================
+
+networks:
+  default:
+    name: root_default
+    external: true
+
+services:
+  pharmai-portal:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.pharmai-portal
+    container_name: pharmai-portal
+    restart: unless-stopped
+
+    networks:
+      default:
+        ipv4_address: 172.18.0.34
+
+    expose:
+      - "5000"
+
+    environment:
+      - PORT=5000
+      - FLASK_DEBUG=false
+      - SERVER_HOST=backend-pharmai-portal
+
+    volumes:
+      - /root/repo/pharmai_portal/frontend:/app:ro
+      - /root/repo/pharmai_portal/data:/data
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.pharmai-portal.loadbalancer.server.port=5000"
+      - "traefik.http.routers.pharmai-portal.rule=HostRegexp(`^(vps-)?pharmai\\.(lehana\\.in|aidhunik\\.com)$$`)"
+      - "traefik.http.routers.pharmai-portal.entrypoints=websecure"
+      - "traefik.http.routers.pharmai-portal.tls=true"
+      - "traefik.http.routers.pharmai-portal.priority=110"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

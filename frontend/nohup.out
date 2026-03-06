@@ -117,3 +117,648 @@ Port 8002 is in use by another program. Either identify and stop that program, o
    3. Update /api/analyze-documents endpoint when you get the real upload API
 
 🎯 Starting development server on port 8002...
+🚀 Starting Pharmai Server...
+🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai
+📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)
+❤️ Health check: /health or /pharmai/health
+
+🔧 Dual routes configured for Traefik compatibility:
+   • Main app: / and /pharmai
+   • Analyze: /analyze and /pharmai/analyze
+   • APIs: /api/* and /pharmai/api/*
+
+🌐 Works with Traefik reverse proxy:
+   • medical.lehana.in/pharmai → Flask /
+   • medical.lehana.in/pharmai/api/search → Flask /api/search
+
+🎯 Starting development server on port 5000...
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://82.112.235.26:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 144-308-233
+🚀 Starting Pharmai Server...
+🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai
+📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)
+❤️ Health check: /health or /pharmai/health
+
+🔧 Dual routes configured for Traefik compatibility:
+   • Main app: / and /pharmai
+   • Analyze: /analyze and /pharmai/analyze
+   • APIs: /api/* and /pharmai/api/*
+
+🌐 Works with Traefik reverse proxy:
+   • medical.lehana.in/pharmai → Flask /
+   • medical.lehana.in/pharmai/api/search → Flask /api/search
+
+🎯 Starting development server on port 5000...
+🚀 Starting Pharmai Server...
+🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai
+📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)
+❤️ Health check: /health or /pharmai/health
+
+🔧 Dual routes configured for Traefik compatibility:
+   • Main app: / and /pharmai
+   • Analyze: /analyze and /pharmai/analyze
+   • APIs: /api/* and /pharmai/api/*
+
+🌐 Works with Traefik reverse proxy:
+   • medical.lehana.in/pharmai → Flask /
+   • medical.lehana.in/pharmai/api/search → Flask /api/search
+
+🎯 Starting development server on port 5000...
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://82.112.235.26:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 144-308-233
+122.187.14.251 - - [18/Feb/2026 18:56:30] code 400, message Bad request version ('58zå«eEd\x93\x03T¸U\x00')
+122.187.14.251 - - [18/Feb/2026 18:56:30] "[31m[1m\x16\x03\x01\x06à\x01\x00\x06Ü\x03\x03\x11ËÊ¬~/\x93EI¿h×<\x1c¼\x87n\x82Cÿ.jo2¬\x12è\x8eëßó9 ~Js7\x1eeãÊ\x90¥ß²\x92<¦\x8f\x11o¡a\x1eä¨jÈmÀ\x03}b\x1c«\x00 zz\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06s**\x00\x00\x003\x04ï\x04íêê\x00\x01\x00\x11ì\x04À©É¯¦Y}µ§\x98z\x06Z",²:\x00^V \x95¸\x10s\x84\x94k\x15\x05-Ï2\x92ÎñpïÈ\x1d58zå«eEd\x93\x03T¸U\x00[0m" 400 -
+121.241.109.219 - - [18/Feb/2026 18:56:30] code 400, message Bad request version ('\x17°\x05&IÎ\x11\x11Zk\x94\x8dòåuÔ2\x98\x13PSyÔ\x9cÈS</\x006=x5')
+121.241.109.219 - - [18/Feb/2026 18:56:30] "[31m[1m\x16\x03\x01\x06À\x01\x00\x06¼\x03\x03 Uèbî\x18\x1eiïz\x0bþ\x98R\x03¬uëðB¥IÆx\x88f;nÚ¸§T \x1fÚ\x1b»âF\x84\x82ë|¹Ï\x03k´ @\x95¨\x01L&òû7Õ]ýÁ'ÿÿ\x00 úú\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06S::\x00\x00\x00\x10\x00\x0e\x00\x0c\x02h2\x08http/1.1\x00-\x00\x02\x01\x01\x00#\x00\x00\x003\x04ï\x04íºº\x00\x01\x00\x11ì\x04Àï\x84?_cy(PË\x9f\x84oã±§\x98'3EiÎnÊ>1äMÃù\x0bÜ@W\x8c\x14,æ\x04\x93\x0d\x83H\x0e\x99\x88G`D\x8d¢\x86GÔ\x18\x155®æD&\x9fU,s0$¬&·¬\x8b\x02\x96|\x96ºU¸\x06\x96vG4\x8a\x9aË\x11]ü:îRpÓ\x0bKÑ×«cÃ\x85(×Y/1Ï°\\½¤\x00OÖKfw°}\x12ÄACX«\x17÷qÏ÷k\x0c\x86\x1c»$Yð\x9c§ÞIG\x89w\x7fÌÉj­õ\x94ÆÚÄÞ\x04±³ù\x88S6#\x00´Ís`\x90m\x15\x11¬Ë@íØiñ»&Í#=Â%_^\x95i¯\x08\x9d<\x11QTD¼µxÍ%U0]ö·FÑ\x87\x0d3A\x9bl¦5:Íüe\x05ÇÔ\x0d\x17°\x05&IÎ\x11\x11Zk\x94\x8dòåuÔ2\x98\x13PSyÔ\x9cÈS</\x006=x5[0m" 400 -
+122.187.14.251 - - [18/Feb/2026 18:56:32] "GET / HTTP/1.1" 200 -
+121.241.109.219 - - [18/Feb/2026 18:56:33] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+121.241.109.219 - - [18/Feb/2026 18:57:53] "[35m[1mPOST /api/list-documents HTTP/1.1[0m" 522 -
+121.241.109.219 - - [18/Feb/2026 19:00:41] "[35m[1mPOST /api/list-documents HTTP/1.1[0m" 522 -
+121.241.109.219 - - [18/Feb/2026 19:21:48] "GET / HTTP/1.1" 200 -
+122.187.14.251 - - [18/Feb/2026 19:21:50] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+172.18.0.2 - - [18/Feb/2026 20:24:44] "GET / HTTP/1.1" 200 -
+172.18.0.2 - - [18/Feb/2026 20:24:46] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+172.18.0.2 - - [18/Feb/2026 20:32:34] "GET / HTTP/1.1" 200 -
+172.18.0.2 - - [18/Feb/2026 20:32:36] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+172.18.0.2 - - [18/Feb/2026 20:58:55] "GET / HTTP/1.1" 200 -
+172.18.0.2 - - [18/Feb/2026 20:58:57] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+172.18.0.2 - - [18/Feb/2026 20:59:02] "POST /api/list-documents HTTP/1.1" 200 -
+ * Detected change in '/root/repo/pharmai_portal/frontend/app.py', reloading
+🚀 Starting Pharmai Server...
+🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai
+📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)
+❤️ Health check: /health or /pharmai/health
+
+🔧 Dual routes configured for Traefik compatibility:
+   • Main app: / and /pharmai
+   • Analyze: /analyze and /pharmai/analyze
+   • APIs: /api/* and /pharmai/api/*
+
+🌐 Works with Traefik reverse proxy:
+   • medical.lehana.in/pharmai → Flask /
+   • medical.lehana.in/pharmai/api/search → Flask /api/search
+
+🎯 Starting development server on port 5000...
+
+[DOCUMENTS] === FETCHING DOCUMENT LIST ===
+[DOCUMENTS] Request method: POST
+[DOCUMENTS] Timestamp: 2026-02-18 18:57:33
+[DOCUMENTS] Calling API: https://medical.lehana.in/ncert/api/documents
+[DOCUMENTS] API Response Status: 522
+[DOCUMENTS] API Error: 522
+
+[DOCUMENTS] === FETCHING DOCUMENT LIST ===
+[DOCUMENTS] Request method: POST
+[DOCUMENTS] Timestamp: 2026-02-18 19:00:22
+[DOCUMENTS] Calling API: https://medical.lehana.in/ncert/api/documents
+[DOCUMENTS] API Response Status: 522
+[DOCUMENTS] API Error: 522
+
+[DOCUMENTS] === FETCHING DOCUMENT LIST ===
+[DOCUMENTS] Request method: POST
+[DOCUMENTS] Timestamp: 2026-02-18 20:59:00
+[DOCUMENTS] Calling API: https://medical.lehana.in/ncert/api/documents
+[DOCUMENTS] API Response Status: 200
+[DOCUMENTS] Retrieved 13 documents
+ * Restarting with stat
+40.77.167.151 - - [18/Feb/2026 22:04:59] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2026 11:44:52] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2026 14:13:20] "POST /api/search HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2026 14:14:02] "[33mHEAD /result HTTP/1.1[0m" 404 -
+127.0.0.1 - - [19/Feb/2026 14:14:08] "HEAD / HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2026 14:14:08] "HEAD /health HTTP/1.1" 200 -
+52.167.144.181 - - [19/Feb/2026 14:19:11] "GET / HTTP/1.1" 200 -
+🚀 Starting Pharmai Server...
+🌐 Access the application at: http://localhost:5000/ or http://localhost:5000/pharmai
+📡 API endpoints: /api/search, /api/upload-files (with /pharmai prefix support)
+❤️ Health check: /health or /pharmai/health
+
+🔧 Dual routes configured for Traefik compatibility:
+   • Main app: / and /pharmai
+   • Analyze: /analyze and /pharmai/analyze
+   • APIs: /api/* and /pharmai/api/*
+
+🌐 Works with Traefik reverse proxy:
+   • medical.lehana.in/pharmai → Flask /
+   • medical.lehana.in/pharmai/api/search → Flask /api/search
+
+🎯 Starting server on port 5000...
+📥 Received query from frontend: dolo 650
+📥 Session ID: pharma-session-001
+
+🚀 === BACKEND: Flask → External API ===
+🎯 External API URL: https://medical.lehana.in/ncert/api/search
+🔑 Query: 'dolo 650'
+📝 Session ID: 'pharma-session-001'
+📡 Making external API call...
+📡 Sending request...
+🌐 URL: https://medical.lehana.in/ncert/api/search
+📦 Headers: {'Content-Type': 'application/json'}
+📝 JSON Body: {
+  "query": "dolo 650",
+  "sessionId": "pharma-session-001"
+}
+✅ Response Status: 200
+📋 Response Headers: {'Date': 'Thu, 19 Feb 2026 08:43:20 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Transfer-Encoding': 'chunked', 'Connection': 'keep-alive', 'access-control-allow-origin': '*', 'etag': 'W/"12b-1bJvPXHeSkPNFOO1ClGC6mfHONY"', 'x-powered-by': 'Express', 'cf-cache-status': 'DYNAMIC', 'Nel': '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}', 'Report-To': '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=jXc4FYg9ZqjG02Ssi2EkIO7SwalvMIDWV8OQDOYx3cjnZzai4VOYPlCyUHtCDUxAgHqBF6TY2%2Fl88okJsDo%2Fzzjt9t3a%2BiGhUmnPqK%2FvXwIdOiqHqGZMPTs%3D"}]}', 'Content-Encoding': 'gzip', 'Server': 'cloudflare', 'CF-RAY': '9d0479869f970abd-BOM', 'alt-svc': 'h3=":443"; ma=86400'}
+✅ API Response: {
+  "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, meaning it requires a prescription for sale.",
+  "sessionId": "pharma-session-001"
+}
+📤 Sending response to frontend: {
+  "status": "success",
+  "query": "dolo 650",
+  "data": {
+    "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, meaning it requires a prescription for sale.",
+    "sessionId": "pharma-session-001"
+  },
+  "api_response": {
+    "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, meaning it requires a prescription for sale.",
+    "sessionId": "pharma-session-001"
+  },
+  "api_url": "https://medical.lehana.in/ncert/api/search",
+  "processing_time": "API call completed"
+}
+📥 Received query from frontend: dolo 650
+📥 Session ID: pharma-session-001
+
+🚀 === BACKEND: Flask → External API ===
+🎯 External API URL: https://medical.lehana.in/ncert/api/search
+🔑 Query: 'dolo 650'
+📝 Session ID: 'pharma-session-001'
+📡 Making external API call...
+📡 Sending request...
+🌐 URL: https://medical.lehana.in/ncert/api/search
+📦 Headers: {'Content-Type': 'application/json'}
+📝 JSON Body: {
+  "query": "dolo 650",
+  "sessionId": "pharma-session-001"
+}
+✅ Response Status: 200
+📋 Response Headers: {'Date': 'Thu, 19 Feb 2026 08:52:55 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Transfer-Encoding': 'chunked', 'Connection': 'keep-alive', 'access-control-allow-origin': '*', 'etag': 'W/"8b2-gjXahWaMG4QyrsTY1ywRksR/94Y"', 'x-powered-by': 'Express', 'cf-cache-status': 'DYNAMIC', 'Nel': '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}', 'Report-To': '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=KfSlJjYV8PtQNX0P7BPf0cmXOf4h%2BQ2KL0Z8aVX0N0njFK5MIyW8RHB0R2%2ByARvcPOBnYOM8EBGNoXlNcQ0XNwSwGC53u2De84335PQRxrBaJVOJ7Fhq0xA%3D"}]}', 'Content-Encoding': 'gzip', 'Server': 'cloudflare', 'CF-RAY': '9d0487bb1a6b6470-BOM', 'alt-svc': 'h3=":443"; ma=86400'}
+✅ API Response: {
+  "query": "dolo 650",
+  "medicine_searched": "dolo 650 (paracetamol 650 mg)",
+  "total_results": 1,
+  "current_status": "scheduled",
+  "results": {
+    "gazette_id": "N/A",
+    "pdf_name": "source not identified",
+    "medicine_name": "dolo 650 (paracetamol 650 mg)",
+    "date_of_ban": "N/A",
+    "date_of_uplift": "N/A",
+    "summary": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+    "reasons_for_ban": "N/A",
+    "reasons_for_uplift": "N/A",
+    "drug_category": "single_drug",
+    "population_restriction": "none",
+    "schedule_classification": "Schedule H",
+    "controlled_status": "Not controlled",
+    "source_authority": "Central Drugs Standard Control Organisation (CDSCO)",
+    "act_reference": "Drugs and Cosmetics Act, 1940, Drugs Rules, 1945",
+    "alternative_medicines": "Not specified in documents",
+    "compliance_note": "Requires prescription for dispensing as a Schedule H drug.",
+    "name_image_match": "Yes",
+    "source_banned": "",
+    "source_internet": "",
+    "source_approved": "never banned",
+    "source_approved_internet": "",
+    "approved_gazette": "",
+    "source_scheduled": "internet",
+    "source_scheduled_file": "",
+    "source_scheduled_internet": "cdsco.gov.in, general knowledge of indian drug regulations",
+    "source_controlled": "",
+    "keyword": "paracetamol",
+    "misc": "",
+    "reasoning": "Dolo 650, containing paracetamol 650 mg, is not found in the provided banned drug lists or any internet search results indicating a general ban by the Indian Government. It is widely known and regulated by the Indian government's CDSCO as a Schedule H drug, which means it requires a prescription for dispensing. It is not listed as a controlled substance under the NDPS Act or other similar regulations. No specific NSQ alerts for Dolo 650 as a general product were found. The image is assumed to match the name and bear 'Rx' indicating its Schedule H status.",
+    "itemid": "N/A"
+  },
+  "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+  "sessionId": "pharma-session-001"
+}
+127.0.0.1 - - [19/Feb/2026 14:22:55] "POST /api/search HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2026 14:26:07] "POST /api/search HTTP/1.1" 200 -
+167.94.138.41 - - [19/Feb/2026 17:05:16] code 400, message Bad request version ('À\x14À')
+167.94.138.41 - - [19/Feb/2026 17:05:16] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03>åµ\x1d¬@hBy\x9c7½\x06§O\x9f\x89²â)£3ºª>pC½\x97Uû` \x15\x9dÊD\x85\x02\x84\x90`7%Ë\x93\x9e¼õ¢\x9aÈ©oôúÏ\x97½©\x92+\x96ä3\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.41 - - [19/Feb/2026 17:05:20] "GET / HTTP/1.1" 200 -
+167.94.138.41 - - [19/Feb/2026 17:05:26] code 400, message Bad request version ('À\x14À')
+167.94.138.41 - - [19/Feb/2026 17:05:26] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03þ};fÓ\x87z\x19Áì\x1bÁ{ü\x0foHò]Æ\x7f$ºæ²âªF\x98¯ÂÌ ¤müJc\x08rÿ\x88\x08|g\x8aø\x01!¬°~\x12§\x03=`¼·l.ãÅqW\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.41 - - [19/Feb/2026 17:05:27] "GET / HTTP/1.1" 200 -
+167.94.138.41 - - [19/Feb/2026 17:05:29] code 505, message Invalid HTTP version (2.0)
+167.94.138.41 - - [19/Feb/2026 17:05:29] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.41 - - [19/Feb/2026 17:05:30] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.41 - - [19/Feb/2026 17:05:46] code 400, message Bad request version ('À\x14À')
+167.94.138.41 - - [19/Feb/2026 17:05:46] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03±\x9a<:\x9dyØ\x8bGn\x8bP(6Áò\x91%Åú;~ïªÁ\x8fBOz\x12Î- Y_\x0f\x04<¦±\x8bTÀx\x9dadÅ\x9eÔÑEj!Crk~\x8b\x1cg\x8d\x95{\x9c\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.41 - - [19/Feb/2026 17:05:47] "[33mGET /sitemap.xml HTTP/1.1[0m" 404 -
+198.235.24.108 - - [20/Feb/2026 01:49:13] "GET / HTTP/1.1" 200 -
+209.38.226.123 - - [20/Feb/2026 02:50:09] "GET / HTTP/1.1" 200 -
+209.38.226.123 - - [20/Feb/2026 02:50:10] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+52.167.144.54 - - [20/Feb/2026 07:26:11] "[33mGET /robots.txt HTTP/1.1[0m" 404 -
+40.77.167.116 - - [20/Feb/2026 07:26:17] "GET / HTTP/1.1" 200 -
+205.210.31.36 - - [20/Feb/2026 18:51:16] "GET / HTTP/1.1" 200 -
+167.94.138.174 - - [20/Feb/2026 21:31:09] code 400, message Bad request version ('À\x14À')
+167.94.138.174 - - [20/Feb/2026 21:31:09] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x98j\x08*i½\x9a««\x8e->ÖYOêÏ\x8f\x95sS>1v]\x13qÇ]\x1a~¨ =ífÙ;\x19êâ\x99¾þª\x9fÌ÷\x7f8C¢q\x12^¬WÔRIÞp\x8d£3\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.174 - - [20/Feb/2026 21:31:14] "GET / HTTP/1.1" 200 -
+167.94.138.174 - - [20/Feb/2026 21:31:15] code 505, message Invalid HTTP version (2.0)
+167.94.138.174 - - [20/Feb/2026 21:31:15] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.174 - - [20/Feb/2026 21:31:16] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.174 - - [20/Feb/2026 21:31:26] code 400, message Bad request version ('À\x14À')
+167.94.138.174 - - [20/Feb/2026 21:31:26] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03ÚÔ\x81­DMÃÒyu\x83Y\x98\x95Öà1o\x97R=tH\x0e¥_è\x87\x00q®F |Þ¡°\x94ï¼º\x9cég°oM¬\x82\x80ØÑ§%åñ\x16º«Á_\x9aTM¨\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.174 - - [20/Feb/2026 21:31:28] "[33mGET /sitemap.xml HTTP/1.1[0m" 404 -
+40.77.167.16 - - [20/Feb/2026 21:37:39] "GET / HTTP/1.1" 200 -
+35.203.210.26 - - [21/Feb/2026 10:21:24] code 400, message Bad request version ('À\x13À')
+35.203.210.26 - - [21/Feb/2026 10:21:24] "[31m[1m\x16\x03\x01\x00è\x01\x00\x00ä\x03\x03HyTôDi\x81n6ks¢Oo±å\x18.åì\x8fÎ,\x8f\x8c \x180£)J\x9d \x11\x92oÅ6È)\x16\x07R\x09Ð^ØG/SD²ï\x8c\x88Ô\x87nFÅ¯ÎY\x03\x9a\x00\x1cÀ+À/À,À0Ì©Ì¨À\x09À\x13À[0m" 400 -
+35.203.210.26 - - [21/Feb/2026 10:21:25] code 400, message Bad request syntax ('\x16\x03\x01\x00Ê\x01\x00\x00Æ\x03\x03ãÁø\x0e;b\x1a¯\x8d.éMã')
+35.203.210.26 - - [21/Feb/2026 10:21:25] "[31m[1m\x16\x03\x01\x00Ê\x01\x00\x00Æ\x03\x03ãÁø\x0e;b\x1a¯\x8d.éMã[0m" 400 -
+162.142.125.193 - - [21/Feb/2026 22:29:02] code 400, message Bad request version ('À\x14À')
+162.142.125.193 - - [21/Feb/2026 22:29:02] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x87-ä\x0b;d·úZ¼\x06HæÿÃ°2Î\x9b\x83ø`\x89ã\x06\x8f¡Ê@VÐp ÎÜ\x7f\x9dÜ%\x1d\x10y\x18+\x96XµdÜµË\x05*Ãp\x10®\x87\x96ý>\x8bÚ`Ú\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+162.142.125.193 - - [21/Feb/2026 22:29:04] "GET / HTTP/1.1" 200 -
+162.142.125.193 - - [21/Feb/2026 22:29:11] code 505, message Invalid HTTP version (2.0)
+162.142.125.193 - - [21/Feb/2026 22:29:11] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+162.142.125.193 - - [21/Feb/2026 22:29:13] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+162.142.125.193 - - [21/Feb/2026 22:29:40] code 400, message Bad request version ('À\x14À')
+162.142.125.193 - - [21/Feb/2026 22:29:40] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03Óúòä\x8d´¬\x83½º\x81ÌËÙæ§\x81kØÝß6\x8a7Ïç/\x18(b¥ç ð\x07\x8fÊ«NJ\x05îx\x88A\x8bÚK½\x16ï1CÀÿÚ(s\x9cç\x9b}ÅEo\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+162.142.125.193 - - [21/Feb/2026 22:29:42] "[33mGET /security.txt HTTP/1.1[0m" 404 -
+40.77.167.184 - - [22/Feb/2026 09:30:51] "[33mGET /robots.txt HTTP/1.1[0m" 404 -
+52.167.144.166 - - [22/Feb/2026 09:31:00] "GET / HTTP/1.1" 200 -
+104.248.169.210 - - [22/Feb/2026 12:08:46] "GET / HTTP/1.1" 200 -
+104.248.169.210 - - [22/Feb/2026 12:08:47] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.57 - - [22/Feb/2026 23:30:40] code 400, message Bad request version ('À\x14À')
+167.94.138.57 - - [22/Feb/2026 23:30:41] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x07s\x1e\x19L§ª\x10\x00Ù\x96ägéÝítÖ¸ü\x81þÃ¬V»Ì\x94y\x1cR\x9b \x873\x0bMãª\x9bèv2|\x1c\x0e7U<°y*<ß¡¯.Ë\x96%\x0d·{\x11¤\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.57 - - [22/Feb/2026 23:30:44] "GET / HTTP/1.1" 200 -
+167.94.138.57 - - [22/Feb/2026 23:30:49] code 505, message Invalid HTTP version (2.0)
+167.94.138.57 - - [22/Feb/2026 23:30:49] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.57 - - [22/Feb/2026 23:30:51] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.57 - - [22/Feb/2026 23:31:40] code 400, message Bad request version ('À\x14À')
+167.94.138.57 - - [22/Feb/2026 23:31:40] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03ÿµîÉ\x07¾kdýM\x04]7ti\x0fÉ£L¤\x8d\x06¬\x11>¼Ï\x1cÓåu¼ ³r\x90/¤e)®©I\x03íTfäU®)!'ÍÃ\x84\x9e£F/ObO3\x11\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.57 - - [22/Feb/2026 23:31:42] "[33mGET /security.txt HTTP/1.1[0m" 404 -
+📤 Sending response to frontend: {
+  "status": "success",
+  "query": "dolo 650",
+  "data": {
+    "query": "dolo 650",
+    "medicine_searched": "dolo 650 (paracetamol 650 mg)",
+    "total_results": 1,
+    "current_status": "scheduled",
+    "results": {
+      "gazette_id": "N/A",
+      "pdf_name": "source not identified",
+      "medicine_name": "dolo 650 (paracetamol 650 mg)",
+      "date_of_ban": "N/A",
+      "date_of_uplift": "N/A",
+      "summary": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+      "reasons_for_ban": "N/A",
+      "reasons_for_uplift": "N/A",
+      "drug_category": "single_drug",
+      "population_restriction": "none",
+      "schedule_classification": "Schedule H",
+      "controlled_status": "Not controlled",
+      "source_authority": "Central Drugs Standard Control Organisation (CDSCO)",
+      "act_reference": "Drugs and Cosmetics Act, 1940, Drugs Rules, 1945",
+      "alternative_medicines": "Not specified in documents",
+      "compliance_note": "Requires prescription for dispensing as a Schedule H drug.",
+      "name_image_match": "Yes",
+      "source_banned": "",
+      "source_internet": "",
+      "source_approved": "never banned",
+      "source_approved_internet": "",
+      "approved_gazette": "",
+      "source_scheduled": "internet",
+      "source_scheduled_file": "",
+      "source_scheduled_internet": "cdsco.gov.in, general knowledge of indian drug regulations",
+      "source_controlled": "",
+      "keyword": "paracetamol",
+      "misc": "",
+      "reasoning": "Dolo 650, containing paracetamol 650 mg, is not found in the provided banned drug lists or any internet search results indicating a general ban by the Indian Government. It is widely known and regulated by the Indian government's CDSCO as a Schedule H drug, which means it requires a prescription for dispensing. It is not listed as a controlled substance under the NDPS Act or other similar regulations. No specific NSQ alerts for Dolo 650 as a general product were found. The image is assumed to match the name and bear 'Rx' indicating its Schedule H status.",
+      "itemid": "N/A"
+    },
+    "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+    "sessionId": "pharma-session-001"
+  },
+  "api_response": {
+    "query": "dolo 650",
+    "medicine_searched": "dolo 650 (paracetamol 650 mg)",
+    "total_results": 1,
+    "current_status": "scheduled",
+    "results": {
+      "gazette_id": "N/A",
+      "pdf_name": "source not identified",
+      "medicine_name": "dolo 650 (paracetamol 650 mg)",
+      "date_of_ban": "N/A",
+      "date_of_uplift": "N/A",
+      "summary": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+      "reasons_for_ban": "N/A",
+      "reasons_for_uplift": "N/A",
+      "drug_category": "single_drug",
+      "population_restriction": "none",
+      "schedule_classification": "Schedule H",
+      "controlled_status": "Not controlled",
+      "source_authority": "Central Drugs Standard Control Organisation (CDSCO)",
+      "act_reference": "Drugs and Cosmetics Act, 1940, Drugs Rules, 1945",
+      "alternative_medicines": "Not specified in documents",
+      "compliance_note": "Requires prescription for dispensing as a Schedule H drug.",
+      "name_image_match": "Yes",
+      "source_banned": "",
+      "source_internet": "",
+      "source_approved": "never banned",
+      "source_approved_internet": "",
+      "approved_gazette": "",
+      "source_scheduled": "internet",
+      "source_scheduled_file": "",
+      "source_scheduled_internet": "cdsco.gov.in, general knowledge of indian drug regulations",
+      "source_controlled": "",
+      "keyword": "paracetamol",
+      "misc": "",
+      "reasoning": "Dolo 650, containing paracetamol 650 mg, is not found in the provided banned drug lists or any internet search results indicating a general ban by the Indian Government. It is widely known and regulated by the Indian government's CDSCO as a Schedule H drug, which means it requires a prescription for dispensing. It is not listed as a controlled substance under the NDPS Act or other similar regulations. No specific NSQ alerts for Dolo 650 as a general product were found. The image is assumed to match the name and bear 'Rx' indicating its Schedule H status.",
+      "itemid": "N/A"
+    },
+    "text": "Dolo 650, which contains Paracetamol 650 mg, is not banned by the Indian Government. It is classified as a Schedule H drug by the Central Drugs Standard Control Organisation (CDSCO) under the Drugs Rules, 1945, requiring a prescription for sale.",
+    "sessionId": "pharma-session-001"
+  },
+  "api_url": "https://medical.lehana.in/ncert/api/search",
+  "processing_time": "API call completed"
+}
+📥 Received query from frontend: dolo 650
+📥 Session ID: pharma-session-001
+
+🚀 === BACKEND: Flask → External API ===
+🎯 External API URL: https://medical.lehana.in/ncert/api/search
+🔑 Query: 'dolo 650'
+📝 Session ID: 'pharma-session-001'
+📡 Making external API call...
+📡 Sending request...
+🌐 URL: https://medical.lehana.in/ncert/api/search
+📦 Headers: {'Content-Type': 'application/json'}
+📝 JSON Body: {
+  "query": "dolo 650",
+  "sessionId": "pharma-session-001"
+}
+✅ Response Status: 500
+📋 Response Headers: {'Date': 'Thu, 19 Feb 2026 08:56:07 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': '1110', 'Connection': 'keep-alive', 'access-control-allow-origin': '*', 'etag': 'W/"456-cYwPG7I5qtNSTMp1pWVcG+P2RoM"', 'x-powered-by': 'Express', 'cf-cache-status': 'DYNAMIC', 'Nel': '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}', 'Report-To': '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=lgpspzM1Ao4WKdwihZKXDWHftx9PEbRDvPqdF7TOHfoyeoipnuWW%2FB0ywS46hVkOwvazGlJOAIouRix8iYrpLGPj9nFQCqTuWaSb5VVO4MzXwwGThdX3xak%3D"}]}', 'Server': 'cloudflare', 'CF-RAY': '9d048c8d9bc63d06-BOM', 'alt-svc': 'h3=":443"; ma=86400'}
+❌ API Error: Status 500
+❌ Error Response: {"error":"{\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\\nPlease retry in 53.123164538s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"details\":[{\"@type\":\"type.googleapis.com/google.rpc.Help\",\"links\":[{\"description\":\"Learn more about Gemini API quotas\",\"url\":\"https://ai.google.dev/gemini-api/docs/rate-limits\"}]},{\"@type\":\"type.googleapis.com/google.rpc.QuotaFailure\",\"violations\":[{\"quotaMetric\":\"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\"quotaId\":\"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\"quotaDimensions\":{\"location\":\"global\",\"model\":\"gemini-2.5-flash\"},\"quotaValue\":\"20\"}]},{\"@type\":\"type.googleapis.com/google.rpc.RetryInfo\",\"retryDelay\":\"53s\"}]}}"}
+📤 Sending response to frontend: {
+  "status": "error",
+  "error": "API returned status 500",
+  "prompt": "dolo 650",
+  "api_url": "https://medical.lehana.in/ncert/api/search"
+}
+
+🚀 === BACKEND: Flask → External API ===
+🎯 External API URL: https://medical.lehana.in/ncert/api/search
+🔑 Query: 'Is terfenadine banned in a india'
+📝 Session ID: 'pharma-session-001'
+📡 Making external API call...
+📡 Sending request...
+🌐 URL: https://medical.lehana.in/ncert/api/search
+📦 Headers: {'Content-Type': 'application/json'}
+121.241.109.212 - - [23/Feb/2026 00:22:16] "GET /pharmai/analyze?query=Is%20terfenadine%20banned%20in%20a%20india HTTP/1.1" 200 -
+167.94.138.62 - - [24/Feb/2026 00:31:58] code 400, message Bad request version ('À\x14À')
+167.94.138.62 - - [24/Feb/2026 00:31:58] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x862î9\x10tÓ\x15.\x81j\x1eñ\x94^ÒÊj\x8cù¿QB?ö\x15R\x07\x85ýe5 <\x1eC9\x04@]ÃR²ûº3ê#Ò»\x85\x8a\x0f\x88eº\x1f\x9cÖ\x13 Æ'\x93\x88\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.62 - - [24/Feb/2026 00:32:04] "GET / HTTP/1.1" 200 -
+167.94.138.62 - - [24/Feb/2026 00:32:09] code 505, message Invalid HTTP version (2.0)
+167.94.138.62 - - [24/Feb/2026 00:32:09] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.62 - - [24/Feb/2026 00:32:13] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.62 - - [24/Feb/2026 00:33:34] code 400, message Bad request version ('À\x14À')
+167.94.138.62 - - [24/Feb/2026 00:33:34] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03FmÏWu!DúX×\x84IÝ\x1aòU\x07\x8eå*;¦ÝwÍnÄ\x88xÏ\x02Û 1ëÆ¬Ðæ\x05\x038Êa:]<ù0òÄÖè_¤@-©/"\x96ÉÕÒ\x03\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.62 - - [24/Feb/2026 00:33:37] "[33mGET /security.txt HTTP/1.1[0m" 404 -
+198.235.24.200 - - [24/Feb/2026 01:26:13] "GET / HTTP/1.1" 200 -
+198.235.24.92 - - [24/Feb/2026 16:51:18] "GET / HTTP/1.1" 200 -
+198.199.79.92 - - [24/Feb/2026 22:03:00] "GET / HTTP/1.1" 200 -
+198.199.79.92 - - [24/Feb/2026 22:03:01] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+198.235.24.95 - - [25/Feb/2026 03:28:23] "GET / HTTP/1.1" 200 -
+162.142.125.201 - - [25/Feb/2026 05:13:46] code 400, message Bad request version ('\x81y7<p`&¹\x7f3µ\x99')
+162.142.125.201 - - [25/Feb/2026 05:13:46] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x035ñÖàÚ©\x1fÄ=Ywòà\x11hî\x1b\x04Z'b[\x1eTi®9\x0dgÙïø \x81y7<p`&¹\x7f3µ\x99[0m" 400 -
+162.142.125.201 - - [25/Feb/2026 05:13:47] "GET / HTTP/1.1" 200 -
+162.142.125.201 - - [25/Feb/2026 05:13:49] code 505, message Invalid HTTP version (2.0)
+162.142.125.201 - - [25/Feb/2026 05:13:49] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+162.142.125.201 - - [25/Feb/2026 05:13:50] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+162.142.125.201 - - [25/Feb/2026 05:13:55] code 400, message Bad HTTP/0.9 request type ('\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03')
+162.142.125.201 - - [25/Feb/2026 05:13:55] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x1dðLCÄ\x9c[0m" 400 -
+162.142.125.201 - - [25/Feb/2026 05:13:55] "[33mGET /wiki HTTP/1.1[0m" 404 -
+139.162.119.94 - - [26/Feb/2026 00:59:06] "GET / HTTP/1.0" 200 -
+139.162.119.94 - - [26/Feb/2026 00:59:08] code 400, message Bad request version ('RTSP/1.0')
+139.162.119.94 - - [26/Feb/2026 00:59:08] "[31m[1mOPTIONS / RTSP/1.0[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:14] code 400, message Bad HTTP/0.9 request type ('\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:14] "[31m[1m\x00\x1e\x00\x06\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07version\x04bind\x00\x00\x10\x00\x03[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:19] code 400, message Bad request version ('0.12\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:19] "[31m[1m\x00\x00\x00¤ÿSMBr\x00\x00\x00\x00\x08\x01@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x06\x00\x00\x01\x00\x00\x81\x00\x02PC NETWORK PROGRAM 1.0\x00\x02MICROSOFT NETWORKS 1.03\x00\x02MICROSOFT NETWORKS 3.0\x00\x02LANMAN1.0\x00\x02LM1.2X002\x00\x02Samba\x00\x02NT LANMAN 1.0\x00\x02NT LM 0.12\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:25] code 400, message Bad request version ('GetClassName\x00\x00\x00\x02\x04\x00\x00\x00\x00\x01\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:25] "[31m[1m\x00\x00\x00\x1f\x00\x00\x00\x00\x00\x00\x00\x0cGetClassName\x00\x00\x00\x02\x04\x00\x00\x00\x00\x01\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:25] "OPTIONS / HTTP/1.0" 200 -
+139.162.119.94 - - [26/Feb/2026 00:59:30] code 400, message Bad request version ('\x00\x01\x97|\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:30] "[31m[1m\x80\x00\x00(rþ\x1d\x13\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86 \x00\x01\x97|\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:35] code 400, message Bad HTTP/0.9 request type ('\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:35] "[31m[1m\x00\x0c\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:35] code 400, message Bad request syntax ('HELP')
+139.162.119.94 - - [26/Feb/2026 00:59:35] "[31m[1mHELP[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:36] code 400, message Bad request syntax ('\x16\x03\x00\x00S\x01\x00\x00O\x03\x00?G×÷º,îê²`~ó\x00ý\x82{¹Õ\x96Èw\x9bæÄÛ<=Ûoï\x10n\x00\x00(\x00\x16\x00\x13\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:36] "[31m[1m\x16\x03\x00\x00S\x01\x00\x00O\x03\x00?G×÷º,îê²`~ó\x00ý\x82{¹Õ\x96Èw\x9bæÄÛ<=Ûoï\x10n\x00\x00(\x00\x16\x00\x13\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:36] code 400, message Bad HTTP/0.9 request type ('\x03\x00\x00*%à\x00\x00\x00\x00\x00Cookie:')
+139.162.119.94 - - [26/Feb/2026 00:59:36] "[31m[1m\x03\x00\x00*%à\x00\x00\x00\x00\x00Cookie: mstshash=nmap[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:36] code 400, message Bad request version ('\x00/\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:36] "[31m[1m\x16\x03\x00\x00i\x01\x00\x00e\x03\x03U\x1c§ärandom1random2random3random4\x00\x00\x0c\x00/\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:37] code 400, message Bad request syntax ('\x00\x00\x00qj\x81n0\x81k¡\x03\x02\x01\x05¢\x03\x02\x01')
+139.162.119.94 - - [26/Feb/2026 00:59:37] "[31m[1m\x00\x00\x00qj\x81n0\x81k¡\x03\x02\x01\x05¢\x03\x02\x01[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:42] code 400, message Bad HTTP/0.9 request type ('l\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:42] "[31m[1ml\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:44] "[33mGET /nice%20ports,/Trinity.txt.bak HTTP/1.0[0m" 404 -
+139.162.119.94 - - [26/Feb/2026 00:59:44] code 400, message Bad request syntax ('\x01default')
+139.162.119.94 - - [26/Feb/2026 00:59:44] "[31m[1m\x01default[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:44] code 400, message Bad request syntax ('0\x84\x00\x00\x00-\x02\x01\x07c\x84\x00\x00\x00$\x04\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:44] "[31m[1m0\x84\x00\x00\x00-\x02\x01\x07c\x84\x00\x00\x00$\x04\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:50] code 400, message Bad HTTP/0.9 request type ('0')
+139.162.119.94 - - [26/Feb/2026 00:59:50] "[31m[1m0\x0c\x02\x01\x01`\x07\x02\x01\x02\x04\x00\x80\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:50] code 400, message Bad request version ('SIP/2.0')
+139.162.119.94 - - [26/Feb/2026 00:59:50] "[31m[1mOPTIONS sip:nm SIP/2.0[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 00:59:56] code 400, message Bad request syntax ('TNMP\x04\x00\x00\x00TNME\x00\x00\x04\x00')
+139.162.119.94 - - [26/Feb/2026 00:59:56] "[31m[1mTNMP\x04\x00\x00\x00TNME\x00\x00\x04\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:01] code 400, message Bad HTTP/0.9 request type ('\x03\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:01] "[31m[1m\x03\x00\x00\x0b\x06à\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:06] code 400, message Bad request syntax ('DmdT\x00\x00\x00\x17\x00\x00\x00\x01\x00\x00\x00\x00\x11\x11\x00ÿ\x01ÿ\x13')
+139.162.119.94 - - [26/Feb/2026 01:00:06] "[31m[1mDmdT\x00\x00\x00\x17\x00\x00\x00\x01\x00\x00\x00\x00\x11\x11\x00ÿ\x01ÿ\x13[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:11] code 400, message Bad HTTP/0.9 request type (':\x00\x00\x00/\x00\x00\x00\x02\x00\x00@\x02\x0f\x00\x01\x00=\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00/\x00\x00\x00\x00\x00\x00\x00\x00\x00@')
+139.162.119.94 - - [26/Feb/2026 01:00:11] "[31m[1m:\x00\x00\x00/\x00\x00\x00\x02\x00\x00@\x02\x0f\x00\x01\x00=\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00/\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x1f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:16] code 400, message Bad request syntax ('JRMI\x00\x02K')
+139.162.119.94 - - [26/Feb/2026 01:00:16] "[31m[1mJRMI\x00\x02K[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:22] code 400, message Bad request version ('\x00{\x000\x000\x000\x000\x00A\x00A\x000\x000\x00-\x000\x00A\x000\x000\x00-\x000\x000\x00a\x000\x00-\x00A\x00A\x000\x00A\x00-\x000\x000\x000\x000\x00A\x000\x00A\x00A\x000\x00A\x00A\x000\x00}\x00\x00\x00àmß_')
+139.162.119.94 - - [26/Feb/2026 01:00:22] "[31m[1m\x01\x00\x00ýÎú\x0b° \x00\x00\x00MMS\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x12\x00\x00\x00\x01\x00\x03\x00ðððð\x0b\x00\x04\x00\x1c\x00\x03\x00N\x00S\x00P\x00l\x00a\x00y\x00e\x00r\x00/\x009\x00.\x000\x00.\x000\x00.\x002\x009\x008\x000\x00;\x00 \x00{\x000\x000\x000\x000\x00A\x00A\x000\x000\x00-\x000\x00A\x000\x000\x00-\x000\x000\x00a\x000\x00-\x00A\x00A\x000\x00A\x00-\x000\x000\x000\x000\x00A\x000\x00A\x00A\x000\x00A\x00A\x000\x00}\x00\x00\x00àmß_[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:27] code 400, message Bad HTTP/0.9 request type ('\x00Z\x00\x00\x01\x00\x00\x00\x016\x01,\x00\x00\x08\x00\x7fÿ\x7f\x08\x00\x00\x00\x01\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:27] "[31m[1m\x00Z\x00\x00\x01\x00\x00\x00\x016\x01,\x00\x00\x08\x00\x7fÿ\x7f\x08\x00\x00\x00\x01\x00 \x00:\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x004æ\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00(CONNECT_DATA=(COMMAND=version))[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:32] code 400, message Bad request version ('\x03\x00(\x00\x04ÿ\x08\x00\x01U\x00\x00\x00MSSQLServer\x00H\x0f\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:32] "[31m[1m\x12\x01\x004\x00\x00\x00\x00\x00\x00\x15\x00\x06\x01\x00\x1b\x00\x01\x02\x00\x1c\x00\x0c\x03\x00(\x00\x04ÿ\x08\x00\x01U\x00\x00\x00MSSQLServer\x00H\x0f\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:37] code 400, message Bad request syntax ('\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x0f\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:37] "[31m[1m\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x0f\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:42] code 400, message Bad request syntax ('GIOP\x01\x00\x01\x00$\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00abcdef\x00\x00\x04\x00\x00\x00get\x00\x00\x00\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:42] "[31m[1mGIOP\x01\x00\x01\x00$\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00abcdef\x00\x00\x04\x00\x00\x00get\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:47] code 400, message Bad HTTP/0.9 request type ('AMQP\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:47] "[31m[1mAMQP\x00\x00\x09\x01[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:49] "[33mGET /devicedesc.xml HTTP/1.1[0m" 404 -
+139.162.119.94 - - [26/Feb/2026 01:00:49] code 400, message Bad request syntax ('CONNECT')
+139.162.119.94 - - [26/Feb/2026 01:00:49] "[31m[1mCONNECT[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:00:54] code 400, message Bad HTTP/0.9 request type ('¤\x00\x00\x00\x00\x00\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:00:54] "[31m[1m¤\x00\x00\x00\x00\x00\x00\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00¤\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:01:00] code 400, message Bad request syntax ('\x01\x00\x00\x00')
+139.162.119.94 - - [26/Feb/2026 01:01:00] "[31m[1m\x01\x00\x00\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:01:13] code 400, message Bad request version ('\x00/\x00')
+139.162.119.94 - - [26/Feb/2026 01:01:13] "[31m[1m\x16\x03\x00\x00i\x01\x00\x00e\x03\x03U\x1c§ärandom1random2random3random4\x00\x00\x0c\x00/\x00[0m" 400 -
+139.162.119.94 - - [26/Feb/2026 01:01:15] "GET / HTTP/1.1" 200 -
+139.162.119.94 - - [26/Feb/2026 01:01:31] code 400, message Bad HTTP/0.9 request type ('\x80\x00\x00(\x06ú\x02\x10\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86')
+139.162.119.94 - - [26/Feb/2026 01:01:31] "[31m[1m\x80\x00\x00(\x06ú\x02\x10\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86 \x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+198.235.24.115 - - [26/Feb/2026 05:13:57] "GET / HTTP/1.0" 200 -
+167.94.138.197 - - [26/Feb/2026 09:15:14] code 400, message Bad request version ('À\x14À')
+167.94.138.197 - - [26/Feb/2026 09:15:14] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03Ú+\x01½\x87\x9f\x1f­ÁÌo+/®OR_Ù·"úîúM;ø\x9bî¦0Ú" PÊêí\x19tsB'\x1dúõ´\x10U¾ì5dûÛ¯Úô\x81¦AÝ\x0dMç¢\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.197 - - [26/Feb/2026 09:15:15] "GET / HTTP/1.1" 200 -
+167.94.138.197 - - [26/Feb/2026 09:15:16] code 505, message Invalid HTTP version (2.0)
+167.94.138.197 - - [26/Feb/2026 09:15:16] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.197 - - [26/Feb/2026 09:15:16] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.197 - - [26/Feb/2026 09:15:20] code 400, message Bad request version ('À\x14À')
+167.94.138.197 - - [26/Feb/2026 09:15:20] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x85¦&ùÐk{Y-\x97 \x8aÑ\x9bt«\x8b\x94Y6@?ÁÄ\x9a\x13\x06*¶°\x91\x98 ^x\x18)$É\x15,þQ@Å*d\x9cd­Ï¸Æ/×¢3ç\x84W"\x11\x8d½/\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.197 - - [26/Feb/2026 09:15:20] "[33mGET /sitemap.xml HTTP/1.1[0m" 404 -
+40.77.167.184 - - [26/Feb/2026 09:29:10] "[33mGET /robots.txt HTTP/1.1[0m" 404 -
+157.55.39.63 - - [26/Feb/2026 09:29:20] "GET / HTTP/1.1" 200 -
+61.142.57.14 - - [26/Feb/2026 12:02:05] "GET / HTTP/1.0" 200 -
+61.142.57.14 - - [26/Feb/2026 12:02:11] "[33mPOST /sdk HTTP/1.1[0m" 404 -
+61.142.57.14 - - [26/Feb/2026 12:02:11] "GET / HTTP/1.0" 200 -
+61.142.57.14 - - [26/Feb/2026 12:02:11] "[33mGET /nmaplowercheck1772087530 HTTP/1.1[0m" 404 -
+61.142.57.14 - - [26/Feb/2026 12:02:11] "[33mGET /HNAP1 HTTP/1.1[0m" 404 -
+61.142.57.14 - - [26/Feb/2026 12:02:12] "[33mGET /evox/about HTTP/1.1[0m" 404 -
+61.142.57.14 - - [26/Feb/2026 12:02:12] "HEAD / HTTP/1.1" 200 -
+61.142.57.14 - - [26/Feb/2026 12:02:21] code 400, message Bad request version ('\x8c0v\x89q$!hnM÷\\øé\x15Ø>ë\x16\x00®\x13\x02\x13\x03\x13\x01\x00\x05\x00\x16\x003\x009\x005\x00')
+61.142.57.14 - - [26/Feb/2026 12:02:21] "[31m[1m\x16\x03\x01\x02\x00\x01\x00\x01ü\x03\x03aëc\x13NÔ$aºïõ\x06ïÐ\x17(\x91\x10q\x92\x07Õ¬\x1a§9Äð\x09ÎQN 9\x9fóÕ(x\x8b r!¨\x98\x1c\x8c0v\x89q$!hnM÷\\øé\x15Ø>ë\x16\x00®\x13\x02\x13\x03\x13\x01\x00\x05\x00\x16\x003\x009\x005\x00[0m" 400 -
+61.142.57.14 - - [26/Feb/2026 12:02:32] "GET / HTTP/1.0" 200 -
+61.142.57.14 - - [26/Feb/2026 12:02:32] "GET / HTTP/1.1" 200 -
+134.199.215.60 - - [26/Feb/2026 20:44:32] "GET / HTTP/1.1" 200 -
+134.199.215.60 - - [26/Feb/2026 20:44:34] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+137.184.19.32 - - [27/Feb/2026 01:24:54] "GET / HTTP/1.0" 200 -
+85.95.191.163 - - [27/Feb/2026 01:59:01] code 400, message Bad HTTP/0.9 request type ('\x03\x00\x00+&à\x00\x00\x00\x00\x00Cookie:')
+85.95.191.163 - - [27/Feb/2026 01:59:01] "[31m[1m\x03\x00\x00+&à\x00\x00\x00\x00\x00Cookie: mstshash=hello[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:04:41] "GET / HTTP/1.0" 200 -
+139.162.119.196 - - [27/Feb/2026 05:04:41] code 400, message Bad request version ('RTSP/1.0')
+139.162.119.196 - - [27/Feb/2026 05:04:41] "[31m[1mOPTIONS / RTSP/1.0[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:04:47] code 400, message Bad HTTP/0.9 request type ('\x00')
+139.162.119.196 - - [27/Feb/2026 05:04:47] "[31m[1m\x00\x1e\x00\x06\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07version\x04bind\x00\x00\x10\x00\x03[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:04:52] code 400, message Bad request version ('0.12\x00')
+139.162.119.196 - - [27/Feb/2026 05:04:52] "[31m[1m\x00\x00\x00¤ÿSMBr\x00\x00\x00\x00\x08\x01@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x06\x00\x00\x01\x00\x00\x81\x00\x02PC NETWORK PROGRAM 1.0\x00\x02MICROSOFT NETWORKS 1.03\x00\x02MICROSOFT NETWORKS 3.0\x00\x02LANMAN1.0\x00\x02LM1.2X002\x00\x02Samba\x00\x02NT LANMAN 1.0\x00\x02NT LM 0.12\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:04:57] code 400, message Bad request version ('GetClassName\x00\x00\x00\x02\x04\x00\x00\x00\x00\x01\x00')
+139.162.119.196 - - [27/Feb/2026 05:04:57] "[31m[1m\x00\x00\x00\x1f\x00\x00\x00\x00\x00\x00\x00\x0cGetClassName\x00\x00\x00\x02\x04\x00\x00\x00\x00\x01\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:04:57] "OPTIONS / HTTP/1.0" 200 -
+139.162.119.196 - - [27/Feb/2026 05:05:02] code 400, message Bad request version ('\x00\x01\x97|\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:02] "[31m[1m\x80\x00\x00(rþ\x1d\x13\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86 \x00\x01\x97|\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:07] code 400, message Bad HTTP/0.9 request type ('\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:07] "[31m[1m\x00\x0c\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:08] code 400, message Bad request syntax ('HELP')
+139.162.119.196 - - [27/Feb/2026 05:05:08] "[31m[1mHELP[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:08] code 400, message Bad request syntax ('\x16\x03\x00\x00S\x01\x00\x00O\x03\x00?G×÷º,îê²`~ó\x00ý\x82{¹Õ\x96Èw\x9bæÄÛ<=Ûoï\x10n\x00\x00(\x00\x16\x00\x13\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:08] "[31m[1m\x16\x03\x00\x00S\x01\x00\x00O\x03\x00?G×÷º,îê²`~ó\x00ý\x82{¹Õ\x96Èw\x9bæÄÛ<=Ûoï\x10n\x00\x00(\x00\x16\x00\x13\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:08] code 400, message Bad HTTP/0.9 request type ('\x03\x00\x00*%à\x00\x00\x00\x00\x00Cookie:')
+139.162.119.196 - - [27/Feb/2026 05:05:08] "[31m[1m\x03\x00\x00*%à\x00\x00\x00\x00\x00Cookie: mstshash=nmap[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:08] code 400, message Bad request version ('\x00/\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:08] "[31m[1m\x16\x03\x00\x00i\x01\x00\x00e\x03\x03U\x1c§ärandom1random2random3random4\x00\x00\x0c\x00/\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:09] code 400, message Bad request syntax ('\x00\x00\x00qj\x81n0\x81k¡\x03\x02\x01\x05¢\x03\x02\x01')
+139.162.119.196 - - [27/Feb/2026 05:05:09] "[31m[1m\x00\x00\x00qj\x81n0\x81k¡\x03\x02\x01\x05¢\x03\x02\x01[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:14] code 400, message Bad HTTP/0.9 request type ('l\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:14] "[31m[1ml\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:14] "[33mGET /nice%20ports,/Trinity.txt.bak HTTP/1.0[0m" 404 -
+139.162.119.196 - - [27/Feb/2026 05:05:14] code 400, message Bad request syntax ('\x01default')
+139.162.119.196 - - [27/Feb/2026 05:05:14] "[31m[1m\x01default[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:14] code 400, message Bad request syntax ('0\x84\x00\x00\x00-\x02\x01\x07c\x84\x00\x00\x00$\x04\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:14] "[31m[1m0\x84\x00\x00\x00-\x02\x01\x07c\x84\x00\x00\x00$\x04\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:20] code 400, message Bad HTTP/0.9 request type ('0')
+139.162.119.196 - - [27/Feb/2026 05:05:20] "[31m[1m0\x0c\x02\x01\x01`\x07\x02\x01\x02\x04\x00\x80\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:20] code 400, message Bad request version ('SIP/2.0')
+139.162.119.196 - - [27/Feb/2026 05:05:20] "[31m[1mOPTIONS sip:nm SIP/2.0[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:25] code 400, message Bad request syntax ('TNMP\x04\x00\x00\x00TNME\x00\x00\x04\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:25] "[31m[1mTNMP\x04\x00\x00\x00TNME\x00\x00\x04\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:30] code 400, message Bad HTTP/0.9 request type ('\x03\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:30] "[31m[1m\x03\x00\x00\x0b\x06à\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:35] code 400, message Bad request syntax ('DmdT\x00\x00\x00\x17\x00\x00\x00\x01\x00\x00\x00\x00\x11\x11\x00ÿ\x01ÿ\x13')
+139.162.119.196 - - [27/Feb/2026 05:05:35] "[31m[1mDmdT\x00\x00\x00\x17\x00\x00\x00\x01\x00\x00\x00\x00\x11\x11\x00ÿ\x01ÿ\x13[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:41] code 400, message Bad HTTP/0.9 request type (':\x00\x00\x00/\x00\x00\x00\x02\x00\x00@\x02\x0f\x00\x01\x00=\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00/\x00\x00\x00\x00\x00\x00\x00\x00\x00@')
+139.162.119.196 - - [27/Feb/2026 05:05:41] "[31m[1m:\x00\x00\x00/\x00\x00\x00\x02\x00\x00@\x02\x0f\x00\x01\x00=\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00/\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x1f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:46] code 400, message Bad request syntax ('JRMI\x00\x02K')
+139.162.119.196 - - [27/Feb/2026 05:05:46] "[31m[1mJRMI\x00\x02K[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:51] code 400, message Bad request version ('\x00{\x000\x000\x000\x000\x00A\x00A\x000\x000\x00-\x000\x00A\x000\x000\x00-\x000\x000\x00a\x000\x00-\x00A\x00A\x000\x00A\x00-\x000\x000\x000\x000\x00A\x000\x00A\x00A\x000\x00A\x00A\x000\x00}\x00\x00\x00àmß_')
+139.162.119.196 - - [27/Feb/2026 05:05:51] "[31m[1m\x01\x00\x00ýÎú\x0b° \x00\x00\x00MMS\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x12\x00\x00\x00\x01\x00\x03\x00ðððð\x0b\x00\x04\x00\x1c\x00\x03\x00N\x00S\x00P\x00l\x00a\x00y\x00e\x00r\x00/\x009\x00.\x000\x00.\x000\x00.\x002\x009\x008\x000\x00;\x00 \x00{\x000\x000\x000\x000\x00A\x00A\x000\x000\x00-\x000\x00A\x000\x000\x00-\x000\x000\x00a\x000\x00-\x00A\x00A\x000\x00A\x00-\x000\x000\x000\x000\x00A\x000\x00A\x00A\x000\x00A\x00A\x000\x00}\x00\x00\x00àmß_[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:05:56] code 400, message Bad HTTP/0.9 request type ('\x00Z\x00\x00\x01\x00\x00\x00\x016\x01,\x00\x00\x08\x00\x7fÿ\x7f\x08\x00\x00\x00\x01\x00')
+139.162.119.196 - - [27/Feb/2026 05:05:56] "[31m[1m\x00Z\x00\x00\x01\x00\x00\x00\x016\x01,\x00\x00\x08\x00\x7fÿ\x7f\x08\x00\x00\x00\x01\x00 \x00:\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x004æ\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00(CONNECT_DATA=(COMMAND=version))[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:01] code 400, message Bad request version ('\x03\x00(\x00\x04ÿ\x08\x00\x01U\x00\x00\x00MSSQLServer\x00H\x0f\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:01] "[31m[1m\x12\x01\x004\x00\x00\x00\x00\x00\x00\x15\x00\x06\x01\x00\x1b\x00\x01\x02\x00\x1c\x00\x0c\x03\x00(\x00\x04ÿ\x08\x00\x01U\x00\x00\x00MSSQLServer\x00H\x0f\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:06] code 400, message Bad request syntax ('\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x0f\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:06] "[31m[1m\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x0f\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:11] code 400, message Bad request syntax ('GIOP\x01\x00\x01\x00$\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00abcdef\x00\x00\x04\x00\x00\x00get\x00\x00\x00\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:11] "[31m[1mGIOP\x01\x00\x01\x00$\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00abcdef\x00\x00\x04\x00\x00\x00get\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:16] code 400, message Bad HTTP/0.9 request type ('AMQP\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:16] "[31m[1mAMQP\x00\x00\x09\x01[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:17] "[33mGET /devicedesc.xml HTTP/1.1[0m" 404 -
+139.162.119.196 - - [27/Feb/2026 05:06:17] code 400, message Bad request syntax ('CONNECT')
+139.162.119.196 - - [27/Feb/2026 05:06:17] "[31m[1mCONNECT[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:22] code 400, message Bad HTTP/0.9 request type ('¤\x00\x00\x00\x00\x00\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:22] "[31m[1m¤\x00\x00\x00\x00\x00\x00\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00¤\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:27] code 400, message Bad request syntax ('\x01\x00\x00\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:27] "[31m[1m\x01\x00\x00\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:28] code 400, message Bad request version ('\x00/\x00')
+139.162.119.196 - - [27/Feb/2026 05:06:28] "[31m[1m\x16\x03\x00\x00i\x01\x00\x00e\x03\x03U\x1c§ärandom1random2random3random4\x00\x00\x0c\x00/\x00[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:33] "GET / HTTP/1.1" 200 -
+139.162.119.196 - - [27/Feb/2026 05:06:38] code 400, message Bad request version ("\x81DMø\x9c\x95\x065H|6ÁôËôfÚß\x99í\x8eËóÑ3\x91ÄñzGÁÞ\x00\x9c\x13\x02\x13\x03\x13\x01\x003\x009\x005\x00/À,À0\x00£\x00\x9fÌ©Ì¨ÌªÀ¯À\xadÀ£À\x9fÀ]ÀaÀWÀSÀ+À/\x00¢\x00\x9eÀ®À¬À¢À\x9eÀ\\À`ÀVÀRÀ$À(\x00k\x00jÀsÀw\x00Ä\x00ÃÀ#À'\x00g\x00@ÀrÀv\x00¾\x00½À")
+139.162.119.196 - - [27/Feb/2026 05:06:38] "[31m[1m\x16\x03\x01\x02\x00\x01\x00\x01ü\x03\x03\x1c6»Í®\x01û\x09¬\x83}dû,HK¬O(òÓµî~3/)¤\x0fl$\x84 \x81DMø\x9c\x95\x065H|6ÁôËôfÚß\x99í\x8eËóÑ3\x91ÄñzGÁÞ\x00\x9c\x13\x02\x13\x03\x13\x01\x003\x009\x005\x00/À,À0\x00£\x00\x9fÌ©Ì¨ÌªÀ¯À­À£À\x9fÀ]ÀaÀWÀSÀ+À/\x00¢\x00\x9eÀ®À¬À¢À\x9eÀ\\À`ÀVÀRÀ$À(\x00k\x00jÀsÀw\x00Ä\x00ÃÀ#À'\x00g\x00@ÀrÀv\x00¾\x00½À[0m" 400 -
+139.162.119.196 - - [27/Feb/2026 05:06:40] code 400, message Bad HTTP/0.9 request type ('\x80\x00\x00(&6\x15h\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86')
+139.162.119.196 - - [27/Feb/2026 05:06:40] "[31m[1m\x80\x00\x00(&6\x15h\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86 \x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00[0m" 400 -
+183.57.177.131 - - [27/Feb/2026 07:38:58] "GET / HTTP/1.1" 200 -
+183.57.177.131 - - [27/Feb/2026 07:39:00] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+68.183.135.94 - - [27/Feb/2026 10:15:52] "GET / HTTP/1.1" 200 -
+162.142.125.211 - - [27/Feb/2026 10:25:34] code 400, message Bad HTTP/0.9 request type ('\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x16\x91\x8eîçEì\x9dlÔ\x96\xadtz')
+162.142.125.211 - - [27/Feb/2026 10:25:34] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03\x16\x91\x8eîçEì\x9dlÔ\x96­tz\x09ip_\x9cüÛX\x08Óöù[0m" 400 -
+162.142.125.211 - - [27/Feb/2026 10:25:35] "GET / HTTP/1.1" 200 -
+162.142.125.211 - - [27/Feb/2026 10:25:37] code 505, message Invalid HTTP version (2.0)
+162.142.125.211 - - [27/Feb/2026 10:25:37] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+162.142.125.211 - - [27/Feb/2026 10:25:38] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+162.142.125.211 - - [27/Feb/2026 10:25:55] code 400, message Bad request version ('À\x14À')
+162.142.125.211 - - [27/Feb/2026 10:25:55] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03Ê·^ý\x8e/¨ZjçéVl3\x8cÞ\x84\x0f¯UõÐ¬x³=æ\x9aZø\x834 ÂÐ# K¹\x82©\x90ù\x8eÙ/uPduðDZA\x90\x0bR÷r;³®à]\x0c\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+162.142.125.211 - - [27/Feb/2026 10:25:57] "[33mGET /security.txt HTTP/1.1[0m" 404 -
+167.94.138.41 - - [28/Feb/2026 15:22:49] code 400, message Bad request version ('À\x14À')
+167.94.138.41 - - [28/Feb/2026 15:22:49] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03iJ¼å)\x99ä"þTÒl\x9d´YW¯'-\x84ú~\x1aA#\x8bõ\x8f\x11º\x8d* /à\x8d¯<\x8aýÒgÛ'æ¯|PX·ÍiÄ\x90¼w\x99éÍoXYûª­\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.41 - - [28/Feb/2026 15:22:52] "GET / HTTP/1.1" 200 -
+167.94.138.41 - - [28/Feb/2026 15:22:59] code 505, message Invalid HTTP version (2.0)
+167.94.138.41 - - [28/Feb/2026 15:22:59] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+167.94.138.41 - - [28/Feb/2026 15:23:03] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+167.94.138.41 - - [28/Feb/2026 15:24:54] code 400, message Bad request version ('À\x14À')
+167.94.138.41 - - [28/Feb/2026 15:24:54] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03CuÙÑzÅ\x8e7¤Ão-\x9dó\x7f\x0dÒis(:\x1dA>,\x85\x00¬\x9eö`p $¢\x1frG»\x14ß:?Oä[mº\x05aº»\x00\x03\x8b\x9fBsøñâh\x98\x11°\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+167.94.138.41 - - [28/Feb/2026 15:25:07] "[33mGET /.well-known/security.txt HTTP/1.1[0m" 404 -
+205.210.31.175 - - [28/Feb/2026 15:57:59] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [28/Feb/2026 16:20:42] "[33mGET /ws/screencast HTTP/1.1[0m" 404 -
+180.95.238.21 - - [28/Feb/2026 16:47:11] "GET / HTTP/1.1" 200 -
+1.24.16.203 - - [28/Feb/2026 16:47:49] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [28/Feb/2026 17:23:50] "GET /health HTTP/1.1" 200 -
+205.210.31.162 - - [01/Mar/2026 05:19:03] "GET / HTTP/1.1" 200 -
+50.18.95.208 - - [01/Mar/2026 06:29:51] "GET / HTTP/1.1" 200 -
+162.216.150.175 - - [01/Mar/2026 15:00:37] code 400, message Bad request version ('À\x13À')
+162.216.150.175 - - [01/Mar/2026 15:00:37] "[31m[1m\x16\x03\x01\x00è\x01\x00\x00ä\x03\x03hVé\x95\x802Y}\x1e*\x0e[Ð\x85¯`n6Ù\x06Y{"`yrFÔÍy«E \x93\x8cS«\x05l\x92\x12\x8b#y.ÌÆ\x0e\x85\x96¥V\x14ÔOg'Y\x93\x15ÏÌq\x90q\x00\x1cÀ+À/À,À0Ì©Ì¨À\x09À\x13À[0m" 400 -
+162.216.150.175 - - [01/Mar/2026 15:00:38] code 400, message Bad request version ('À(À$À\x14À')
+162.216.150.175 - - [01/Mar/2026 15:00:38] "[31m[1m\x16\x03\x01\x00Ê\x01\x00\x00Æ\x03\x03þPä¥Â\x04\x06\x9a\x8eH\x19Æ^ü$\x97:àSÄ]g 1Ädæô\x96\x90\x14Û\x00\x00hÌ\x14Ì\x13À/À+À0À,À\x11À\x07À'À#À\x13À\x09À(À$À\x14À[0m" 400 -
+162.142.125.45 - - [01/Mar/2026 16:34:03] code 400, message Bad request version ('»à\x07¡\x15ª')
+162.142.125.45 - - [01/Mar/2026 16:34:03] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03ú±\x1e³ú\x09ÉµX®DéWcÑ/\x1a%UTÆÑ\x94fMÄÓü1±\x99\x19 »à\x07¡\x15ª[0m" 400 -
+162.142.125.45 - - [01/Mar/2026 16:34:07] "GET / HTTP/1.1" 200 -
+162.142.125.45 - - [01/Mar/2026 16:34:11] code 505, message Invalid HTTP version (2.0)
+162.142.125.45 - - [01/Mar/2026 16:34:11] "[35m[1mPRI * HTTP/2.0[0m" 505 -
+162.142.125.45 - - [01/Mar/2026 16:34:13] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+162.142.125.45 - - [01/Mar/2026 16:34:46] code 400, message Bad request version ('À\x14À')
+162.142.125.45 - - [01/Mar/2026 16:34:46] "[31m[1m\x16\x03\x01\x00î\x01\x00\x00ê\x03\x03Q^¨[a\x9f¬.¼\x8d\x19µl\x81^\x1fò\x09\x91\x92.ª½!(ÔNVB7\x80y ¿ÿlí3K3Vjý05\x10\x1292.\x08\\Kÿn\x1d¡\x95ä\x9b\x8fÓl\x05\x09\x00&Ì¨Ì©À/À0À+À,À\x13À\x09À\x14À[0m" 400 -
+162.142.125.45 - - [01/Mar/2026 16:34:49] "[33mGET /security.txt HTTP/1.1[0m" 404 -
+167.99.59.107 - - [01/Mar/2026 19:37:05] "GET / HTTP/1.1" 200 -
+167.99.59.107 - - [01/Mar/2026 19:37:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -

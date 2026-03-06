@@ -11,6 +11,7 @@ An advanced **Retrieval Augmented Generation (RAG)** system specifically designe
 - [Installation](#-installation)
 - [Configuration](#-configuration)
 - [Usage](#-usage)
+- [Docker Deployment](#-docker-deployment)
 - [API Reference](#-api-reference)
 - [File Descriptions](#-file-descriptions)
 - [Regulatory Categories](#-regulatory-categories)
@@ -109,6 +110,45 @@ pharma-rag-query/
    ```
 
    The application will be available at `http://localhost:8001`
+
+## 🐳 Docker Deployment
+
+### Quick Start (PharmAI Portal)
+
+```bash
+cd /root/repo/pharmai_portal
+docker compose up -d --build
+```
+
+### Service
+
+| Service | URL | Internal Port | Description |
+|---------|-----|---------------|-------------|
+| pharmai-portal | https://pharmai.lehana.in | 5000 | Flask-based PharmAI web portal |
+
+### Routing Model
+
+- Traefik routing is configured via Docker labels (auto-discovery), not file-provider backend IP mappings.
+- Router rule supports both domains: `pharmai.lehana.in` and `pharmai.aidhunik.com`.
+- Health endpoint: `/health` (also available as `/pharmai/health`).
+
+### Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+Minimum portal variables:
+
+- `PORT=5000`
+- `FLASK_DEBUG=false`
+- `SERVER_HOST=backend-pharmai-portal`
+
+### Logs
+
+```bash
+docker compose logs -f pharmai-portal
+```
 
 ### Virtual Environment Deployment
 

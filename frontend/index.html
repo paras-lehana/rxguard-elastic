@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaSafe - Drug & Medicine Validation Portal</title>
+<title>Pharmai - Drug & Medicine Validation Portal</title>
 <meta name="description" content="AI-powered pharmaceutical safety validation with banned drug detection" />
 
 <!-- Descope Web Component -->
@@ -1505,7 +1505,7 @@
     <div class="auth-modal-content">
         <button id="closeModal" class="auth-modal-close">&times;</button>
         
-        <h2 class="auth-modal-title">Welcome to PharmaSafe</h2>
+        <h2 class="auth-modal-title">Welcome to Pharmai</h2>
         <p class="auth-modal-description">
             Sign in to access advanced pharmaceutical safety validation and banned drug detection.
         </p>
@@ -1542,7 +1542,7 @@
 <div class="main-container">
     <!-- Header -->
     <div class="header">
-        <div class="title">PharmaSafe</div>
+        <div class="title">Pharmai</div>
         <div class="subtitle">Advanced Drug & Medicine Safety Portal</div>
         <div class="tagline">
             <span id="typewriter" class="typewriter"></span>
@@ -1595,44 +1595,44 @@
         </div>
 
         <div class="templates-grid">
-            <div class="template-card" data-query="What are the penalties for manufacturing banned drugs and what are the compliance requirements?">
+            <div class="template-card" data-query="Is terfenadine banned in a india">
                 <div class="template-content">
-                    <div class="template-icon">⚖️</div>
+                    <div class="template-icon">🚫</div>
                     <div class="template-text">
                         <div class="template-category">
-                            Legal Compliance
+                            Banned Drugs
                             <span class="safety-tag">Critical</span>
                         </div>
-                        <div class="template-title">Drug Manufacturing Penalties</div>
-                        <div class="template-description">Learn about legal penalties for manufacturing banned drugs and regulatory compliance requirements.</div>
+                        <div class="template-title">Terfenadine - Ban Status India</div>
+                        <div class="template-description">Check if Terfenadine is banned in India according to CDSCO regulations.</div>
                     </div>
                 </div>
             </div>
 
-            <div class="template-card" data-query="Check if Thalidomide is banned or restricted in pregnancy">
+            <div class="template-card" data-query="composition of Paracetamol and Pentazocin is banned in india?">
                 <div class="template-content">
-                    <div class="template-icon">🤰</div>
+                    <div class="template-icon">💊</div>
                     <div class="template-text">
                         <div class="template-category">
-                            Pregnancy Safety
+                            Drug Composition
                             <span class="safety-tag">High Risk</span>
                         </div>
-                        <div class="template-title">Thalidomide - Pregnancy Risk</div>
-                        <div class="template-description">Analyze Thalidomide safety during pregnancy and breastfeeding periods.</div>
+                        <div class="template-title">Paracetamol + Pentazocin Ban</div>
+                        <div class="template-description">Verify if the combination of Paracetamol and Pentazocin is banned in India.</div>
                     </div>
                 </div>
             </div>
 
-            <div class="template-card" data-query="Verify if Oxycodone is approved by FDA and not on the banned list">
+            <div class="template-card" data-query="Amidopyrine is banned in India?">
                 <div class="template-content">
-                    <div class="template-icon">✅</div>
+                    <div class="template-icon">⚠️</div>
                     <div class="template-text">
                         <div class="template-category">
                             Regulatory Status
                             <span class="safety-tag">Essential</span>
                         </div>
-                        <div class="template-title">Oxycodone - FDA Status</div>
-                        <div class="template-description">Check Oxycodone regulatory approval status and controlled substance classification.</div>
+                        <div class="template-title">Amidopyrine - Ban Status</div>
+                        <div class="template-description">Check if Amidopyrine is banned in India according to regulatory guidelines.</div>
                     </div>
                 </div>
             </div>
@@ -2789,13 +2789,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('Error loading documents:', error);
-            
-            // Show fallback/demo documents
-            console.log('Using fallback demo documents');
-            allDocuments = getDemoDocuments();
+
+            // Do not show mock/demo data when API fails.
+            // Keep behavior explicit so users immediately see backend issues.
+            allDocuments = [];
             displayDocuments(allDocuments);
-            
-            auth.showNotification('Using demo documents - API connection unavailable', 'warning');
+
+            if (window.auth && typeof window.auth.showNotification === 'function') {
+                auth.showNotification('Documents API unavailable. Please try again later.', 'error');
+            }
         }
         
         loadingEl.style.display = 'none';

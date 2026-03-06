@@ -7,7 +7,7 @@ This document provides complete API integration details for the PharmaSafe pharm
 
 ## 🌐 **Base URL**
 ```
-https://medical.lehana.in/ncert
+https://api.lehana.in/ai/gemini-file-search
 ```
 
 ---
@@ -34,7 +34,7 @@ https://medical.lehana.in/ncert
 
 **Example cURL:**
 ```bash
-curl -X POST https://medical.lehana.in/ncert/api/search \
+curl -X POST https://api.lehana.in/ai/gemini-file-search/api/search \
   -H "Content-Type: application/json" \
   -d '{
     "query": "Is paracetamol banned in India?",
@@ -115,7 +115,7 @@ curl -X POST https://medical.lehana.in/ncert/api/search \
 
 **Example cURL:**
 ```bash
-curl -X POST https://medical.lehana.in/ncert/api/index \
+curl -X POST https://api.lehana.in/ai/gemini-file-search/api/index \
   -F "file=@banned-drugs-cdsco.pdf" \
   -F 'metadata={"source": "CDSCO", "type": "banned_drugs_list", "year": "2024"}'
 ```
@@ -150,7 +150,7 @@ curl -X POST https://medical.lehana.in/ncert/api/index \
 
 **Example cURL:**
 ```bash
-curl -X GET https://medical.lehana.in/ncert/api/documents
+curl -X GET https://api.lehana.in/ai/gemini-file-search/api/documents
 ```
 
 **Response Format:**
@@ -210,7 +210,7 @@ For each document, show:
 
 **Example cURL:**
 ```bash
-curl -X POST https://medical.lehana.in/ncert/api/documents/delete \
+curl -X POST https://api.lehana.in/ai/gemini-file-search/api/documents/delete \
   -H "Content-Type: application/json" \
   -d '{"documentId": "fileSearchStores/abc123/documents/xyz789"}'
 ```
@@ -243,7 +243,7 @@ curl -X POST https://medical.lehana.in/ncert/api/documents/delete \
 
 **Example cURL:**
 ```bash
-curl -X DELETE https://medical.lehana.in/ncert/api/documents/all
+curl -X DELETE https://api.lehana.in/ai/gemini-file-search/api/documents/all
 ```
 
 **Response Format:**
@@ -467,7 +467,7 @@ Currently, these APIs are **open** (no authentication required). If your app use
 // Example using fetch/axios
 const searchMedicine = async (query) => {
   try {
-    const response = await fetch('https://medical.lehana.in/ncert/api/search', {
+    const response = await fetch('https://api.lehana.in/ai/gemini-file-search/api/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -530,7 +530,7 @@ function displayResults(data) {
 For any integration issues or questions:
 - Test all endpoints using the provided cURL examples
 - Check response format matches documented structure
-- Verify base URL is correct: `https://medical.lehana.in/ncert`
+- Verify base URL is correct: `https://api.lehana.in/ai/gemini-file-search`
 
 ---
 
@@ -552,4 +552,4 @@ Before deploying, verify:
 
 **Last Updated:** February 17, 2026
 **API Version:** Production v1.0
-**Base URL:** https://medical.lehana.in/ncert
+**Base URL:** https://api.lehana.in/ai/gemini-file-search

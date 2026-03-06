@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PharmaSafe - Analysis Results</title>
+    <title>Pharmai - Analysis Results</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -762,6 +762,60 @@
             }
         }
 
+        function extractRegulatoryDetailsFromText(text) {
+            if (!text || typeof text !== 'string') return [];
+
+            const details = [];
+            const normalizedText = text.trim();
+
+            if (/\bnot\s+banned\b/i.test(normalizedText)) {
+                details.push({ label: 'Current Status', value: 'Not Banned' });
+            } else if (/\bbanned\b/i.test(normalizedText)) {
+                details.push({ label: 'Current Status', value: 'Banned' });
+            }
+
+            const scheduleMatch = normalizedText.match(/\bSchedule\s+[A-Z0-9-]+\b/i);
+            if (scheduleMatch) {
+                details.push({ label: 'Schedule Classification', value: scheduleMatch[0] });
+            }
+
+            const authorityMatch = normalizedText.match(/\b(CDSCO|Central Drugs Standard Control Organisation|DCGI|FSSAI|NPPA)\b/i);
+            if (authorityMatch) {
+                details.push({ label: 'Regulatory Authority', value: authorityMatch[0] });
+            }
+
+            const legalBasisMatch = normalizedText.match(/\b(Drugs\s*(?:and|&)\s*Cosmetics\s*Act,?\s*1940|Drugs\s*Rules,?\s*1945)\b/i);
+            if (legalBasisMatch) {
+                details.push({ label: 'Legal Basis', value: legalBasisMatch[0] });
+            }
+
+            if (/\brequires?\s+(?:a\s+)?prescription\b|\bprescription\s+required\b/i.test(normalizedText)) {
+                details.push({ label: 'Prescription Requirement', value: 'Prescription Required' });
+            } else if (/\bover-the-counter\b|\botc\b/i.test(normalizedText)) {
+                details.push({ label: 'Prescription Requirement', value: 'Over-the-Counter (OTC)' });
+            }
+
+            return details;
+        }
+
+        function formatRegulatoryDetailsBlock(details) {
+            if (!Array.isArray(details) || details.length === 0) return '';
+
+            let html = '<div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(220, 38, 38, 0.3);">';
+            html += '<h4 style="color: #f59e0b; margin: 0 0 1rem 0; font-size: 1.1rem;">📊 Regulatory Details:</h4>';
+            html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+
+            details.forEach((item) => {
+                html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem; border-radius: 8px;">
+                    <div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">${item.label}</div>
+                    <div style="color: #e2e8f0; font-size: 0.95rem;">${item.value}</div>
+                </div>`;
+            });
+
+            html += '</div></div>';
+            return html;
+        }
+
         function formatAPIResponse(response) {
             console.log('🎨 Formatting response:', response);
             
@@ -772,6 +826,33 @@
             // If it's an object (parsed JSON), format it nicely
             if (typeof response === 'object') {
                 let formatted = '<div style="font-size: 1rem; line-height: 1.8;">';
+
+                // If API returns both narrative text and structured fields,
+                // show BOTH (text summary + regulatory details).
+                const hasStructuredDetails = !!(
+                    response.medicine_searched ||
+                    response.current_status ||
+                    response.results ||
+                    response.summary ||
+                    response.disclaimer
+                );
+
+                if (typeof response.text === 'string' && response.text.trim()) {
+                    if (!hasStructuredDetails) {
+                        const extractedDetails = extractRegulatoryDetailsFromText(response.text);
+                        return `<div style="font-size: 1rem; line-height: 1.8; color: #e2e8f0; margin-bottom: 1rem;">${response.text.replace(/\n/g, '<br>')}</div>${formatRegulatoryDetailsBlock(extractedDetails)}`;
+                    }
+
+                    formatted += `<div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.08)); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.25rem; border: 1px solid rgba(59, 130, 246, 0.25);">
+                        <h4 style="color: #60a5fa; margin: 0 0 0.75rem 0; font-size: 1.05rem;">📝 Search Summary</h4>
+                        <p style="color: #e2e8f0; margin: 0; line-height: 1.75;">${response.text.replace(/\n/g, '<br>')}</p>
+                    </div>`;
+
+                    const extractedDetails = extractRegulatoryDetailsFromText(response.text);
+                    if (extractedDetails.length > 0 && !response.results) {
+                        formatted += formatRegulatoryDetailsBlock(extractedDetails);
+                    }
+                }
                 
                 // Display medicine information if available
                 if (response.medicine_searched) {
@@ -872,6 +953,9 @@
             
             // Convert to string if it's not already
             let responseStr = typeof response === 'string' ? response : JSON.stringify(response, null, 2);
+
+            const extractedDetails = extractRegulatoryDetailsFromText(responseStr);
+            const extractedDetailsHtml = formatRegulatoryDetailsBlock(extractedDetails);
             
             // Simple formatting - just convert line breaks to HTML
             let formatted = responseStr.replace(/\n/g, '<br>');
@@ -880,7 +964,7 @@
             formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
             
-            return formatted;
+            return `${formatted}${extractedDetailsHtml}`;
         }
 
         function updateResultsBasedOnQuery() {
