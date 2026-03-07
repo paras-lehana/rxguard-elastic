@@ -22,12 +22,10 @@ Endpoints:
   GET  /health                 → Health check
 """
 
-from flask import Flask, send_from_directory, request, redirect, jsonify
+from flask import Flask, render_template_string, request, redirect, jsonify
 import os
 import requests
 import json
-import base64
-import tempfile
 from werkzeug.utils import secure_filename
 import time
 
@@ -43,11 +41,10 @@ PHARMA_INSIGHT_URL = os.getenv('PHARMA_INSIGHT_URL', '')
 SARVAM_BASE = 'https://api.sarvam.ai'
 
 # ─── Flask App ───────────────────────────────────────────────────────────────
-# static_folder='.': Serve CSS/JS/assets from the same dir as app.py
-app = Flask(__name__, static_folder='.', static_url_path='/static')
+app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'pharmai-portal-secret-2026')
 app.config['UPLOAD_FOLDER'] = '../data'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max for KB uploads
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Create upload directory
 upload_path = os.path.abspath(app.config['UPLOAD_FOLDER'])
@@ -150,32 +147,20 @@ def search_tier1_n8n(query, session_id):
     return None
 
 
-def search_tier2_sarvam(query, history=None, space_context=None):
-    """Tier 2 — Sarvam AI Chat (sarvam-m). Supports conversation history."""
+def search_tier2_sarvam(query):
+    """Tier 2 — Sarvam AI Chat (sarvam-m). Returns dict or None."""
     if not SARVAM_API_KEY:
         return None
     try:
-        # Build messages array with optional history for context-aware follow-ups
-        messages = [{'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT}]
-
-        # Add space-specific system instruction if provided
-        if space_context:
-            messages.append({'role': 'system', 'content': f'Additional context: {space_context}'})
-
-        # Add conversation history for follow-up context
-        if history and isinstance(history, list):
-            for h in history[-8:]:  # Max 8 history entries
-                if h.get('role') in ('user', 'assistant'):
-                    messages.append({'role': h['role'], 'content': h['content'][:500]})
-
-        messages.append({'role': 'user', 'content': query})
-
         res = requests.post(
             f'{SARVAM_BASE}/v1/chat/completions',
             headers=sarvam_headers(),
             json={
                 'model': 'sarvam-m',
-                'messages': messages,
+                'messages': [
+                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
+                    {'role': 'user', 'content': query},
+                ],
                 'temperature': 0.5,
                 'max_tokens': 1024,
             },
@@ -191,12 +176,12 @@ def search_tier2_sarvam(query, history=None, space_context=None):
     return None
 
 
-def search_medicine(query, session_id, history=None, space_context=None):
-    """Execute the full 2-tier search fallback chain with optional context."""
+def search_medicine(query, session_id):
+    """Execute the full 2-tier search fallback chain."""
     result = search_tier1_n8n(query, session_id)
     if result:
         return result
-    result = search_tier2_sarvam(query, history=history, space_context=space_context)
+    result = search_tier2_sarvam(query)
     if result:
         return result
     return {
@@ -209,36 +194,29 @@ def search_medicine(query, session_id, history=None, space_context=None):
     }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  ROUTES — Static File Serving
-# ══════════════════════════════════════════════════════════════════════════════
+# ─── Template loading ────────────────────────────────────────────────────────
+def load_template(name):
+    try:
+        with open(name, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return f"Template {name} not found"
 
-# Serve the main index.html and static assets (CSS, JS) directly.
-# WHY send_from_directory: The new v2 frontend uses external CSS/JS files
-# instead of inline <style>/<script>. render_template_string won't work
-# because the HTML now references relative paths like css/base.css and js/app.js.
 
-FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Pages
+# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/')
 @app.route('/pharmai')
 def index():
-    return send_from_directory(FRONTEND_DIR, 'index.html')
+    return render_template_string(load_template('index.html'))
 
-@app.route('/css/<path:filename>')
-@app.route('/pharmai/css/<path:filename>')
-def serve_css(filename):
-    return send_from_directory(os.path.join(FRONTEND_DIR, 'css'), filename)
 
-@app.route('/js/<path:filename>')
-@app.route('/pharmai/js/<path:filename>')
-def serve_js(filename):
-    return send_from_directory(os.path.join(FRONTEND_DIR, 'js'), filename)
-
-@app.route('/assets/<path:filename>')
-@app.route('/pharmai/assets/<path:filename>')
-def serve_assets(filename):
-    return send_from_directory(os.path.join(FRONTEND_DIR, 'assets'), filename)
+@app.route('/analyze')
+@app.route('/pharmai/analyze')
+def analyze():
+    return render_template_string(load_template('result.html'))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -253,12 +231,10 @@ def api_search():
     data = request.get_json(force=True)
     query = data.get('query') or data.get('prompt', '')
     session_id = data.get('sessionId', f'pharmai-web-{int(time.time())}')
-    history = data.get('history')           # Optional: conversation history for context
-    space_context = data.get('space_context')  # Optional: space persona instruction
     if not query:
         return jsonify({'status': 'error', 'error': 'No query provided'}), 400
-    print(f"[SEARCH] query='{query}' session={session_id} history_len={len(history) if history else 0}")
-    result = search_medicine(query, session_id, history=history, space_context=space_context)
+    print(f"[SEARCH] query='{query}' session={session_id}")
+    result = search_medicine(query, session_id)
     return _cors_json({
         'status': 'success' if result['source'] != 'error' else 'error',
         **result,
@@ -272,40 +248,9 @@ def api_search():
 @app.route('/api/stt', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/stt', methods=['POST', 'OPTIONS'])
 def api_stt():
-    """Speech-to-Text — Sarvam Saaras v3.
-    Accepts either:
-      - multipart/form-data with 'file' field (legacy)
-      - JSON with 'audio' field (base64-encoded) — used by v2 frontend
-    """
+    """Speech-to-Text — Sarvam Saaras v3."""
     if request.method == 'OPTIONS':
         return _cors_preflight()
-
-    # JSON-based request (base64 audio from v2 frontend)
-    if request.is_json:
-        data = request.get_json(force=True)
-        audio_b64 = data.get('audio', '')
-        lang = data.get('language', 'en-IN')
-        if not audio_b64:
-            return jsonify({'error': 'No audio provided'}), 400
-        try:
-            audio_bytes = base64.b64decode(audio_b64)
-            with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as tmp:
-                tmp.write(audio_bytes)
-                tmp_path = tmp.name
-            with open(tmp_path, 'rb') as f:
-                res = requests.post(
-                    f'{SARVAM_BASE}/speech-to-text',
-                    headers={'api-subscription-key': SARVAM_API_KEY},
-                    files={'file': ('audio.webm', f, 'audio/webm')},
-                    data={'model': 'saaras:v3', 'mode': 'transcribe', 'language_code': lang},
-                    timeout=30,
-                )
-            os.unlink(tmp_path)
-            return _cors_json(res.json(), res.status_code)
-        except Exception as e:
-            return _cors_json({'error': str(e)}, 500)
-
-    # Legacy: multipart file upload
     if 'file' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
     audio = request.files['file']
@@ -388,43 +333,9 @@ def api_translate():
 @app.route('/api/ocr', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/ocr', methods=['POST', 'OPTIONS'])
 def api_ocr():
-    """Document OCR — Sarvam parse/document.
-    Accepts either:
-      - multipart/form-data with 'file' field (legacy)
-      - JSON with 'image' field (base64-encoded) — used by v2 frontend
-    """
+    """Document OCR — Sarvam parse/document."""
     if request.method == 'OPTIONS':
         return _cors_preflight()
-
-    # Check if JSON-based request (base64 image from v2 frontend)
-    if request.is_json:
-        data = request.get_json(force=True)
-        image_b64 = data.get('image', '')
-        if not image_b64:
-            return jsonify({'error': 'No image provided'}), 400
-        try:
-            img_bytes = base64.b64decode(image_b64)
-            # Write to temp file for Sarvam API
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                tmp.write(img_bytes)
-                tmp_path = tmp.name
-            with open(tmp_path, 'rb') as f:
-                res = requests.post(
-                    f'{SARVAM_BASE}/parse/document',
-                    headers={'api-subscription-key': SARVAM_API_KEY},
-                    files={'file': ('prescription.jpg', f, 'image/jpeg')},
-                    timeout=60,
-                )
-            os.unlink(tmp_path)
-            rj = res.json()
-            extracted = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
-            if not extracted and isinstance(rj.get('pages'), list):
-                extracted = '\n'.join(p.get('text', '') for p in rj['pages'])
-            return _cors_json({'text': extracted, 'raw': rj})
-        except Exception as e:
-            return _cors_json({'error': str(e)}, 500)
-
-    # Legacy: multipart file upload
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     doc = request.files['file']
@@ -641,9 +552,9 @@ def health():
     return jsonify({
         'status': 'healthy',
         'service': 'PharmAI Portal',
-        'version': '2.1',
+        'version': '2.0',
         'timestamp': time.time(),
-        'features': ['2-tier-search', 'session-history', 'spaces', 'stt', 'tts', 'translate', 'ocr', 'prescription-scan', 'interaction-check', 'doc-analysis', 'kb-upload'],
+        'features': ['2-tier-search', 'stt', 'tts', 'translate', 'ocr', 'interaction-check', 'doc-analysis'],
     })
 
 
@@ -685,7 +596,7 @@ def _cors_json(data, status=200):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    print(f"🚀 PharmAI Portal v2.1 starting on port {port}")
+    print(f"🚀 PharmAI Portal v2.0 starting on port {port}")
     print(f"   Features: 2-tier search, STT, TTS, Translate, OCR, Interaction Check, Doc Analysis")
     print(f"   N8N: {'configured' if PHARMA_INSIGHT_URL else '⚠️  NOT configured'}")
     print(f"   Sarvam: {'configured' if SARVAM_API_KEY else '⚠️  NOT configured'}")

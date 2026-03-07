@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PharmAI Responsive — Media queries for tablet and mobile
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Tablet (768px - 1023px) ─── */
+@media (max-width: 1023px) {
+  .sidebar {
+    /* Sidebar is overlay on tablet */
+    width: var(--sidebar-width);
+    z-index: 850;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .search-bar-fixed {
+    left: 50% !important;
+  }
+
+  .chat-view {
+    padding: 1rem;
+  }
+
+  .template-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+/* ─── Mobile (< 768px) ─── */
+@media (max-width: 767px) {
+  .sidebar {
+    width: 85vw;
+    max-width: 320px;
+  }
+
+  .top-bar .logo {
+    font-size: 1rem;
+  }
+  .top-bar .logo-badge {
+    display: none;
+  }
+
+  .user-name {
+    display: none; /* Hide full name, keep avatar */
+  }
+
+  .landing h1 {
+    font-size: 1.6rem;
+  }
+  .landing .subtitle {
+    font-size: 0.88rem;
+  }
+
+  .template-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .template-card {
+    padding: 0.9rem;
+  }
+
+  .chat-view {
+    padding: 0.75rem 0.5rem 0;
+  }
+
+  .chat-msg.user .msg-bubble {
+    max-width: 85%;
+  }
+  .chat-msg.assistant .msg-bubble {
+    max-width: 92%;
+  }
+
+  .search-bar-fixed {
+    width: 96vw;
+    padding: 0.5rem 0 0.75rem;
+  }
+  .search-input {
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .msg-actions {
+    opacity: 1; /* Always visible on mobile (no hover) */
+  }
+
+  .tool-panel {
+    padding: 1rem 0.75rem;
+  }
+
+  .doc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lang-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .modal-content {
+    width: 95vw;
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+}
+
+/* ─── Small Mobile (< 400px) ─── */
+@media (max-width: 399px) {
+  .landing h1 { font-size: 1.35rem; }
+  .landing .stats-row { gap: 0.4rem; }
+  .landing .stat-pill { font-size: 0.7rem; padding: 0.25rem 0.6rem; }
+  .space-indicator { display: none; }
+}
+
+/* ─── Safe area for notched phones ─── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .search-bar-fixed {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}

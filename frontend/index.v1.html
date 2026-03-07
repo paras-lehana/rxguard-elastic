@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PharmAI — India's Drug Safety AI</title>
+<meta name="description" content="AI-powered pharmaceutical safety validation with Sarvam AI, voice search, and multi-language support" />
+
+<!-- Descope Auth -->
+<script src="https://unpkg.com/@descope/web-component@latest/dist/index.js"></script>
+<script src="https://unpkg.com/@descope/web-js-sdk@latest/dist/index.umd.js"></script>
+<!-- Markdown renderer -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+/* ─── PharmAI Aura Design System ─────────────────────────────────────────── */
+:root {
+  --primary: #0D9488;
+  --primary-dark: #065F55;
+  --primary-light: #14B8A6;
+  --accent: #D97706;
+  --accent-light: #FDE68A;
+  --success: #059669;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --bg-light: #F0FDFA;
+  --bg-dark: #042F2E;
+  --card-bg: rgba(255,255,255,0.85);
+  --card-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.08);
+  --text: #1e293b;
+  --text-light: #64748b;
+  --radius-card: 16px;
+  --radius-pill: 40px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-light);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Auth Header ───────────────────────────────────────────────────────── */
+.auth-header {
+  position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.user-info {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--card-bg); border: 1px solid rgba(13,148,136,0.3);
+  border-radius: var(--radius-pill); padding: 0.5rem 1rem;
+  backdrop-filter: blur(12px); box-shadow: var(--card-shadow);
+}
+.user-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 0.8rem;
+}
+.user-name { color: var(--text); font-size: 0.85rem; font-weight: 600; }
+.auth-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; border: none; padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-pill); cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+}
+.auth-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,148,136,0.4); }
+.logout-btn { background: linear-gradient(135deg, #374151, #1f2937); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+/* ─── Auth Modal ────────────────────────────────────────────────────────── */
+.auth-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden; transition: all 0.3s;
+}
+.auth-modal.active { opacity: 1; visibility: visible; }
+.auth-modal-content {
+  background: white; border-radius: var(--radius-card); padding: 2rem;
+  max-width: 420px; width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  position: relative;
+}
+.auth-modal-close { position: absolute; top:1rem; right:1rem; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); }
+.auth-modal-title { text-align:center; font-size:1.4rem; font-weight:700; color:var(--primary-dark); margin-bottom:0.5rem; }
+.auth-modal-description { text-align:center; color:var(--text-light); margin-bottom:1.5rem; font-size:0.9rem; }
+.descope-container { width:100%; }
+
+/* ─── Hero ──────────────────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; padding: 4rem 2rem 3rem; text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 80%, rgba(255,255,255,0.1), transparent 60%);
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+  border-radius: var(--radius-pill); padding: 0.4rem 1rem;
+  font-size: 0.8rem; font-weight: 600; margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+.hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.75rem; position: relative; }
+.hero p { font-size: 1.15rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2rem; position: relative; }
+@media (max-width:768px) { .hero h1 { font-size:2rem; } .hero p { font-size:1rem; } }
+
+/* ─── Navigation Tabs ───────────────────────────────────────────────────── */
+.nav-tabs {
+  display: flex; justify-content: center; gap: 0.5rem;
+  background: white; padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  flex-wrap: wrap;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.2rem; border: 2px solid transparent;
+  border-radius: var(--radius-pill); background: #f1f5f9;
+  color: var(--text-light); cursor: pointer; font-weight: 600;
+  font-size: 0.85rem; transition: all 0.3s; white-space: nowrap;
+}
+.tab-btn:hover { background: #e2e8f0; color: var(--text); }
+.tab-btn.active {
+  background: var(--primary); color: white; border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+}
+@media (max-width:640px) { .tab-btn { font-size:0.75rem; padding:0.5rem 0.8rem; } }
+
+/* ─── Main Container ────────────────────────────────────────────────────── */
+.main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 8rem; }
+
+/* ─── Tab Panels ────────────────────────────────────────────────────────── */
+.tab-panel { display: none; animation: fadeIn 0.4s ease; }
+.tab-panel.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ─── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg); border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow); backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,0,0,0.06); padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.card-title {
+  font-size: 1.1rem; font-weight: 700; color: var(--primary-dark);
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* ─── Search Bar (Fixed Bottom) ─────────────────────────────────────────── */
+.search-section {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  width: min(90vw, 700px); z-index: 200;
+}
+.search-container {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: white; border: 2px solid var(--primary);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 30px rgba(13,148,136,0.2);
+  padding: 0.4rem 0.4rem 0.4rem 1.2rem;
+  transition: all 0.3s;
+}
+.search-container:focus-within {
+  box-shadow: 0 8px 40px rgba(13,148,136,0.35);
+  border-color: var(--primary-dark);
+}
+.search-input {
+  flex: 1; border: none; outline: none; font-size: 1rem;
+  font-family: inherit; color: var(--text); background: transparent;
+  min-width: 0;
+}
+.search-input::placeholder { color: #94a3b8; }
+
+/* Mic button in search bar */
+.mic-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none;
+  background: #f1f5f9; color: var(--primary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; flex-shrink: 0; font-size: 1.1rem;
+}
+.mic-btn:hover { background: #e2e8f0; }
+.mic-btn.recording { background: var(--danger); color: white; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.1); } }
+
+.search-submit {
+  width: 44px; height: 44px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.3s; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+}
+.search-submit:hover { transform: scale(1.08); }
+
+/* ─── Template Cards Grid ───────────────────────────────────────────────── */
+.template-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem; margin-top: 1.5rem;
+}
+.template-card {
+  background: white; border: 1px solid #e2e8f0; border-radius: var(--radius-card);
+  padding: 1.25rem; cursor: pointer; transition: all 0.3s; position: relative;
+  overflow: hidden;
+}
+.template-card::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  transform: scaleX(0); transition: transform 0.3s; transform-origin: left;
+}
+.template-card:hover { border-color: var(--primary); transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13,148,136,0.12); }
+.template-card:hover::before { transform: scaleX(1); }
+.template-card .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.template-card .label { font-size: 0.7rem; text-transform: uppercase; font-weight: 700;
+  color: var(--primary); letter-spacing: 0.5px; margin-bottom: 0.3rem; }
+.template-card h3 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+.template-card p { font-size: 0.8rem; color: var(--text-light); line-height: 1.4; }
+
+/* ─── Status Badges ─────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.8rem; border-radius: var(--radius-pill);
+  font-size: 0.75rem; font-weight: 700;
+}
+.badge-allowed { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+.badge-banned { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+.badge-restricted { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+.badge-ai { background: #f0fdfa; color: var(--primary); border: 1px solid #99f6e4; }
+
+/* ─── Result Display Area ───────────────────────────────────────────────── */
+#searchResultArea {
+  display: none; margin-top: 1.5rem;
+}
+.result-card {
+  background: white; border-radius: var(--radius-card); padding: 2rem;
+  box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; position: relative;
+}
+.result-card .source-badge { position: absolute; top: 1rem; right: 1rem; }
+.result-actions {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem;
+  padding-top: 1rem; border-top: 1px solid #e2e8f0;
+}
+.action-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.5rem 1rem; border-radius: var(--radius-pill);
+  border: 1px solid #e2e8f0; background: #f8fafc;
+  color: var(--text); font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.action-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.action-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.action-btn.loading::after {
+  content: ''; width:12px; height:12px; border:2px solid currentColor;
+  border-top-color:transparent; border-radius:50%; animation:spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ─── Markdown Content ──────────────────────────────────────────────────── */
+.md-content { line-height: 1.8; color: var(--text); }
+.md-content h1,.md-content h2,.md-content h3 { color: var(--primary-dark); margin: 1rem 0 0.5rem; }
+.md-content strong { color: var(--primary-dark); }
+.md-content ul,.md-content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+.md-content p { margin: 0.5rem 0; }
+.md-content code { background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+
+/* ─── Form Controls ─────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:0.85rem; font-weight:600; color:var(--text); margin-bottom:0.4rem; }
+.form-input {
+  width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0;
+  border-radius: 12px; font-size: 0.95rem; transition: all 0.3s;
+  font-family: inherit; color: var(--text); background: white;
+}
+.form-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(13,148,136,0.1); }
+.form-input::placeholder { color:#94a3b8; }
+select.form-input { cursor:pointer; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white; border: none; border-radius: 12px; font-size: 0.95rem;
+  font-weight: 600; cursor: pointer; transition: all 0.3s; width: 100%;
+  box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(13,148,136,0.4); }
+.btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+/* ─── Upload Zone ───────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed #cbd5e1; border-radius: var(--radius-card);
+  padding: 2rem; text-align: center; cursor: pointer;
+  transition: all 0.3s; background: #f8fafc;
+}
+.upload-zone:hover { border-color: var(--primary); background: #f0fdfa; }
+.upload-zone.dragover { border-color: var(--primary); background: #ccfbf1; }
+.upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.upload-zone .text { font-weight: 600; color: var(--text); }
+.upload-zone .sub { font-size: 0.85rem; color: var(--text-light); margin-top: 0.3rem; }
+
+/* ─── Recent Searches ───────────────────────────────────────────────────── */
+.recent-list { list-style: none; }
+.recent-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9;
+  cursor: pointer; transition: background 0.2s; border-radius: 8px;
+}
+.recent-item:hover { background: #f0fdfa; }
+.recent-query { font-weight: 500; color: var(--text); font-size: 0.9rem; }
+.recent-time { font-size: 0.75rem; color: var(--text-light); }
+
+/* ─── Language Selector ─────────────────────────────────────────────────── */
+.lang-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+.lang-option {
+  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; text-align: center; transition: all 0.2s;
+  font-size: 0.85rem; font-weight: 500;
+}
+.lang-option:hover { border-color: var(--primary); background: #f0fdfa; }
+.lang-option.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+/* ─── Disclaimer ────────────────────────────────────────────────────────── */
+.disclaimer {
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+  padding: 1rem; margin-top: 1rem; font-size: 0.8rem; color: #92400e;
+  display: flex; align-items: flex-start; gap: 0.5rem;
+}
+
+/* ─── Loading ───────────────────────────────────────────────────────────── */
+.loading-overlay {
+  position: fixed; inset:0; background:rgba(255,255,255,0.8);
+  backdrop-filter:blur(4px); z-index:3000;
+  display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:1rem;
+}
+.loading-overlay.active { display:flex; }
+.loading-spinner {
+  width:48px; height:48px; border:4px solid #e2e8f0;
+  border-top-color:var(--primary); border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+.loading-text { color:var(--text-light); font-weight:500; }
+
+/* ─── Document cards ────────────────────────────────────────────────────── */
+.doc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; margin-top:1rem; }
+.doc-card {
+  background:white; border:1px solid #e2e8f0; border-radius:var(--radius-card);
+  padding:1.25rem; transition:all 0.3s;
+}
+.doc-card:hover { border-color:var(--primary); box-shadow:0 4px 12px rgba(13,148,136,0.1); }
+.doc-name { font-weight:600; color:var(--text); margin-bottom:0.5rem; word-break:break-word; }
+.doc-meta { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.75rem; }
+.doc-chip {
+  background:#f1f5f9; padding:0.2rem 0.6rem; border-radius:var(--radius-pill);
+  font-size:0.75rem; color:var(--text-light);
+}
+.doc-delete {
+  padding:0.4rem 0.8rem; background:#fef2f2; color:var(--danger);
+  border:1px solid #fecaca; border-radius:8px; cursor:pointer;
+  font-size:0.8rem; font-weight:600; transition:all 0.2s;
+}
+.doc-delete:hover { background:var(--danger); color:white; }
+
+/* ─── Notification Toast ────────────────────────────────────────────────── */
+.toast {
+  position:fixed; top:80px; right:20px; padding:0.75rem 1.25rem;
+  border-radius:12px; color:white; font-size:0.85rem; font-weight:600;
+  z-index:10000; opacity:0; transform:translateX(100px);
+  transition:all 0.3s; max-width:350px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.15);
+}
+.toast.show { opacity:1; transform:translateX(0); }
+.toast-success { background:var(--success); }
+.toast-error { background:var(--danger); }
+.toast-info { background:var(--primary); }
+.toast-warning { background:var(--warning); }
+
+/* ─── Features Grid ─────────────────────────────────────────────────────── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem; margin-top: 1.5rem;
+}
+.feature-card {
+  background: white; border: 1px solid #e2e8f0; border-radius: var(--radius-card);
+  padding: 1.5rem; text-align: center; transition: all 0.3s;
+}
+.feature-card:hover { border-color: var(--primary); transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(13,148,136,0.12); }
+.feature-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+.feature-title { font-weight: 700; color: var(--primary-dark); margin-bottom: 0.5rem; }
+.feature-desc { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; }
+
+/* ─── Stats ─────────────────────────────────────────────────────────────── */
+.stats-row { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:2rem; position:relative; }
+.stat-pill {
+  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25);
+  border-radius:var(--radius-pill); padding:0.5rem 1.2rem;
+  font-size:0.85rem; font-weight:600; backdrop-filter:blur(10px);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width:8px; }
+::-webkit-scrollbar-track { background:#f1f5f9; }
+::-webkit-scrollbar-thumb { background:var(--primary); border-radius:4px; }
+
+/* ─── Audio player ──────────────────────────────────────────────────────── */
+.audio-player {
+  margin-top:0.75rem; display:none; align-items:center; gap:0.5rem;
+  background:#f0fdfa; padding:0.5rem 1rem; border-radius:var(--radius-pill);
+}
+.audio-player.active { display:flex; }
+</style>
+</head>
+<body>
+
+<!-- Auth Header -->
+<div class="auth-header">
+  <div id="userInfo" class="user-info" style="display:none">
+    <div id="userAvatar" class="user-avatar"></div>
+    <span id="userName" class="user-name"></span>
+    <button id="logoutBtn" class="auth-btn logout-btn">Logout</button>
+  </div>
+  <button id="loginBtn" class="auth-btn">Login / Sign Up</button>
+</div>
+
+<!-- Auth Modal -->
+<div id="authModal" class="auth-modal">
+  <div class="auth-modal-content">
+    <button id="closeModal" class="auth-modal-close">&times;</button>
+    <h2 class="auth-modal-title">Welcome to PharmAI</h2>
+    <p class="auth-modal-description">Sign in to access advanced pharmaceutical safety analysis.</p>
+    <div class="descope-container">
+      <descope-wc project-id="P32OxoFpY0ihVvncEbabQARqzw8I" flow-id="sign-up-or-in-passwords" theme="light"></descope-wc>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">Analyzing...</div>
+</div>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-badge">⚕ Powered by Sarvam AI · CDSCO</div>
+  <h1>India's Drug Safety AI</h1>
+  <p>Check if any medicine is banned, restricted, or allowed in India. Voice search, multi-language support, and AI-powered analysis.</p>
+  <div class="stats-row">
+    <span class="stat-pill">50,000+ Drugs</span>
+    <span class="stat-pill">2,847 Banned</span>
+    <span class="stat-pill">11 Languages</span>
+    <span class="stat-pill">< 2s Response</span>
+  </div>
+</section>
+
+<!-- Navigation Tabs -->
+<nav class="nav-tabs">
+  <button class="tab-btn active" data-tab="search">🔍 AI Search</button>
+  <button class="tab-btn" data-tab="interaction">💊 Drug Interactions</button>
+  <button class="tab-btn" data-tab="scanner">📷 Medicine Scanner</button>
+  <button class="tab-btn" data-tab="docanalysis">🩺 Doc Analysis</button>
+  <button class="tab-btn" data-tab="documents">📋 Documents</button>
+  <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+</nav>
+
+<div class="main">
+
+<!-- ═══════════════ TAB: AI Medicine Search ═══════════════ -->
+<div id="searchPanel" class="tab-panel active">
+
+  <!-- Template Cards -->
+  <div class="template-grid">
+    <div class="template-card" data-query="Is Terfenadine banned in India?">
+      <div class="icon">🚫</div>
+      <div class="label">Banned Drugs</div>
+      <h3>Terfenadine Ban Status</h3>
+      <p>Check CDSCO regulatory status in India</p>
+    </div>
+    <div class="template-card" data-query="Paracetamol and Pentazocin combination is banned in India?">
+      <div class="icon">💊</div>
+      <div class="label">Drug Composition</div>
+      <h3>Paracetamol + Pentazocin</h3>
+      <p>Verify combination ban status</p>
+    </div>
+    <div class="template-card" data-query="Is Amidopyrine banned in India?">
+      <div class="icon">⚠️</div>
+      <div class="label">Regulatory</div>
+      <h3>Amidopyrine Status</h3>
+      <p>Check regulatory guidelines</p>
+    </div>
+    <div class="template-card" data-query="Warfarin dangerous interactions with common drugs">
+      <div class="icon">⚠️</div>
+      <div class="label">Interactions</div>
+      <h3>Warfarin Risks</h3>
+      <p>Identify dangerous drug interactions</p>
+    </div>
+    <div class="template-card" data-query="Is Fentanyl classified as controlled substance in India?">
+      <div class="icon">🔒</div>
+      <div class="label">Controlled</div>
+      <h3>Fentanyl Classification</h3>
+      <p>Controlled substance status</p>
+    </div>
+    <div class="template-card" data-query="Digoxin dosage adjustments for elderly patients">
+      <div class="icon">👴</div>
+      <div class="label">Geriatric</div>
+      <h3>Digoxin Elderly Safety</h3>
+      <p>Dosage adjustments for seniors</p>
+    </div>
+  </div>
+
+  <!-- Search Results Area -->
+  <div id="searchResultArea">
+    <div class="result-card">
+      <div id="resultBadge" class="source-badge"></div>
+      <div id="resultContent" class="md-content"></div>
+      <div class="result-actions">
+        <button class="action-btn" id="ttsBtn" onclick="readAloud()">🔊 Read Aloud</button>
+        <select id="translateLang" class="action-btn" style="border:1px solid #e2e8f0;padding:0.4rem 0.6rem;font-size:0.8rem;cursor:pointer;" onchange="translateResult()">
+          <option value="">🌐 Translate to...</option>
+          <option value="hi-IN">Hindi / हिंदी</option>
+          <option value="ta-IN">Tamil / தமிழ்</option>
+          <option value="te-IN">Telugu / తెలుగు</option>
+          <option value="bn-IN">Bengali / বাংলা</option>
+          <option value="mr-IN">Marathi / मराठी</option>
+          <option value="gu-IN">Gujarati / ગુજરાતી</option>
+          <option value="kn-IN">Kannada / ಕನ್ನಡ</option>
+          <option value="ml-IN">Malayalam / മലയാളം</option>
+          <option value="pa-IN">Punjabi / ਪੰਜਾਬੀ</option>
+          <option value="od-IN">Odia / ଓଡ଼ିଆ</option>
+        </select>
+        <button class="action-btn" onclick="copyResult()">📋 Copy</button>
+      </div>
+      <div id="audioPlayer" class="audio-player">
+        <audio id="ttsAudio" controls style="height:32px;"></audio>
+      </div>
+      <div class="disclaimer" id="resultDisclaimer" style="display:none">
+        ⚠️ <span>AI-powered analysis for informational purposes only. Not a substitute for professional medical advice.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Searches -->
+  <div id="recentSection" class="card" style="margin-top:1.5rem;">
+    <div class="card-title">🕐 Recent Searches</div>
+    <ul id="recentList" class="recent-list">
+      <li style="color:var(--text-light);font-size:0.9rem;padding:0.5rem;">No recent searches yet</li>
+    </ul>
+  </div>
+
+  <!-- Features -->
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-title">AI Drug Search</div>
+      <div class="feature-desc">Real-time banned drug detection across CDSCO regulatory databases</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎙️</div>
+      <div class="feature-title">Voice Search</div>
+      <div class="feature-desc">Speak in any Indian language and search with Sarvam AI</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">11 Languages</div>
+      <div class="feature-desc">Results in Hindi, Tamil, Telugu, Bengali, and more</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📷</div>
+      <div class="feature-title">Medicine Scanner</div>
+      <div class="feature-desc">Upload medicine photo for instant AI identification</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💊</div>
+      <div class="feature-title">Drug Interactions</div>
+      <div class="feature-desc">Check if two medicines are safe to take together</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🩺</div>
+      <div class="feature-title">Doc Analysis</div>
+      <div class="feature-desc">Upload prescriptions, X-rays, blood tests for AI analysis</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: Drug Interaction Checker ═══════════════ -->
+<div id="interactionPanel" class="tab-panel">
+  <div class="card">
+    <div class="card-title">💊 Drug Interaction Checker</div>
+    <p style="color:var(--text-light);margin-bottom:1.5rem;font-size:0.9rem;">
+      Check if two medicines are safe to take together. Enter the names below.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Medicine A</label>
+      <input id="medA" type="text" class="form-input" placeholder="e.g., Warfarin">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Medicine B</label>
+      <input id="medB" type="text" class="form-input" placeholder="e.g., Aspirin">
+    </div>
+    <button class="btn-primary" id="checkInteractionBtn" onclick="checkInteraction()">
+      🔬 Check Interaction
+    </button>
+  </div>
+  <div id="interactionResult" style="display:none;" class="card">
+    <div class="card-title">📋 Interaction Analysis</div>
+    <div id="interactionContent" class="md-content"></div>
+    <div class="disclaimer">
+      ⚠️ <span>Always consult your doctor before combining medicines. This is AI-based guidance only.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: Medicine Scanner (OCR) ═══════════════ -->
+<div id="scannerPanel" class="tab-panel">
+  <div class="card">
+    <div class="card-title">📷 Medicine Scanner</div>
+    <p style="color:var(--text-light);margin-bottom:1rem;font-size:0.9rem;">
+      Upload an image or photo of a medicine package, label, or prescription. AI will extract medicine names and search automatically.
+    </p>
+    <label class="upload-zone" id="ocrZone">
+      <input type="file" id="ocrFileInput" accept="image/*,.pdf" style="display:none">
+      <div class="icon">📸</div>
+      <div class="text">Drop an image or PDF here</div>
+      <div class="sub">Supports: JPG, PNG, WebP, PDF</div>
+    </label>
+    <div id="ocrFileName" style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-light);display:none;"></div>
+    <button class="btn-primary" id="scanBtn" onclick="scanDocument()" style="margin-top:1rem;display:none;">
+      🔍 Scan & Search
+    </button>
+  </div>
+  <div id="ocrResult" style="display:none;" class="card">
+    <div class="card-title">📝 Extracted Text</div>
+    <div id="ocrText" style="background:#f8fafc;padding:1rem;border-radius:8px;font-family:monospace;font-size:0.85rem;white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
+    <button class="btn-primary" style="margin-top:1rem;" onclick="searchOcrText()">🔍 Search Extracted Medicines</button>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: AI Document Analysis ═══════════════ -->
+<div id="docanalysisPanel" class="tab-panel">
+  <div class="card">
+    <div class="card-title">🩺 AI Document Analysis</div>
+    <p style="color:var(--text-light);margin-bottom:1rem;font-size:0.9rem;">
+      Upload a medical document (prescription, blood test, X-ray report, MRI) for AI-powered interpretation.
+    </p>
+    <label class="upload-zone" id="docAnalysisZone">
+      <input type="file" id="docAnalysisInput" accept="image/*,.pdf" style="display:none">
+      <div class="icon">🏥</div>
+      <div class="text">Upload Medical Document</div>
+      <div class="sub">X-Ray, Blood Test, MRI, Prescription</div>
+    </label>
+    <div id="docAnalysisFileName" style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-light);display:none;"></div>
+    <button class="btn-primary" id="analyzeDocBtn" onclick="analyzeDocument()" style="margin-top:1rem;display:none;">
+      🩺 Analyze Document
+    </button>
+  </div>
+  <div id="docAnalysisResult" style="display:none;" class="card">
+    <div class="card-title">📋 AI Analysis</div>
+    <div id="docAnalysisContent" class="md-content"></div>
+    <div class="disclaimer">
+      ⚠️ <span>AI-powered analysis for informational purposes only. Not a substitute for professional medical advice.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: Document Database ═══════════════ -->
+<div id="documentsPanel" class="tab-panel">
+  <div class="card">
+    <div class="card-title">📋 Document Database</div>
+    <p style="color:var(--text-light);margin-bottom:1rem;font-size:0.9rem;">
+      Browse pharmaceutical regulatory documents. Login required to upload.
+    </p>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <input id="docSearchInput" type="text" class="form-input" placeholder="Search documents..." style="flex:1;min-width:200px;">
+      <button class="btn-primary" style="width:auto;" onclick="loadDocuments()">🔄 Refresh</button>
+      <button class="doc-delete" onclick="deleteAllDocs()">🗑️ Delete All</button>
+    </div>
+  </div>
+  <!-- Upload (auth required) -->
+  <div class="card">
+    <div class="card-title">📄 Upload Documents</div>
+    <label class="upload-zone" id="docUploadZone">
+      <input type="file" id="docUploadInput" multiple accept=".pdf" style="display:none">
+      <div class="icon">📋</div>
+      <div class="text" id="docUploadText">Drop PDF documents here</div>
+      <div class="sub">PDF files only</div>
+    </label>
+    <div id="uploadFileList" style="margin-top:0.75rem;display:none;"></div>
+    <button id="uploadSubmitBtn" class="btn-primary" style="margin-top:1rem;display:none;" onclick="uploadDocuments()">
+      📤 Upload & Index
+    </button>
+  </div>
+  <div id="docsLoading" style="text-align:center;padding:2rem;color:var(--text-light);display:none;">
+    <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
+    Loading documents...
+  </div>
+  <div id="docsGrid" class="doc-grid"></div>
+  <div id="noDocs" style="text-align:center;padding:2rem;color:var(--text-light);display:none;">
+    <div style="font-size:2rem;margin-bottom:0.5rem;">📄</div>
+    <p>No documents found</p>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: Settings ═══════════════ -->
+<div id="settingsPanel" class="tab-panel">
+  <div class="card">
+    <div class="card-title">🌐 Language Settings</div>
+    <p style="color:var(--text-light);margin-bottom:1rem;font-size:0.9rem;">
+      Select your preferred language for Text-to-Speech and voice search.
+    </p>
+    <div class="lang-grid" id="langGrid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">ℹ️ About PharmAI</div>
+    <p style="color:var(--text-light);font-size:0.9rem;line-height:1.6;">
+      PharmAI is an AI-powered pharmaceutical safety platform for India.
+      It checks whether medicines are banned, restricted, or allowed under CDSCO/FSSAI regulations.
+      Powered by Sarvam AI for voice, translation, and drug analysis in 11 Indian languages.
+    </p>
+    <p style="color:var(--text-light);font-size:0.8rem;margin-top:0.75rem;">Version 2.0 · Built with ❤️ for India</p>
+  </div>
+</div>
+
+</div><!-- end .main -->
+
+<!-- Fixed Search Bar -->
+<div class="search-section" id="searchBarSection">
+  <form id="searchForm" autocomplete="off">
+    <div class="search-container">
+      <input id="searchInput" class="search-input" type="text"
+        placeholder="Search any medicine, drug, or composition..."
+        required>
+      <button type="button" class="mic-btn" id="micBtn" title="Voice Search">🎙️</button>
+      <button type="submit" class="search-submit" title="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  CONFIG & STATE
+// ══════════════════════════════════════════════════════════════════════════════
+
+const LANGUAGES = [
+  {code:'en-IN',label:'English'},{code:'hi-IN',label:'Hindi / हिंदी'},
+  {code:'ta-IN',label:'Tamil / தமிழ்'},{code:'te-IN',label:'Telugu / తెలుగు'},
+  {code:'bn-IN',label:'Bengali / বাংলা'},{code:'mr-IN',label:'Marathi / मराठी'},
+  {code:'gu-IN',label:'Gujarati / ગુજરાતી'},{code:'kn-IN',label:'Kannada / ಕನ್ನಡ'},
+  {code:'ml-IN',label:'Malayalam / മലയാളം'},{code:'pa-IN',label:'Punjabi / ਪੰਜਾਬੀ'},
+  {code:'od-IN',label:'Odia / ଓଡ଼ିଆ'},
+];
+
+let currentAnswer = ''; // raw markdown answer from last search
+let selectedLang = localStorage.getItem('pharmai_lang') || 'hi-IN';
+let recentSearches = JSON.parse(localStorage.getItem('pharmai_recent') || '[]');
+let ocrSelectedFile = null;
+let docAnalysisFile = null;
+let uploadFiles = [];
+
+// ─── API helper ─────────────────────────────────────────────────────────────
+function apiUrl(path) {
+  const base = window.location.pathname.replace(/\/+$/, '');
+  return base + path;
+}
+
+// ─── Toast notifications ────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 4000);
+}
+
+// ─── Loading overlay ────────────────────────────────────────────────────────
+function showLoading(text='Analyzing...') {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingOverlay').classList.add('active');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// ─── Markdown rendering ─────────────────────────────────────────────────────
+function renderMd(text) {
+  if (typeof marked !== 'undefined') {
+    return marked.parse(text || '');
+  }
+  // Fallback: basic formatting
+  return (text || '')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DESCOPE AUTH
+// ══════════════════════════════════════════════════════════════════════════════
+
+class DescopeAuth {
+  constructor() {
+    this.isLoggedIn = false;
+    this.user = null;
+    this.sdk = null;
+    this.init();
+  }
+  async init() {
+    try {
+      this.sdk = Descope({ projectId: 'P32OxoFpY0ihVvncEbabQARqzw8I' });
+      const saved = localStorage.getItem('pharma_user');
+      if (saved) {
+        this.user = JSON.parse(saved);
+        this.isLoggedIn = true;
+        this.updateUI();
+        return;
+      }
+      const token = this.sdk.getSessionToken();
+      if (token) {
+        const info = await this.sdk.me();
+        if (info) { this.user = info; this.isLoggedIn = true;
+          localStorage.setItem('pharma_user', JSON.stringify(this.user)); this.updateUI(); }
+      }
+    } catch(e) {
+      const saved = localStorage.getItem('pharma_user');
+      if (saved) { this.user = JSON.parse(saved); this.isLoggedIn = true; this.updateUI(); }
+    }
+    this.setupListeners();
+  }
+  setupListeners() {
+    document.getElementById('loginBtn').onclick = () => this.showModal();
+    document.getElementById('logoutBtn').onclick = () => this.logout();
+    document.getElementById('closeModal').onclick = () => this.hideModal();
+    document.getElementById('authModal').onclick = (e) => { if(e.target.id==='authModal') this.hideModal(); };
+    const wc = document.querySelector('descope-wc');
+    if (wc) {
+      wc.addEventListener('success', (e) => this.onSuccess(e.detail));
+      wc.addEventListener('error', (e) => toast('Auth failed','error'));
+    }
+  }
+  showModal() { document.getElementById('authModal').classList.add('active'); }
+  hideModal() { document.getElementById('authModal').classList.remove('active'); }
+  onSuccess(detail) {
+    if (detail.user) {
+      this.user = { email: detail.user.email, name: detail.user.name || detail.user.email.split('@')[0], loginTime: Date.now() };
+      this.isLoggedIn = true;
+      localStorage.setItem('pharma_user', JSON.stringify(this.user));
+      this.updateUI(); this.hideModal(); toast('Signed in successfully!','success');
+    }
+  }
+  async logout() {
+    try { if(this.sdk) await this.sdk.logout(); } catch(e){}
+    this.user=null; this.isLoggedIn=false; localStorage.removeItem('pharma_user');
+    this.updateUI(); toast('Signed out','info');
+  }
+  updateUI() {
+    const info = document.getElementById('userInfo');
+    const btn = document.getElementById('loginBtn');
+    if (this.isLoggedIn && this.user) {
+      info.style.display='flex'; btn.style.display='none';
+      document.getElementById('userAvatar').textContent = this.user.name.substring(0,2).toUpperCase();
+      document.getElementById('userName').textContent = this.user.name;
+    } else {
+      info.style.display='none'; btn.style.display='inline-block';
+    }
+  }
+  requireAuth(cb) {
+    if (this.isLoggedIn) { cb(); } else { this.showModal(); toast('Please sign in','warning'); }
+  }
+}
+const auth = new DescopeAuth();
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TAB SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById(tab+'Panel').classList.add('active');
+    // Show/hide search bar based on tab
+    const searchBar = document.getElementById('searchBarSection');
+    searchBar.style.display = (tab === 'search') ? 'block' : 'none';
+    // Load documents when switching to docs tab
+    if (tab === 'documents') loadDocuments();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SEARCH (2-tier with backend proxy)
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.getElementById('searchForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  await performSearch(q);
+});
+
+// Template card clicks
+document.querySelectorAll('.template-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const q = card.dataset.query;
+    document.getElementById('searchInput').value = q;
+    performSearch(q);
+    // Switch to search tab
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-tab="search"]').classList.add('active');
+    document.getElementById('searchPanel').classList.add('active');
+    document.getElementById('searchBarSection').style.display = 'block';
+  });
+});
+
+async function performSearch(query) {
+  showLoading('Searching medicine databases...');
+  addRecentSearch(query);
+
+  try {
+    const res = await fetch(apiUrl('/api/search'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, sessionId: 'pharmai-web-' + Date.now() }),
+      signal: AbortSignal.timeout(50000),
+    });
+    const data = await res.json();
+    hideLoading();
+
+    if (data.status === 'success' || data.answer) {
+      currentAnswer = data.answer || '';
+      displaySearchResult(data);
+    } else {
+      toast('Search failed: ' + (data.error || 'Unknown error'), 'error');
+    }
+  } catch(err) {
+    hideLoading();
+    toast('Network error. Please try again.', 'error');
+  }
+}
+
+function displaySearchResult(data) {
+  const area = document.getElementById('searchResultArea');
+  const content = document.getElementById('resultContent');
+  const badge = document.getElementById('resultBadge');
+  const disclaimer = document.getElementById('resultDisclaimer');
+
+  area.style.display = 'block';
+
+  // Source badge
+  if (data.source === 'sarvam') {
+    badge.innerHTML = '<span class="badge badge-ai">🤖 Sarvam AI</span>';
+  } else if (data.source === 'n8n') {
+    badge.innerHTML = '<span class="badge badge-allowed">📚 RAG Database</span>';
+  } else {
+    badge.innerHTML = '';
+  }
+
+  // Render markdown content
+  content.innerHTML = renderMd(data.answer);
+  disclaimer.style.display = 'flex';
+
+  // Reset translate dropdown and audio
+  document.getElementById('translateLang').value = '';
+  document.getElementById('audioPlayer').classList.remove('active');
+
+  // Scroll to result
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TTS (Read Aloud)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function readAloud() {
+  if (!currentAnswer) return;
+  const btn = document.getElementById('ttsBtn');
+  btn.disabled = true; btn.textContent = '🔊 Loading...';
+
+  // Strip markdown for TTS
+  const plainText = currentAnswer.replace(/[#*_`\[\]()]/g, '').replace(/\n+/g, ' ').slice(0, 500);
+
+  try {
+    const res = await fetch(apiUrl('/api/tts'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: plainText, language: selectedLang }),
+    });
+    const data = await res.json();
+    if (data.audio) {
+      const audio = document.getElementById('ttsAudio');
+      audio.src = 'data:audio/wav;base64,' + data.audio;
+      document.getElementById('audioPlayer').classList.add('active');
+      audio.play();
+    } else {
+      toast('TTS failed: ' + (data.error || 'No audio'), 'error');
+    }
+  } catch(e) {
+    toast('TTS error', 'error');
+  }
+  btn.disabled = false; btn.textContent = '🔊 Read Aloud';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TRANSLATION
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function translateResult() {
+  const lang = document.getElementById('translateLang').value;
+  if (!lang || !currentAnswer) return;
+
+  const btn = document.getElementById('translateLang');
+  btn.disabled = true;
+  showLoading('Translating...');
+
+  // Strip markdown for translation
+  const plainText = currentAnswer.replace(/[#*_`\[\]()]/g, '').replace(/\n+/g, '\n');
+
+  try {
+    const res = await fetch(apiUrl('/api/translate'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: plainText, target: lang, source: 'en-IN' }),
+    });
+    const data = await res.json();
+    hideLoading();
+    if (data.translated_text) {
+      document.getElementById('resultContent').innerHTML =
+        '<div class="badge badge-ai" style="margin-bottom:1rem;">🌐 Translated</div>' +
+        '<div style="line-height:1.8;">' + data.translated_text.replace(/\n/g, '<br>') + '</div>';
+    } else {
+      toast('Translation failed', 'error');
+    }
+  } catch(e) {
+    hideLoading();
+    toast('Translation error', 'error');
+  }
+  btn.disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VOICE SEARCH (STT)
+// ══════════════════════════════════════════════════════════════════════════════
+
+let mediaRecorder = null;
+let audioChunks = [];
+
+document.getElementById('micBtn').addEventListener('click', toggleVoiceSearch);
+
+async function toggleVoiceSearch() {
+  const btn = document.getElementById('micBtn');
+
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    // Stop recording
+    mediaRecorder.stop();
+    btn.classList.remove('recording');
+    btn.textContent = '🎙️';
+    return;
+  }
+
+  // Start recording
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      showLoading('Converting speech to text...');
+
+      const form = new FormData();
+      form.append('file', blob, 'recording.webm');
+
+      try {
+        const res = await fetch(apiUrl('/api/stt'), { method: 'POST', body: form });
+        const data = await res.json();
+        hideLoading();
+        if (data.transcript) {
+          document.getElementById('searchInput').value = data.transcript;
+          toast('Voice captured: ' + data.transcript, 'success');
+          performSearch(data.transcript);
+        } else {
+          toast('Could not transcribe. Try again.', 'warning');
+        }
+      } catch(e) {
+        hideLoading();
+        toast('STT error', 'error');
+      }
+    };
+
+    mediaRecorder.start();
+    btn.classList.add('recording');
+    btn.textContent = '⏹️';
+    toast('Listening... Click again to stop.', 'info');
+
+    // Auto-stop after 10 seconds
+    setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️';
+      }
+    }, 10000);
+
+  } catch(e) {
+    toast('Microphone access denied', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  COPY RESULT
+// ══════════════════════════════════════════════════════════════════════════════
+
+function copyResult() {
+  if (!currentAnswer) return;
+  navigator.clipboard.writeText(currentAnswer).then(() => toast('Copied!','success'));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  RECENT SEARCHES
+// ══════════════════════════════════════════════════════════════════════════════
+
+function addRecentSearch(query) {
+  recentSearches = recentSearches.filter(r => r.query !== query);
+  recentSearches.unshift({ query, time: Date.now() });
+  if (recentSearches.length > 10) recentSearches = recentSearches.slice(0, 10);
+  localStorage.setItem('pharmai_recent', JSON.stringify(recentSearches));
+  renderRecentSearches();
+}
+
+function renderRecentSearches() {
+  const list = document.getElementById('recentList');
+  if (recentSearches.length === 0) {
+    list.innerHTML = '<li style="color:var(--text-light);font-size:0.9rem;padding:0.5rem;">No recent searches yet</li>';
+    return;
+  }
+  list.innerHTML = recentSearches.map(r => {
+    const ago = timeAgo(r.time);
+    return `<li class="recent-item" onclick="document.getElementById('searchInput').value='${r.query.replace(/'/g,"\\'")}';performSearch('${r.query.replace(/'/g,"\\'")}')">
+      <span class="recent-query">🔍 ${r.query}</span>
+      <span class="recent-time">${ago}</span>
+    </li>`;
+  }).join('');
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return Math.floor(diff/86400000) + 'd ago';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRUG INTERACTION CHECKER
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function checkInteraction() {
+  const a = document.getElementById('medA').value.trim();
+  const b = document.getElementById('medB').value.trim();
+  if (!a || !b) { toast('Enter both medicine names','warning'); return; }
+
+  const btn = document.getElementById('checkInteractionBtn');
+  btn.disabled = true;
+  showLoading('Checking drug interaction...');
+
+  try {
+    const res = await fetch(apiUrl('/api/interaction'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medicine_a: a, medicine_b: b }),
+    });
+    const data = await res.json();
+    hideLoading();
+
+    const result = document.getElementById('interactionResult');
+    const content = document.getElementById('interactionContent');
+    result.style.display = 'block';
+    content.innerHTML = renderMd(data.answer || data.error || 'No data available.');
+    result.scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    hideLoading();
+    toast('Interaction check failed','error');
+  }
+  btn.disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  OCR / MEDICINE SCANNER
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.getElementById('ocrFileInput').addEventListener('change', (e) => {
+  if (e.target.files.length) {
+    ocrSelectedFile = e.target.files[0];
+    document.getElementById('ocrFileName').style.display = 'block';
+    document.getElementById('ocrFileName').textContent = '📎 ' + ocrSelectedFile.name;
+    document.getElementById('scanBtn').style.display = 'block';
+  }
+});
+
+// Drag and drop for OCR zone
+const ocrZone = document.getElementById('ocrZone');
+ocrZone.addEventListener('dragover', (e) => { e.preventDefault(); ocrZone.classList.add('dragover'); });
+ocrZone.addEventListener('dragleave', () => ocrZone.classList.remove('dragover'));
+ocrZone.addEventListener('drop', (e) => {
+  e.preventDefault(); ocrZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    ocrSelectedFile = e.dataTransfer.files[0];
+    document.getElementById('ocrFileName').style.display = 'block';
+    document.getElementById('ocrFileName').textContent = '📎 ' + ocrSelectedFile.name;
+    document.getElementById('scanBtn').style.display = 'block';
+  }
+});
+
+async function scanDocument() {
+  if (!ocrSelectedFile) return;
+  showLoading('Scanning document...');
+
+  const form = new FormData();
+  form.append('file', ocrSelectedFile);
+
+  try {
+    const res = await fetch(apiUrl('/api/ocr'), { method: 'POST', body: form });
+    const data = await res.json();
+    hideLoading();
+
+    if (data.text) {
+      document.getElementById('ocrResult').style.display = 'block';
+      document.getElementById('ocrText').textContent = data.text;
+      toast('Text extracted successfully!','success');
+    } else {
+      toast('OCR failed: ' + (data.error || 'No text found'),'error');
+    }
+  } catch(e) {
+    hideLoading();
+    toast('OCR error','error');
+  }
+}
+
+function searchOcrText() {
+  const text = document.getElementById('ocrText').textContent;
+  if (text) {
+    document.getElementById('searchInput').value = text.slice(0, 200);
+    // Switch to search tab
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-tab="search"]').classList.add('active');
+    document.getElementById('searchPanel').classList.add('active');
+    document.getElementById('searchBarSection').style.display = 'block';
+    performSearch(text.slice(0, 200));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  AI DOCUMENT ANALYSIS
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.getElementById('docAnalysisInput').addEventListener('change', (e) => {
+  if (e.target.files.length) {
+    docAnalysisFile = e.target.files[0];
+    document.getElementById('docAnalysisFileName').style.display = 'block';
+    document.getElementById('docAnalysisFileName').textContent = '📎 ' + docAnalysisFile.name;
+    document.getElementById('analyzeDocBtn').style.display = 'block';
+  }
+});
+
+const docZone = document.getElementById('docAnalysisZone');
+docZone.addEventListener('dragover', (e) => { e.preventDefault(); docZone.classList.add('dragover'); });
+docZone.addEventListener('dragleave', () => docZone.classList.remove('dragover'));
+docZone.addEventListener('drop', (e) => {
+  e.preventDefault(); docZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    docAnalysisFile = e.dataTransfer.files[0];
+    document.getElementById('docAnalysisFileName').style.display = 'block';
+    document.getElementById('docAnalysisFileName').textContent = '📎 ' + docAnalysisFile.name;
+    document.getElementById('analyzeDocBtn').style.display = 'block';
+  }
+});
+
+async function analyzeDocument() {
+  if (!docAnalysisFile) return;
+  showLoading('Analyzing medical document...');
+
+  const form = new FormData();
+  form.append('file', docAnalysisFile);
+
+  try {
+    const res = await fetch(apiUrl('/api/doc-analysis'), { method: 'POST', body: form });
+    const data = await res.json();
+    hideLoading();
+
+    if (data.analysis) {
+      const result = document.getElementById('docAnalysisResult');
+      const content = document.getElementById('docAnalysisContent');
+      result.style.display = 'block';
+      content.innerHTML = renderMd(data.analysis);
+      if (data.ocr_text) {
+        content.innerHTML += '<details style="margin-top:1rem;"><summary style="cursor:pointer;color:var(--primary);font-weight:600;">📝 View Extracted Text</summary><pre style="background:#f8fafc;padding:1rem;border-radius:8px;margin-top:0.5rem;white-space:pre-wrap;font-size:0.8rem;max-height:200px;overflow-y:auto;">' + data.ocr_text + '</pre></details>';
+      }
+      result.scrollIntoView({ behavior: 'smooth' });
+      toast('Analysis complete!','success');
+    } else {
+      toast('Analysis failed: ' + (data.error || 'Unknown'),'error');
+    }
+  } catch(e) {
+    hideLoading();
+    toast('Document analysis error','error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DOCUMENT DATABASE
+// ══════════════════════════════════════════════════════════════════════════════
+
+let allDocs = [];
+
+async function loadDocuments() {
+  const loading = document.getElementById('docsLoading');
+  const grid = document.getElementById('docsGrid');
+  const noDocs = document.getElementById('noDocs');
+  loading.style.display = 'block'; grid.innerHTML = ''; noDocs.style.display = 'none';
+
+  try {
+    const res = await fetch(apiUrl('/api/list-documents'), { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    allDocs = await res.json();
+    loading.style.display = 'none';
+    renderDocs(allDocs);
+  } catch(e) {
+    loading.style.display = 'none';
+    allDocs = [];
+    renderDocs([]);
+    toast('Documents API unavailable','error');
+  }
+}
+
+function renderDocs(docs) {
+  const grid = document.getElementById('docsGrid');
+  const noDocs = document.getElementById('noDocs');
+  if (!docs.length) { grid.innerHTML = ''; noDocs.style.display = 'block'; return; }
+  noDocs.style.display = 'none';
+  grid.innerHTML = docs.map(d => {
+    const name = d.displayName || d.path?.split('/').pop() || 'Unknown';
+    const size = formatBytes(d.sizeBytes || d.size || 0);
+    const id = d.name || d.id || '';
+    return `<div class="doc-card">
+      <div class="doc-name">${name}</div>
+      <div class="doc-meta">
+        <span class="doc-chip">📄 PDF</span>
+        <span class="doc-chip">💾 ${size}</span>
+      </div>
+      <button class="doc-delete" onclick="deleteDoc('${id}')">🗑️ Delete</button>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('docSearchInput').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase();
+  if (!q) { renderDocs(allDocs); return; }
+  renderDocs(allDocs.filter(d => {
+    const name = (d.displayName || d.path?.split('/').pop() || '').toLowerCase();
+    return name.includes(q);
+  }));
+});
+
+async function deleteDoc(id) {
+  if (!confirm('Delete this document?')) return;
+  try {
+    await fetch(apiUrl('/api/delete-document'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentId: id }),
+    });
+    toast('Document deleted','success');
+    loadDocuments();
+  } catch(e) { toast('Delete failed','error'); }
+}
+
+async function deleteAllDocs() {
+  if (!confirm('Delete ALL documents? This cannot be undone!')) return;
+  try {
+    await fetch(apiUrl('/api/delete-all-documents'), { method: 'DELETE' });
+    toast('All documents deleted','success');
+    loadDocuments();
+  } catch(e) { toast('Delete failed','error'); }
+}
+
+function formatBytes(b) {
+  if (b === 0) return '0 B';
+  const k = 1024, s = ['B','KB','MB','GB'];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
+}
+
+// ─── Document Upload ─────────────────────────────────────────────────────────
+document.getElementById('docUploadInput').addEventListener('change', (e) => {
+  uploadFiles = Array.from(e.target.files);
+  showUploadList();
+});
+
+const docUpZone = document.getElementById('docUploadZone');
+docUpZone.addEventListener('dragover', (e) => { e.preventDefault(); docUpZone.classList.add('dragover'); });
+docUpZone.addEventListener('dragleave', () => docUpZone.classList.remove('dragover'));
+docUpZone.addEventListener('drop', (e) => {
+  e.preventDefault(); docUpZone.classList.remove('dragover');
+  uploadFiles = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.pdf'));
+  showUploadList();
+});
+
+function showUploadList() {
+  if (!uploadFiles.length) return;
+  const el = document.getElementById('uploadFileList');
+  el.style.display = 'block';
+  el.innerHTML = uploadFiles.map(f => `<div style="padding:0.4rem 0;font-size:0.85rem;color:var(--text);">📄 ${f.name} (${formatBytes(f.size)})</div>`).join('');
+  document.getElementById('uploadSubmitBtn').style.display = 'block';
+}
+
+async function uploadDocuments() {
+  if (!uploadFiles.length) return;
+  auth.requireAuth(async () => {
+    showLoading('Uploading documents...');
+    const form = new FormData();
+    uploadFiles.forEach(f => form.append('files', f));
+    try {
+      const res = await fetch(apiUrl('/api/upload-files'), { method: 'POST', body: form });
+      const data = await res.json();
+      hideLoading();
+      if (data.success) {
+        toast(data.message, 'success');
+        uploadFiles = [];
+        document.getElementById('uploadFileList').style.display = 'none';
+        document.getElementById('uploadSubmitBtn').style.display = 'none';
+        loadDocuments();
+      } else {
+        toast(data.message || 'Upload failed', 'error');
+      }
+    } catch(e) {
+      hideLoading();
+      toast('Upload error', 'error');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  LANGUAGE SETTINGS
+// ══════════════════════════════════════════════════════════════════════════════
+
+function renderLanguages() {
+  const grid = document.getElementById('langGrid');
+  grid.innerHTML = LANGUAGES.map(l =>
+    `<div class="lang-option ${l.code === selectedLang ? 'selected' : ''}" onclick="selectLang('${l.code}')">${l.label}</div>`
+  ).join('');
+}
+
+function selectLang(code) {
+  selectedLang = code;
+  localStorage.setItem('pharmai_lang', code);
+  renderLanguages();
+  toast('Language set to ' + LANGUAGES.find(l=>l.code===code)?.label, 'success');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderRecentSearches();
+  renderLanguages();
+});
+</script>
+</body>
+</html>
