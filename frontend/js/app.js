@@ -11,7 +11,7 @@
  */
 
 // ─── Global Config ──────────────────────────────────────────────────────────
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '3.0.0';
 
 // ─── Tool Panel Management ─────────────────────────────────────────────────
 // Tool panels are side features (OCR, Interaction, Documents, Settings)
@@ -99,11 +99,13 @@ function renderTemplateCards() {
   const container = document.getElementById('templateGrid');
   if (!container) return;
 
-  container.innerHTML = TEMPLATE_QUERIES.map(t => `
+  container.innerHTML = TEMPLATE_QUERIES.map((t, i) => `
     <div class="template-card" onclick="handleTemplateClick('${escapeHtml(t.query).replace(/'/g, "\\'")}')">
       <div class="template-icon">${t.icon}</div>
-      <div class="template-title">${t.title}</div>
-      <div class="template-query">${escapeHtml(t.query)}</div>
+      <div>
+        <div class="template-title">${t.title}</div>
+        <div class="template-query">${escapeHtml(t.query)}</div>
+      </div>
     </div>
   `).join('');
 }

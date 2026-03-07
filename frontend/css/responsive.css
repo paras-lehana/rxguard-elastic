@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   PharmAI Responsive — Media queries for tablet and mobile
+   PharmAI Responsive v3.0 — Media queries for tablet, mobile, small mobile
+   Follows mobile-first principle with progressive enhancement
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Tablet (768px - 1023px) ─── */
+/* ═══════════════════ TABLET (768px – 1023px) ═══════════════════ */
 @media (max-width: 1023px) {
   .sidebar {
-    /* Sidebar is overlay on tablet */
     width: var(--sidebar-width);
     z-index: 850;
   }
@@ -19,100 +19,241 @@
   }
 
   .chat-view {
-    padding: 1rem;
+    padding: 1rem 0.75rem 0;
   }
 
   .template-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tool-panel {
+    padding: 1.5rem 1rem;
+  }
 }
 
-/* ─── Mobile (< 768px) ─── */
+/* ═══════════════════ MOBILE (< 768px) ═══════════════════ */
 @media (max-width: 767px) {
+  :root {
+    --topbar-height: 52px;
+    --searchbar-height: 72px;
+  }
+
   .sidebar {
-    width: 85vw;
+    width: 82vw;
     max-width: 320px;
   }
 
+  /* Top bar mobile */
+  .top-bar {
+    padding: 0 0.75rem;
+  }
   .top-bar .logo {
     font-size: 1rem;
   }
   .top-bar .logo-badge {
     display: none;
   }
-
   .user-name {
-    display: none; /* Hide full name, keep avatar */
+    display: none; /* Keep avatar only */
+  }
+  .auth-btn {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.85rem;
   }
 
-  .landing h1 {
-    font-size: 1.6rem;
+  /* Landing */
+  .landing-view {
+    padding: 1.5rem 1rem;
   }
-  .landing .subtitle {
-    font-size: 0.88rem;
+  .landing-hero h1 {
+    font-size: 1.75rem;
+  }
+  .landing-hero p {
+    font-size: 0.92rem;
+  }
+  .hero-badge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.75rem;
+  }
+  .stats-row {
+    gap: 0.35rem;
+  }
+  .stat-pill {
+    font-size: 0.72rem;
+    padding: 0.25rem 0.65rem;
   }
 
+  .features-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+  .feature-card {
+    padding: 0.85rem;
+  }
+  .feature-icon {
+    width: 32px; height: 32px;
+    font-size: 1.2rem;
+    margin-bottom: 0.35rem;
+  }
+  .feature-title { font-size: 0.82rem; }
+  .feature-desc { font-size: 0.72rem; }
+
+  /* Template cards */
   .template-grid {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
   .template-card {
-    padding: 0.9rem;
+    padding: 0.85rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .template-icon {
+    margin-bottom: 0;
+    flex-shrink: 0;
   }
 
+  /* Chat */
   .chat-view {
-    padding: 0.75rem 0.5rem 0;
+    padding: 0.5rem 0.5rem 0;
   }
-
   .chat-msg.user .msg-bubble {
     max-width: 85%;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.88rem;
   }
   .chat-msg.assistant .msg-bubble {
     max-width: 92%;
+    padding: 0.85rem 1rem;
+    font-size: 0.88rem;
+  }
+  .msg-actions {
+    opacity: 1; /* Always visible on mobile — no hover */
   }
 
+  /* Search bar */
   .search-bar-fixed {
     width: 96vw;
-    padding: 0.5rem 0 0.75rem;
+    padding: 0 0 0.5rem;
+  }
+  .search-bar-fixed .search-container {
+    border-radius: var(--radius-xl);
+    padding: 0.3rem 0.4rem 0.3rem 0.7rem;
   }
   .search-input {
-    font-size: 16px; /* Prevent iOS zoom */
+    font-size: 16px; /* Prevent iOS auto-zoom on focus */
+  }
+  .mic-btn {
+    width: 34px; height: 34px;
+  }
+  .search-submit {
+    width: 38px; height: 38px;
   }
 
-  .msg-actions {
-    opacity: 1; /* Always visible on mobile (no hover) */
-  }
-
+  /* Tool panels */
   .tool-panel {
     padding: 1rem 0.75rem;
   }
 
+  /* Documents */
   .doc-grid {
     grid-template-columns: 1fr;
   }
 
+  /* Language grid */
   .lang-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   }
 
+  /* Modal */
   .modal-content {
     width: 95vw;
-    padding: 1.25rem;
+    padding: 1.5rem;
     margin: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Scroll FAB */
+  .scroll-fab {
+    right: 1rem;
+    bottom: calc(var(--searchbar-height) + 0.5rem);
   }
 }
 
-/* ─── Small Mobile (< 400px) ─── */
+/* ═══════════════════ SMALL MOBILE (< 400px) ═══════════════════ */
 @media (max-width: 399px) {
-  .landing h1 { font-size: 1.35rem; }
-  .landing .stats-row { gap: 0.4rem; }
-  .landing .stat-pill { font-size: 0.7rem; padding: 0.25rem 0.6rem; }
+  .landing-hero h1 { font-size: 1.5rem; }
+  .stats-row { gap: 0.3rem; }
+  .stat-pill { font-size: 0.68rem; padding: 0.2rem 0.5rem; }
   .space-indicator { display: none; }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .feature-icon { margin-bottom: 0; flex-shrink: 0; }
+
+  .template-card h3 { font-size: 0.82rem; }
+  .template-card p { font-size: 0.72rem; }
+
+  .sidebar {
+    width: 90vw;
+  }
 }
 
-/* ─── Safe area for notched phones ─── */
+/* ═══════════════════ LARGE DESKTOP (> 1440px) ═══════════════════ */
+@media (min-width: 1440px) {
+  .chat-view {
+    max-width: 860px;
+  }
+  .tool-panel {
+    max-width: 720px;
+  }
+  .landing-hero h1 {
+    font-size: 2.8rem;
+  }
+}
+
+/* ═══════════════════ SAFE AREA (notched phones) ═══════════════════ */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .search-bar-fixed {
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ═══════════════════ REDUCED MOTION ═══════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════ PRINT ═══════════════════ */
+@media print {
+  .top-bar, .sidebar, .sidebar-backdrop, .search-bar-fixed,
+  .scroll-fab, .toast-container, .loading-overlay,
+  #disclaimerBanner, .modal-overlay { display: none !important; }
+
+  .main-content {
+    margin: 0 !important;
+  }
+  .chat-view {
+    max-width: 100%;
+  }
+  .msg-actions { display: none !important; }
 }

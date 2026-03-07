@@ -186,7 +186,7 @@ function createMessageElement(msg) {
     }
 
     wrapper.innerHTML = `
-      <div class="msg-avatar">⚕</div>
+      <div class="msg-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
       <div class="msg-bubble">
         <div class="msg-header">
           ${statusBadge}
@@ -195,9 +195,9 @@ function createMessageElement(msg) {
         <div class="msg-content">${renderMd(msg.content)}</div>
         ${citationsHtml}
         <div class="msg-actions">
-          <button class="msg-action-btn" onclick="copyMessageText(this)" data-text="${escapeHtml(msg.content)}">📋 Copy</button>
-          <button class="msg-action-btn" onclick="readMessageAloud(this)" data-text="${escapeHtml(msg.content)}">🔊 Read</button>
-          <button class="msg-action-btn" onclick="translateMessage(this)" data-text="${escapeHtml(msg.content)}">🌐 Translate</button>
+          <button class="msg-action-btn" onclick="copyMessageText(this)" data-text="${escapeHtml(msg.content)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+          <button class="msg-action-btn" onclick="readMessageAloud(this)" data-text="${escapeHtml(msg.content)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Read</button>
+          <button class="msg-action-btn" onclick="translateMessage(this)" data-text="${escapeHtml(msg.content)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg> Translate</button>
         </div>
       </div>
     `;
@@ -221,7 +221,7 @@ function showTypingIndicator(text = 'Searching...') {
   indicator.id = 'typingIndicator';
   indicator.className = 'chat-msg assistant';
   indicator.innerHTML = `
-    <div class="msg-avatar">⚕</div>
+    <div class="msg-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
     <div class="typing-indicator">
       <div class="typing-dots"><span></span><span></span><span></span></div>
       <span class="typing-text">${escapeHtml(text)}</span>
