@@ -91,6 +91,7 @@
   <div class="sidebar-footer">
     <button id="toolOcr" class="sidebar-tool-btn" title="Prescription Scanner" aria-label="Open Prescription Scanner">📷</button>
     <button id="toolDocuments" class="sidebar-tool-btn" title="Knowledge Base" aria-label="Manage Knowledge Base">📚<span id="docCountBadge" class="badge" style="display:none"></span></button>
+    <button id="toolJanAushadhi" class="sidebar-tool-btn" title="Jan Aushadhi" aria-label="Open Jan Aushadhi">💊</button>
     <button id="toolSettings" class="sidebar-tool-btn" title="Settings" aria-label="Open Settings">⚙️</button>
   </div>
 </aside>
@@ -230,6 +231,38 @@
     <div id="uploadProgress" style="display:none;margin-top:0.75rem;"></div>
     <!-- Document List -->
     <div id="documentList" style="margin-top:1.5rem;"></div>
+  </div>
+
+  <!-- ── Jan Aushadhi ── -->
+  <div id="toolPanel-janaushadhi" class="tool-panel" style="display:none">
+    <div class="tool-panel-header">
+      <h2>💊 Jan Aushadhi Search & Locate</h2>
+      <button class="tool-panel-close">✕</button>
+    </div>
+    <p class="tool-panel-desc">
+      Upload pricing PDFs, find generic alternatives, and locate PMBJP Kendras.
+    </p>
+
+    <div class="upload-zone" id="jaDropZone" style="margin-bottom: 1rem; cursor: pointer;">
+      <div class="upload-icon">📄</div>
+      <p>Click to upload Jan Aushadhi PDFs</p>
+      <p class="upload-hint">Updates the unified RAG Knowledge Base</p>
+      <input type="file" id="jaUploadInput" accept="application/pdf" multiple style="display:none">
+    </div>
+
+    <div style="margin-top: 1rem;">
+      <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">Find Alternative:</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="text" id="janaushadhiSearchInput" placeholder="Enter medicine name..." style="flex:1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary);">
+        <button class="btn-primary" onclick="performSearch('What is the Jan Aushadhi alternative for ' + document.getElementById('janaushadhiSearchInput').value)">Search</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+      <h3 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-primary);">Locate Kendra</h3>
+      <p class="tool-panel-desc" style="margin-bottom: 1rem;">Find your nearest PMBJP store.</p>
+      <a href="https://janaushadhi.gov.in/KendraDetails.aspx" target="_blank" rel="noopener noreferrer" style="display:block; text-align:center; padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: var(--radius-md); text-decoration: none; font-weight: 500;">📍 Open Store Locator</a>
+    </div>
   </div>
 
   <!-- ── Settings ── -->

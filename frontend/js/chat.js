@@ -142,6 +142,19 @@ function deleteSession(sessionId) {
   renderSessionList();
 }
 
+/**
+ * Flush all sessions from the frontend state and storage.
+ * Called when all KB documents are deleted to prevent phantom searches.
+ */
+function flushFrontendSession() {
+  sessions = [];
+  activeSessionId = null;
+  saveSessions();
+  saveActiveSession();
+  showLandingView();
+  renderSessionList();
+}
+
 function renameSession(sessionId, title) {
   const session = getSession(sessionId);
   if (session) {
@@ -209,7 +222,10 @@ function createMessageElement(msg) {
   } else if (msg.role === 'assistant') {
     const status = detectDrugStatus(msg.content);
     const statusBadge = status ? `<span class="status-badge status-${status}">${getStatusEmoji(status)} ${status.toUpperCase()}</span>` : '';
-    const sourceBadge = msg.source ? `<span class="source-badge">${msg.source === 'kb' ? '📚 AWS KB' : '🤖 Sarvam AI'}</span>` : '';
+    let badgeText = '🔬 AI Analysis';
+    if (msg.source === 'aws-bedrock' || msg.source === 'kb') badgeText = '🔬 AWS Bedrock KB';
+    else if (msg.source === 'sarvam') badgeText = '🤖 Sarvam AI';
+    const sourceBadge = msg.source ? `<span class="source-badge">${badgeText}</span>` : '';
 
     let citationsHtml = '';
     if (msg.citations && msg.citations.length > 0) {

@@ -136,6 +136,7 @@ function setupSearchBar() {
 function setupSidebarToolButtons() {
   document.getElementById('toolOcr')?.addEventListener('click', () => { showToolPanel('ocr'); closeSidebar(); });
   document.getElementById('toolDocuments')?.addEventListener('click', () => { showToolPanel('documents'); closeSidebar(); });
+  document.getElementById('toolJanAushadhi')?.addEventListener('click', () => { showToolPanel('janaushadhi'); closeSidebar(); });
   document.getElementById('toolSettings')?.addEventListener('click', () => { showToolPanel('settings'); closeSidebar(); });
 
   // Close tool panel buttons

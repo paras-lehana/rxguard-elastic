@@ -146,6 +146,9 @@ async function deleteAllDocuments() {
     if (res.ok) {
       toast('All documents deleted', 'success');
       await loadDocuments();
+      if (typeof flushFrontendSession === 'function') {
+        flushFrontendSession();
+      }
     } else {
       toast(data.error || 'Bulk delete failed', 'error');
     }
@@ -174,7 +177,7 @@ function renderDocumentList() {
 
   let html = `<div class="doc-header">
     <span class="doc-count">${documents.length} document(s)</span>
-    <button class="btn-action danger" onclick="deleteAllDocuments()">🗑️ Delete All</button>
+    <button class="btn-action danger" onclick="deleteAllDocuments()" style="position: relative; z-index: 10;">🗑️ Delete All</button>
   </div>`;
 
   html += '<div class="doc-grid">';
@@ -186,7 +189,7 @@ function renderDocumentList() {
         <div class="doc-icon">📄</div>
         <div class="doc-info">
           <span class="doc-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-          <span class="doc-meta">${formatBytes(doc.size || 0)}</span>
+          <span class="doc-meta">Uploaded PDF</span>
         </div>
         <button class="doc-delete" onclick="deleteDocument('${escapeHtml(id)}')" title="Delete">🗑️</button>
       </div>
@@ -227,6 +230,13 @@ function initDocuments() {
     e.target.value = ''; // Reset for re-upload
   });
 
+  // Jan Aushadhi direct upload input
+  const jaUploadInput = document.getElementById('jaUploadInput');
+  jaUploadInput?.addEventListener('change', (e) => {
+    uploadDocuments(e.target.files);
+    e.target.value = '';
+  });
+
   // Drag-and-drop zone (also clickable via onclick in HTML)
   const dropZone = document.getElementById('docDropZone');
   if (dropZone) {
@@ -240,6 +250,26 @@ function initDocuments() {
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropZone.classList.remove('dragover');
+      uploadDocuments(e.dataTransfer.files);
+    });
+  }
+
+  // Jan Aushadhi drop zone (clickable & draggable)
+  const jaDropZone = document.getElementById('jaDropZone');
+  if (jaDropZone) {
+    jaDropZone.addEventListener('click', () => {
+      document.getElementById('jaUploadInput').click();
+    });
+    jaDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      jaDropZone.classList.add('dragover');
+    });
+    jaDropZone.addEventListener('dragleave', () => {
+      jaDropZone.classList.remove('dragover');
+    });
+    jaDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      jaDropZone.classList.remove('dragover');
       uploadDocuments(e.dataTransfer.files);
     });
   }

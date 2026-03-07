@@ -955,3 +955,27 @@
 - [x] R1.11.11 Test public Traefik URL: search via `https://medical.lehana.in/pharmai/api/search` → ✅ works
 - [x] R1.11.12 Test TTS: POST `/api/tts` with `en-IN` → ✅ returns base64 audio (Sarvam Bulbul v2)
 - [x] R1.11.13 Test health: `/health` → ✅ v3.1 with all new features listed
+
+## Phase R3: Bug Fixes, OCR, Knowledge Base, & Jan Aushadhi
+
+### Task 1: Prescription Scanner (OCR) Bug Fix
+- [x] 1.1 In `frontend/app.py`, locate `api_ocr()`. The image payload contains a base64 header (`data:image/jpeg;base64,...`). Add logic to strip this header using `image_b64.split(',', 1)[1]` before `base64.b64decode()`.
+
+### Task 2: Knowledge Base (KB) Glitches Resolution
+- [x] 2.1 Individual Delete bug: In `frontend/app.py`, inside `api_list_documents()`, traverse the array of documents returned by backend and enforce `d['id'] = d.get('name')` so the correct ID is passed to frontend `js/documents.js` for deletion targeting. Completed: Fixed
+- [x] 2.2 Delete All unclickable dead zone: In `frontend/css/components.css` (or `documents.css` if it exists) or directly modifying `frontend/js/documents.js`, ensure the "Delete All" button has `position: relative; z-index: 10;` to counteract `span.doc-count` overlap. Completed: Fixed
+- [x] 2.3 Post-Delete Ghost Search logic: Inside `frontend/js/documents.js`, inside `deleteAllDocuments()` (and maybe individual delete too), flush the frontend chat session or context array to clear stale Bedrock vectors cached locally. Completed: Fixed
+- [x] 2.4 "0 KB" label removal: Inside `frontend/js/documents.js`, in the `renderDocumentList()` function, remove `doc.size || '0 KB'` data-binding logic. Replace it visually with a generic "Uploaded PDF" label. Completed: Fixed
+- [x] 2.5 Upload crash resolution: In `frontend/app.py` `api_upload_files()`, replace the `f.save(fpath)` into `../data/` logic. Import and use python's `tempfile.NamedTemporaryFile` or RAM buffering to bypass the read-only mounted container structure, guaranteeing AWS API transmission. Completed: Refactored api_upload_files to use memory bytes.
+
+### Task 3: Unwanted Sarvam AI Search Mentions & Output Formatting
+- [x] 3.1 Badge correction: In `frontend/js/chat.js` (around line 212), rewrite the ternary evaluating `msg.source`. Ensure `msg.source === 'aws-bedrock' ? '🔬 AWS Bedrock KB' : '🔬 AI Analysis'` instead of defaulting non-kb to `'🤖 Sarvam AI'`. Only TTS/STT/OCR should be labeled Sarvam.
+- [x] 3.2 Formatting cleanup: In `frontend/app.py` `target_tier2_aws()`, remove the forcibly injected `\n🔬 **AI Analysis (AWS Bedrock KB)**\n\n` strings from final payloads to avoid duplication.
+- [x] 3.3 Remove Regex Banned: In `frontend/app.py` `target_tier2_aws()`, remove regex mapping that forcefully injects `"🚫 BANNED"` prefix tags to the output. Let the LLM handle conversation naturally.
+- [x] 3.4 Prompt relaxation: Deep dive `PHARMAI_SYSTEM_PROMPT` in `app.py`. Strip directives like "format Status:" that force BANNED repetition, ensuring a natural, fluid flow. Completed: Refactored app.py and chat.js to remove hardcoded Sarvam badges, forced BANNED strings, and relaxed prompts.
+
+### Task 4: Jan Aushadhi Architecture Switch (LLM -> KB/UI)
+- [x] 4.1 Remove Hallucination Prompting: Edit `PHARMAI_SYSTEM_PROMPT` in `app.py` to stop explicitly commanding the LLM to invent "percentage cost savings compared to branded prices". Completed: Suppressed hallucination in prompt.
+- [x] 4.2 Jan Aushadhi UI Setup: In `frontend/index.html`, duplicate/create a tool panel for Jan Aushadhi (akin to the prescription scanner / KB). Add a sidebar button to trigger it. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.
+- [x] 4.3 Add Jan Aushadhi PDF ingestion inside this same UI panel to explicitly allow queries running over those KB files exclusively, enabling real facts extraction. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.
+- [x] 4.4 Add UI components in the Jan Aushadhi panel to allow location of nearby stores and getting full medicine lists via RAG. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.

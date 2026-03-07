@@ -57,9 +57,12 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'pharmai-portal-secret-2026')
 app.config['UPLOAD_FOLDER'] = '../data'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max for KB uploads
 
-# Create upload directory
+# Create upload directory (may fail if container is strictly read-only, which is fine since we use memory now)
 upload_path = os.path.abspath(app.config['UPLOAD_FOLDER'])
-os.makedirs(upload_path, exist_ok=True)
+try:
+    os.makedirs(upload_path, exist_ok=True)
+except OSError:
+    pass
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'webp'}
 
@@ -101,25 +104,19 @@ def is_useless_n8n_response(text):
 PHARMAI_SYSTEM_PROMPT = (
     "You are PharmaAI, an expert Indian pharmaceutical assistant specialized "
     "in drug safety. When given a medicine name, composition, or scanned text "
-    "from a medicine package, provide a comprehensive analysis:\n\n"
-    "**Status:** Whether it is BANNED / RESTRICTED / ALLOWED in India "
-    "(check CDSCO/FSSAI regulations)\n"
-    "**Safety:** Side effects, contraindications, drug interactions, warnings\n"
-    "**Usage:** What it is used for, dosage guidelines\n"
-    "**Regulatory:** CDSCO schedule classification, gazette notifications if banned\n"
-    "**Alternatives:** Safer alternatives if the medicine is banned or restricted\n\n"
+    "from a medicine package, provide a comprehensive analysis. Include the "
+    "regulatory status in India (such as whether it is allowed, restricted, or banned by CDSCO/FSSAI), "
+    "safety details (side effects, contraindications, drug interactions), "
+    "and usage guidelines.\n\n"
     "**💰 Jan Aushadhi (Generic) Alternatives:**\n"
-    "For EVERY branded medicine mentioned, you MUST provide:\n"
-    "- The equivalent generic medicine available under Pradhan Mantri Bhartiya "
-    "Janaushadhi Pariyojana (PMBJP)\n"
-    "- Approximate branded price vs. Jan Aushadhi generic price\n"
-    "- Percentage cost savings (e.g., '₹120 branded → ₹15 Jan Aushadhi = 87% savings')\n"
-    "- Nearest Jan Aushadhi Kendra availability tip\n"
-    "If no Jan Aushadhi equivalent exists, state that clearly.\n\n"
-    "Be concise, accurate, and respond in the same language the user uses. "
-    "If the query is in Hindi or another Indian language, respond in that language. "
-    "Use Markdown bold (**text**) for section headers. Start your response with a "
-    "clear status indicator: ✅ ALLOWED, 🚫 BANNED, or ⚠️ RESTRICTED."
+    "For EVERY branded medicine mentioned, mention if an equivalent generic medicine is available "
+    "under Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP).\n"
+    "Do NOT fabricate prices or percentage savings if you are not certain. "
+    "Instead, simply state that generic alternatives from PMBJP are usually significantly cheaper.\n"
+    "Mention how the user can locate a nearby Jan Aushadhi Kendra.\n\n"
+    "Be concise, accurate, and highly conversational. Keep the response fluid and natural. "
+    "Respond in the same language the user uses. "
+    "Use Markdown for formatting."
 )
 
 
@@ -204,13 +201,8 @@ def search_tier2_aws(query, history=None, space_context=None):
             # - 'medicine_searched': the query medicine name
             answer = data.get('text') or data.get('answer') or data.get('response') or data.get('result', '')
             
-            # If structured result available, build a richer response
-            if data.get('medicine_searched') and data.get('current_status'):
-                badges = {'open': '✅ ALLOWED', 'banned': '🚫 BANNED', 'restricted': '⚠️ RESTRICTED'}
-                status = data.get('current_status', 'unknown')
-                badge = badges.get(status, 'ℹ️ ' + status.upper())
-                
-                # Extract structured details
+            # Let Bedrock handle it naturally
+            if data.get('medicine_searched'):
                 results = data.get('results', {})
                 summary = ''
                 if isinstance(results, dict):
@@ -218,16 +210,11 @@ def search_tier2_aws(query, history=None, space_context=None):
                 elif isinstance(results, str):
                     summary = results
                 
-                answer_parts = [f"{badge}", f"**Medicine:** {data['medicine_searched']}", ""]
                 if summary:
-                    answer_parts.append(summary)
-                elif answer:
-                    answer_parts.append(answer)
-                
-                answer = '\n\n'.join(answer_parts)
+                    answer = summary
             
             if answer:
-                return {'source': 'aws-bedrock', 'answer': f"🔬 **AI Analysis (AWS Bedrock KB)**\n\n{answer}"}
+                return {'source': 'aws-bedrock', 'answer': answer}
         print(f"[SEARCH T2] AWS RAG status={res.status_code}")
     except Exception as e:
         print(f"[SEARCH T2] AWS RAG error: {e}")
@@ -449,6 +436,8 @@ def api_ocr():
         if not image_b64:
             return jsonify({'error': 'No image provided'}), 400
         try:
+            if ',' in image_b64:
+                image_b64 = image_b64.split(',', 1)[1]
             img_bytes = base64.b64decode(image_b64)
             # Write to temp file for Sarvam API
             with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
@@ -564,35 +553,32 @@ def api_upload_files():
     files = request.files.getlist('files')
     if not files or all(f.filename == '' for f in files):
         return _cors_json({'success': False, 'message': 'No files selected'}, 400)
-    uploaded = []
+    
+    index_results = []
+    valid_count = 0
+    
     for f in files:
         if f and f.filename and allowed_file(f.filename):
+            valid_count += 1
             fname = secure_filename(f.filename)
-            fpath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], fname))
-            f.save(fpath)
-            uploaded.append(fpath)
-    if not uploaded:
-        return _cors_json({'success': False, 'message': 'No valid files uploaded'}, 400)
-    index_results = []
-    for fpath in uploaded:
-        try:
-            with open(fpath, 'rb') as fp:
+            try:
+                # Send the file bytes directly to AWS RAG to avoid writing to read-only container volumes
+                file_bytes = f.read()
                 res = requests.post(
                     f'{AWS_RAG_BASE_URL}/api/index',
-                    files={'file': (os.path.basename(fpath), fp, 'application/pdf')},
+                    files={'file': (fname, file_bytes, 'application/pdf')},
                     data={'metadata': json.dumps({'source': 'CDSCO', 'type': 'pharmaceutical_document', 'year': str(time.localtime().tm_year)})},
                     timeout=120,
                 )
-            index_results.append({'file': os.path.basename(fpath), 'indexed': res.status_code == 200})
-        except Exception as e:
-            index_results.append({'file': os.path.basename(fpath), 'indexed': False, 'error': str(e)})
-        finally:
-            try:
-                os.remove(fpath)
-            except OSError:
-                pass
-    ok = sum(1 for r in index_results if r['indexed'])
-    return _cors_json({'success': ok > 0, 'message': f'Indexed {ok}/{len(uploaded)} file(s)', 'count': len(uploaded), 'results': index_results})
+                index_results.append({'file': fname, 'indexed': res.status_code == 200})
+            except Exception as e:
+                index_results.append({'file': fname, 'indexed': False, 'error': str(e)})
+                
+    if valid_count == 0:
+        return _cors_json({'success': False, 'message': 'No valid files uploaded'}, 400)
+        
+    ok = sum(1 for r in index_results if r.get('indexed', False))
+    return _cors_json({'success': ok > 0, 'message': f'Indexed {ok}/{valid_count} file(s)', 'count': valid_count, 'results': index_results})
 
 
 @app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
@@ -605,7 +591,10 @@ def api_list_documents():
     try:
         res = requests.get(f'{AWS_RAG_BASE_URL}/api/documents', timeout=30)
         if res.status_code == 200:
-            return _cors_json(res.json().get('documents', []))
+            docs = res.json().get('documents', [])
+            for d in docs:
+                d['id'] = d.get('name')
+            return _cors_json(docs)
         return _cors_json({'error': f'API status {res.status_code}'}, res.status_code)
     except Exception as e:
         return _cors_json({'error': str(e)}, 503)
