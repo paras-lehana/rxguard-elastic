@@ -77,6 +77,7 @@ class DescopeAuth {
   onSuccess(detail) {
     if (detail.user) {
       this.user = {
+        userId: detail.user.userId || detail.user.loginIds?.[0] || detail.user.email,
         email: detail.user.email,
         name: detail.user.name || detail.user.email.split('@')[0],
         loginTime: Date.now(),
@@ -85,6 +86,11 @@ class DescopeAuth {
       localStorage.setItem('pharma_user', JSON.stringify(this.user));
       this.updateUI();
       this.hideModal();
+
+      // Reload sessions for this user (user-scoped storage)
+      loadSessions();
+      renderSessionList();
+
       toast('Signed in successfully!', 'success');
     }
   }
@@ -95,6 +101,13 @@ class DescopeAuth {
     this.isLoggedIn = false;
     localStorage.removeItem('pharma_user');
     this.updateUI();
+
+    // Clear session data from UI for privacy — next user must not see previous chats
+    sessions = [];
+    activeSessionId = null;
+    renderSessionList();
+    showLandingView();
+
     toast('Signed out', 'info');
   }
 

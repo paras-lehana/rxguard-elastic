@@ -5,8 +5,47 @@
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const MAX_SESSIONS = 50;    // Maximum sessions in localStorage before eviction
-const STORAGE_KEY_SESSIONS = 'pharmai_sessions';
-const STORAGE_KEY_ACTIVE = 'pharmai_active_session';
+
+// ─── User-Scoped Storage Keys ───────────────────────────────────────────────
+// WHY: Sessions must be isolated per user. Without user-keyed storage,
+// logging out and logging in as another user would expose previous sessions.
+// The key includes the Descope userId (or email hash) appended by auth.js.
+
+/**
+ * Get user-scoped localStorage key for sessions.
+ * Falls back to a generic 'anonymous' key if no user is logged in.
+ * @returns {string} The localStorage key for sessions
+ */
+function getSessionStorageKey() {
+  const user = getUserId();
+  return user ? `pharmai_sessions_${user}` : 'pharmai_sessions_anon';
+}
+
+/**
+ * Get user-scoped localStorage key for the active session ID.
+ * @returns {string} The localStorage key for active session
+ */
+function getActiveSessionStorageKey() {
+  const user = getUserId();
+  return user ? `pharmai_active_session_${user}` : 'pharmai_active_session_anon';
+}
+
+/**
+ * Get the current user's unique ID from localStorage.
+ * Used to scope session storage per user for privacy.
+ * @returns {string|null} The user ID or null if not logged in
+ */
+function getUserId() {
+  try {
+    const userData = localStorage.getItem('pharma_user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      // Use email as unique identifier (stable across sessions)
+      return user.userId || user.email || null;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 let sessions = [];       // Array of session objects
@@ -27,13 +66,15 @@ let activeSessionId = null;  // Currently displayed session ID
 
 // ─── Load & Save ────────────────────────────────────────────────────────────
 function loadSessions() {
-  sessions = storageGet(STORAGE_KEY_SESSIONS, []);
-  activeSessionId = storageGet(STORAGE_KEY_ACTIVE, null);
+  const sessKey = getSessionStorageKey();
+  const activeKey = getActiveSessionStorageKey();
+  sessions = storageGet(sessKey, []);
+  activeSessionId = storageGet(activeKey, null);
 
   // Validate active session still exists
   if (activeSessionId && !sessions.find(s => s.id === activeSessionId)) {
     activeSessionId = null;
-    storageSet(STORAGE_KEY_ACTIVE, null);
+    storageSet(activeKey, null);
   }
 }
 
@@ -43,11 +84,11 @@ function saveSessions() {
     sessions.sort((a, b) => b.updatedAt - a.updatedAt);
     sessions = sessions.slice(0, MAX_SESSIONS);
   }
-  storageSet(STORAGE_KEY_SESSIONS, sessions);
+  storageSet(getSessionStorageKey(), sessions);
 }
 
 function saveActiveSession() {
-  storageSet(STORAGE_KEY_ACTIVE, activeSessionId);
+  storageSet(getActiveSessionStorageKey(), activeSessionId);
 }
 
 // ─── Session CRUD ───────────────────────────────────────────────────────────

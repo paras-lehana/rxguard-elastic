@@ -1,24 +1,26 @@
 """
-PharmAI Portal — Flask Backend v2.0
+PharmAI Portal — Flask Backend v3.1
 ====================================
-Serves the frontend and proxies all Sarvam AI / N8N API calls.
+Serves the frontend and proxies API calls to:
+  - AWS Bedrock Knowledge Base (via RAG backend at localhost:4101) for search, interaction, doc-analysis
+  - Sarvam AI for STT, TTS, OCR, and Translation ONLY
 Keeps API keys server-side (never exposed to browser).
 
 Endpoints:
   GET  /                       → Main portal page
   GET  /pharmai                → Same (Traefik compat)
   GET  /analyze, /pharmai/analyze → Results page
-  POST /api/search             → 2-tier medicine search (N8N → Sarvam)
+  POST /api/search             → 2-tier medicine search (N8N → AWS Bedrock KB)
   POST /api/stt                → Speech-to-Text (Sarvam Saaras v3)
-  POST /api/tts                → Text-to-Speech (Sarvam Bulbul v3)
+  POST /api/tts                → Text-to-Speech (Sarvam Bulbul v2)
   POST /api/translate          → Translation (Sarvam Mayura v1)
   POST /api/ocr                → Document OCR (Sarvam parse/document)
-  POST /api/interaction        → Drug interaction check (Sarvam Chat)
-  POST /api/doc-analysis       → AI document analysis (Sarvam Chat)
-  POST /api/upload-files       → PDF upload & index
-  POST /api/list-documents     → List indexed documents
-  POST /api/delete-document    → Delete a document
-  DELETE /api/delete-all-documents → Delete all documents
+  POST /api/interaction        → Drug interaction check (AWS Bedrock KB)
+  POST /api/doc-analysis       → AI document analysis (Sarvam OCR + AWS Bedrock KB)
+  POST /api/upload-files       → PDF upload & index (AWS Bedrock KB)
+  POST /api/list-documents     → List indexed documents (AWS Bedrock KB)
+  POST /api/delete-document    → Delete a document (AWS Bedrock KB)
+  DELETE /api/delete-all-documents → Delete all documents (AWS Bedrock KB)
   GET  /health                 → Health check
 """
 
@@ -41,6 +43,12 @@ except ImportError:
 SARVAM_API_KEY = os.getenv('SARVAM_API_KEY', '')
 PHARMA_INSIGHT_URL = os.getenv('PHARMA_INSIGHT_URL', '')
 SARVAM_BASE = 'https://api.sarvam.ai'
+
+# AWS RAG Backend — Knowledge Base search, document indexing, and listing
+# Hosted at /home/ubuntu/AWS_RAG_CURD/, container 'knowledge-base-aws' on port 4101
+# NOTE: Accessible via localhost:4101 from the host; pharma-frontend container
+# must use host.docker.internal or 172.18.0.1 (Docker host gateway)
+AWS_RAG_BASE_URL = os.getenv('AWS_RAG_BASE_URL', 'http://172.18.0.1:4101')
 
 # ─── Flask App ───────────────────────────────────────────────────────────────
 # static_folder='.': Serve CSS/JS/assets from the same dir as app.py
@@ -100,6 +108,14 @@ PHARMAI_SYSTEM_PROMPT = (
     "**Usage:** What it is used for, dosage guidelines\n"
     "**Regulatory:** CDSCO schedule classification, gazette notifications if banned\n"
     "**Alternatives:** Safer alternatives if the medicine is banned or restricted\n\n"
+    "**💰 Jan Aushadhi (Generic) Alternatives:**\n"
+    "For EVERY branded medicine mentioned, you MUST provide:\n"
+    "- The equivalent generic medicine available under Pradhan Mantri Bhartiya "
+    "Janaushadhi Pariyojana (PMBJP)\n"
+    "- Approximate branded price vs. Jan Aushadhi generic price\n"
+    "- Percentage cost savings (e.g., '₹120 branded → ₹15 Jan Aushadhi = 87% savings')\n"
+    "- Nearest Jan Aushadhi Kendra availability tip\n"
+    "If no Jan Aushadhi equivalent exists, state that clearly.\n\n"
     "Be concise, accurate, and respond in the same language the user uses. "
     "If the query is in Hindi or another Indian language, respond in that language. "
     "Use Markdown bold (**text**) for section headers. Start your response with a "
@@ -150,53 +166,83 @@ def search_tier1_n8n(query, session_id):
     return None
 
 
-def search_tier2_sarvam(query, history=None, space_context=None):
-    """Tier 2 — Sarvam AI Chat (sarvam-m). Supports conversation history."""
-    if not SARVAM_API_KEY:
-        return None
+def search_tier2_aws(query, history=None, space_context=None):
+    """Tier 2 — AWS Bedrock Knowledge Base via RAG backend at /api/search.
+    
+    WHY: AWS Bedrock provides domain-specific pharmaceutical knowledge via
+    a curated Knowledge Base with CDSCO/FSSAI documents, far superior to
+    a generic Sarvam chat completion for drug safety queries.
+    The RAG backend handles vector search + Bedrock model inference internally.
+    """
     try:
-        # Build messages array with optional history for context-aware follow-ups
-        messages = [{'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT}]
-
-        # Add space-specific system instruction if provided
+        # Build the search query with optional space context prepended
+        search_query = query
         if space_context:
-            messages.append({'role': 'system', 'content': f'Additional context: {space_context}'})
+            search_query = f"[Context: {space_context}] {query}"
 
-        # Add conversation history for follow-up context
+        # Include conversation history summary for follow-up context
         if history and isinstance(history, list):
-            for h in history[-8:]:  # Max 8 history entries
-                if h.get('role') in ('user', 'assistant'):
-                    messages.append({'role': h['role'], 'content': h['content'][:500]})
-
-        messages.append({'role': 'user', 'content': query})
+            recent = history[-4:]  # Last 4 exchanges for context
+            history_text = ' | '.join(
+                f"{h.get('role', 'user')}: {h.get('content', '')[:200]}"
+                for h in recent if h.get('role') in ('user', 'assistant')
+            )
+            if history_text:
+                search_query = f"{query}\n\n[Previous conversation context: {history_text}]"
 
         res = requests.post(
-            f'{SARVAM_BASE}/v1/chat/completions',
-            headers=sarvam_headers(),
-            json={
-                'model': 'sarvam-m',
-                'messages': messages,
-                'temperature': 0.5,
-                'max_tokens': 1024,
-            },
-            timeout=45,
+            f'{AWS_RAG_BASE_URL}/api/search',
+            json={'query': search_query, 'session_id': f'pharmai-web-{int(time.time())}'},
+            timeout=60,
         )
         if res.status_code == 200:
             data = res.json()
-            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-            if content:
-                return {'source': 'sarvam', 'answer': f"🤖 **AI Analysis (Sarvam-M)**\n\n{content}"}
+            # AWS RAG backend response format:
+            # - 'text': main summary text
+            # - 'results': dict with detailed structured fields
+            # - 'current_status': 'open' | 'banned' | 'restricted' etc.
+            # - 'medicine_searched': the query medicine name
+            answer = data.get('text') or data.get('answer') or data.get('response') or data.get('result', '')
+            
+            # If structured result available, build a richer response
+            if data.get('medicine_searched') and data.get('current_status'):
+                badges = {'open': '✅ ALLOWED', 'banned': '🚫 BANNED', 'restricted': '⚠️ RESTRICTED'}
+                status = data.get('current_status', 'unknown')
+                badge = badges.get(status, 'ℹ️ ' + status.upper())
+                
+                # Extract structured details
+                results = data.get('results', {})
+                summary = ''
+                if isinstance(results, dict):
+                    summary = results.get('summary', '')
+                elif isinstance(results, str):
+                    summary = results
+                
+                answer_parts = [f"{badge}", f"**Medicine:** {data['medicine_searched']}", ""]
+                if summary:
+                    answer_parts.append(summary)
+                elif answer:
+                    answer_parts.append(answer)
+                
+                answer = '\n\n'.join(answer_parts)
+            
+            if answer:
+                return {'source': 'aws-bedrock', 'answer': f"🔬 **AI Analysis (AWS Bedrock KB)**\n\n{answer}"}
+        print(f"[SEARCH T2] AWS RAG status={res.status_code}")
     except Exception as e:
-        print(f"[SEARCH T2] Sarvam error: {e}")
+        print(f"[SEARCH T2] AWS RAG error: {e}")
     return None
 
 
 def search_medicine(query, session_id, history=None, space_context=None):
-    """Execute the full 2-tier search fallback chain with optional context."""
+    """Execute the full 2-tier search fallback chain with optional context.
+    Tier 1: N8N RAG Pipeline (structured drug lookup)
+    Tier 2: AWS Bedrock Knowledge Base (general pharma AI search)
+    """
     result = search_tier1_n8n(query, session_id)
     if result:
         return result
-    result = search_tier2_sarvam(query, history=history, space_context=space_context)
+    result = search_tier2_aws(query, history=history, space_context=space_context)
     if result:
         return result
     return {
@@ -447,7 +493,12 @@ def api_ocr():
 @app.route('/api/interaction', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/interaction', methods=['POST', 'OPTIONS'])
 def api_interaction():
-    """Drug Interaction Checker — Sarvam Chat."""
+    """Drug Interaction Checker — Uses AWS Bedrock Knowledge Base.
+    
+    WHY AWS RAG instead of Sarvam Chat: The Knowledge Base contains curated
+    CDSCO/FSSAI drug interaction data, providing more accurate and India-specific
+    interaction analysis than a generic chat model.
+    """
     if request.method == 'OPTIONS':
         return _cors_preflight()
     data = request.get_json(force=True)
@@ -456,28 +507,26 @@ def api_interaction():
     if not med_a or not med_b:
         return jsonify({'error': 'Both medicine names required'}), 400
     prompt = (
-        f"Are {med_a} and {med_b} safe to take together in India? "
+        f"Drug-Drug Interaction Analysis: {med_a} and {med_b}. "
+        "Are they safe to take together in India? "
         "Provide: interaction type, severity (Safe/Caution/Dangerous), "
-        "mechanism, and recommendation. Use markdown."
+        "mechanism, clinical significance, and recommendation. "
+        "Also suggest Jan Aushadhi (generic) alternatives if available. Use markdown."
     )
     try:
         res = requests.post(
-            f'{SARVAM_BASE}/v1/chat/completions',
-            headers=sarvam_headers(),
-            json={
-                'model': 'sarvam-m',
-                'messages': [
-                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
-                    {'role': 'user', 'content': prompt},
-                ],
-                'temperature': 0.5,
-                'max_tokens': 1024,
-            },
-            timeout=45,
+            f'{AWS_RAG_BASE_URL}/api/search',
+            json={'query': prompt, 'session_id': f'pharmai-interaction-{int(time.time())}'},
+            timeout=60,
         )
-        rj = res.json()
-        content = rj.get('choices', [{}])[0].get('message', {}).get('content', '')
-        return _cors_json({'answer': content or 'No interaction data available.'})
+        if res.status_code == 200:
+            rj = res.json()
+            # AWS RAG returns 'text' field with summary, 'results.summary' for detail
+            content = rj.get('text') or rj.get('answer') or rj.get('response') or rj.get('result', '')
+            if not content and isinstance(rj.get('results'), dict):
+                content = rj['results'].get('summary', '')
+            return _cors_json({'answer': content or 'No interaction data available.'})
+        return _cors_json({'answer': 'No interaction data available.'})
     except Exception as e:
         return _cors_json({'error': str(e)}, 500)
 
@@ -508,7 +557,7 @@ def api_doc_analysis():
         return _cors_json({'error': f'OCR failed: {e}'}, 500)
     if not ocr_text.strip():
         return _cors_json({'error': 'Could not extract text from document.'}, 400)
-    # Step 2: AI Interpretation
+    # Step 2: AI Interpretation via AWS Bedrock Knowledge Base
     analysis_prompt = (
         f"I have a medical document with the following extracted text:\n\n"
         f"---\n{ocr_text[:3000]}\n---\n\n"
@@ -516,26 +565,24 @@ def api_doc_analysis():
         "1. **Document Type** (prescription, blood test, X-ray report, etc.)\n"
         "2. **Key Findings** from the document\n"
         "3. **Medicines mentioned** and their safety status in India\n"
-        "4. **Recommendations** or flags for the patient\n"
+        "4. **Jan Aushadhi Alternatives** — generic equivalents with cost savings\n"
+        "5. **Recommendations** or flags for the patient\n"
         "Use markdown formatting."
     )
     try:
         res = requests.post(
-            f'{SARVAM_BASE}/v1/chat/completions',
-            headers=sarvam_headers(),
-            json={
-                'model': 'sarvam-m',
-                'messages': [
-                    {'role': 'system', 'content': PHARMAI_SYSTEM_PROMPT},
-                    {'role': 'user', 'content': analysis_prompt},
-                ],
-                'temperature': 0.5,
-                'max_tokens': 1024,
-            },
-            timeout=45,
+            f'{AWS_RAG_BASE_URL}/api/search',
+            json={'query': analysis_prompt, 'session_id': f'pharmai-docanalysis-{int(time.time())}'},
+            timeout=60,
         )
-        rj = res.json()
-        analysis = rj.get('choices', [{}])[0].get('message', {}).get('content', '')
+        if res.status_code == 200:
+            rj = res.json()
+            # AWS RAG returns 'text' field with summary, 'results.summary' for detail
+            analysis = rj.get('text') or rj.get('answer') or rj.get('response') or rj.get('result', '')
+            if not analysis and isinstance(rj.get('results'), dict):
+                analysis = rj['results'].get('summary', '')
+        else:
+            analysis = 'Analysis could not be generated.'
         return _cors_json({
             'ocr_text': ocr_text[:2000],
             'analysis': analysis or 'Analysis could not be generated.',
@@ -570,7 +617,7 @@ def api_upload_files():
         try:
             with open(fpath, 'rb') as fp:
                 res = requests.post(
-                    'https://medical.lehana.in/ncert/api/index',
+                    f'{AWS_RAG_BASE_URL}/api/index',
                     files={'file': (os.path.basename(fpath), fp, 'application/pdf')},
                     data={'metadata': json.dumps({'source': 'CDSCO', 'type': 'pharmaceutical_document', 'year': str(time.localtime().tm_year)})},
                     timeout=120,
@@ -595,7 +642,7 @@ def api_list_documents():
     if request.method == 'OPTIONS':
         return _cors_preflight()
     try:
-        res = requests.get('https://medical.lehana.in/ncert/api/documents', timeout=30)
+        res = requests.get(f'{AWS_RAG_BASE_URL}/api/documents', timeout=30)
         if res.status_code == 200:
             return _cors_json(res.json().get('documents', []))
         return _cors_json({'error': f'API status {res.status_code}'}, res.status_code)
@@ -613,7 +660,7 @@ def api_delete_document():
     if not doc_id:
         return jsonify({'error': 'No documentId'}), 400
     try:
-        res = requests.post('https://medical.lehana.in/ncert/api/documents/delete', json={'documentId': doc_id}, timeout=30)
+        res = requests.post(f'{AWS_RAG_BASE_URL}/api/documents/delete', json={'documentId': doc_id}, timeout=30)
         return _cors_json(res.json(), res.status_code)
     except Exception as e:
         return _cors_json({'error': str(e)}, 500)
@@ -625,7 +672,7 @@ def api_delete_all_documents():
     if request.method == 'OPTIONS':
         return _cors_preflight()
     try:
-        res = requests.delete('https://medical.lehana.in/ncert/api/documents/all', timeout=60)
+        res = requests.delete(f'{AWS_RAG_BASE_URL}/api/documents/all', timeout=60)
         return _cors_json(res.json(), res.status_code)
     except Exception as e:
         return _cors_json({'error': str(e)}, 500)
@@ -641,9 +688,9 @@ def health():
     return jsonify({
         'status': 'healthy',
         'service': 'PharmAI Portal',
-        'version': '2.1',
+        'version': '3.1',
         'timestamp': time.time(),
-        'features': ['2-tier-search', 'session-history', 'spaces', 'stt', 'tts', 'translate', 'ocr', 'prescription-scan', 'interaction-check', 'doc-analysis', 'kb-upload'],
+        'features': ['aws-rag', 'jan-aushadhi', 'session-privacy', '2-tier-search', 'session-history', 'spaces', 'stt', 'tts', 'translate', 'ocr', 'prescription-scan', 'interaction-check', 'doc-analysis', 'kb-upload'],
     })
 
 
@@ -685,8 +732,9 @@ def _cors_json(data, status=200):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    print(f"🚀 PharmAI Portal v2.1 starting on port {port}")
-    print(f"   Features: 2-tier search, STT, TTS, Translate, OCR, Interaction Check, Doc Analysis")
+    print(f"🚀 PharmAI Portal v3.1 starting on port {port}")
+    print(f"   Features: AWS RAG + Jan Aushadhi + Session Privacy + STT/TTS/Translate/OCR")
+    print(f"   AWS RAG: {AWS_RAG_BASE_URL}")
     print(f"   N8N: {'configured' if PHARMA_INSIGHT_URL else '⚠️  NOT configured'}")
-    print(f"   Sarvam: {'configured' if SARVAM_API_KEY else '⚠️  NOT configured'}")
+    print(f"   Sarvam (STT/TTS/OCR only): {'configured' if SARVAM_API_KEY else '⚠️  NOT configured'}")
     app.run(debug=debug, host='0.0.0.0', port=port)

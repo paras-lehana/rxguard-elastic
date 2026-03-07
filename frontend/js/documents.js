@@ -220,20 +220,14 @@ function updateUploadProgress(current, total) {
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 function initDocuments() {
-  // Upload button / file input
+  // Upload file input — triggered by clicking the drop zone (unified UI)
   const uploadInput = document.getElementById('docUploadInput');
   uploadInput?.addEventListener('change', (e) => {
     uploadDocuments(e.target.files);
     e.target.value = ''; // Reset for re-upload
   });
 
-  // Upload trigger button
-  const uploadBtn = document.getElementById('docUploadBtn');
-  uploadBtn?.addEventListener('click', () => {
-    document.getElementById('docUploadInput')?.click();
-  });
-
-  // Drag-and-drop zone
+  // Drag-and-drop zone (also clickable via onclick in HTML)
   const dropZone = document.getElementById('docDropZone');
   if (dropZone) {
     dropZone.addEventListener('dragover', (e) => {

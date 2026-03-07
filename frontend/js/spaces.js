@@ -138,6 +138,7 @@ function setActiveSpace(spaceId) {
   saveActiveSpace();
   renderSpaceSelector();
   renderSessionList();
+  updateSpacePromptEditor();  // Show/hide custom prompt textarea
 }
 
 // ─── Space Selector UI ─────────────────────────────────────────────────────
@@ -235,6 +236,43 @@ function updateSpaceIndicator() {
   }
 }
 
+// ─── Custom System Prompt Editor ────────────────────────────────────────────
+
+/**
+ * Show/hide the inline system prompt textarea based on active space.
+ * Default space hides the editor. Non-default spaces show it with
+ * the space's current systemInstruction pre-filled.
+ */
+function updateSpacePromptEditor() {
+  const editor = document.getElementById('spacePromptEditor');
+  const textarea = document.getElementById('spacePromptTextarea');
+  if (!editor || !textarea) return;
+
+  const space = getSpaceById(activeSpaceId);
+  if (!space || space.id === 'default') {
+    editor.style.display = 'none';
+    return;
+  }
+
+  editor.style.display = '';
+  textarea.value = space.systemInstruction || '';
+}
+
+/**
+ * Handle changes to the custom system prompt textarea.
+ * Auto-saves the instruction to the active space on blur.
+ */
+function handleSpacePromptChange() {
+  const textarea = document.getElementById('spacePromptTextarea');
+  if (!textarea) return;
+
+  const space = getSpaceById(activeSpaceId);
+  if (!space || space.isDefault) return;  // Cannot edit default spaces' prompts
+
+  space.systemInstruction = textarea.value;
+  saveSpaces();
+}
+
 // ─── Init ───────────────────────────────────────────────────────────────────
 
 function initSpaces() {
@@ -256,4 +294,14 @@ function initSpaces() {
   // Create space form
   document.getElementById('createSpaceForm')?.addEventListener('submit', handleCreateSpace);
   document.getElementById('cancelCreateSpace')?.addEventListener('click', hideCreateSpaceModal);
+
+  // Custom system prompt editor — auto-save on blur
+  const promptTextarea = document.getElementById('spacePromptTextarea');
+  if (promptTextarea) {
+    promptTextarea.addEventListener('blur', handleSpacePromptChange);
+    promptTextarea.addEventListener('change', handleSpacePromptChange);
+  }
+
+  // Initialize prompt editor visibility
+  updateSpacePromptEditor();
 }

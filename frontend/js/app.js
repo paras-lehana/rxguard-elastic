@@ -11,7 +11,7 @@
  */
 
 // ─── Global Config ──────────────────────────────────────────────────────────
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.1.0';
 
 // ─── Tool Panel Management ─────────────────────────────────────────────────
 // Tool panels are side features (OCR, Interaction, Documents, Settings)
@@ -64,34 +64,25 @@ function closeToolPanel() {
 
 const TEMPLATE_QUERIES = [
   {
+    icon: '�',
+    title: 'Search Medicine',
+    query: 'Is Nimesulide banned in India? Show Jan Aushadhi alternatives.',
+  },
+  {
+    icon: '📷',
+    title: 'Scan Prescription',
+    query: '__ACTION:OCR__',
+    action: 'ocr',
+  },
+  {
     icon: '💊',
-    title: 'Drug Safety',
-    query: 'Is Paracetamol safe during pregnancy?',
-  },
-  {
-    icon: '⚠️',
-    title: 'Side Effects',
-    query: 'Common side effects of Metformin 500mg',
-  },
-  {
-    icon: '🔄',
     title: 'Drug Interaction',
-    query: 'Interaction between Aspirin and Warfarin',
+    query: 'Check interaction between Aspirin and Warfarin',
   },
   {
-    icon: '📋',
-    title: 'Dosage Info',
-    query: 'Recommended dosage of Amoxicillin for adults',
-  },
-  {
-    icon: '🏥',
-    title: 'CDSCO Status',
-    query: 'Is Nimesulide banned in India?',
-  },
-  {
-    icon: '🧬',
-    title: 'Drug Composition',
-    query: 'Active ingredients in Crocin Advance',
+    icon: '💰',
+    title: 'Jan Aushadhi Savings',
+    query: 'Find Jan Aushadhi generic alternative for Augmentin 625 with cost savings',
   },
 ];
 
@@ -99,15 +90,21 @@ function renderTemplateCards() {
   const container = document.getElementById('templateGrid');
   if (!container) return;
 
-  container.innerHTML = TEMPLATE_QUERIES.map((t, i) => `
-    <div class="template-card" onclick="handleTemplateClick('${escapeHtml(t.query).replace(/'/g, "\\'")}')">
+  container.innerHTML = TEMPLATE_QUERIES.map((t, i) => {
+    // If the card has an action (like opening OCR panel), use data-action
+    const clickHandler = t.action
+      ? `showToolPanel('${t.action}')`
+      : `handleTemplateClick('${escapeHtml(t.query).replace(/'/g, "\\'")}')`;
+
+    return `
+    <div class="template-card" onclick="${clickHandler}">
       <div class="template-icon">${t.icon}</div>
       <div>
         <div class="template-title">${t.title}</div>
-        <div class="template-query">${escapeHtml(t.query)}</div>
+        <div class="template-query">${t.action ? 'Upload & scan your prescription' : escapeHtml(t.query)}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─── Search Bar Setup ───────────────────────────────────────────────────────

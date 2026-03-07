@@ -84,15 +84,7 @@ function initSidebar() {
   loadSessions();
   renderSessionList();
 
-  // On desktop, auto-open sidebar
-  if (window.innerWidth >= 1024) {
-    openSidebar();
-  }
-
-  // Handle window resize: close sidebar on shrink, open on expand
-  window.addEventListener('resize', debounce(() => {
-    if (window.innerWidth >= 1024 && !sidebarOpen) {
-      openSidebar();
-    }
-  }, 200));
+  // NOTE: Sidebar starts CLOSED on all screen sizes to prevent
+  // blurred backdrop on first load. User can toggle with hamburger.
+  // Previously auto-opened on desktop (>=1024px) which caused blur issues.
 }

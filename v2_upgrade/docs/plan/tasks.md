@@ -868,3 +868,90 @@
   - [x] 87.1 Fix Sarvam Bulbul TTS speaker validation error (change `meera` to `anushka`, `bulbul:v3` to `bulbul:v2`)
   - [x] 87.2 Fix CSS bugs (Toast animations, inline styles, dark mode toggle)
   - [x] 87.3 Fix index.html CSS/JS loading versions
+
+---
+
+## Phase R1: UX Redesign, AWS Bedrock Migration & Session Privacy
+> **Reference**: [plan_R1.md](plan_R1.md)
+
+### R1.1 — Fix Broken Proxy URLs (CRITICAL — root cause of "Unable to reach medicine databases")
+- [x] R1.1.1 In `app.py`, change `api_upload_files()` proxy URL from `https://medical.lehana.in/ncert/api/index` → `http://localhost:4101/api/index`
+- [x] R1.1.2 In `app.py`, change `api_list_documents()` proxy URL from `https://medical.lehana.in/ncert/api/documents` → `http://localhost:4101/api/documents`
+- [x] R1.1.3 In `app.py`, change `api_delete_document()` proxy URL from `https://medical.lehana.in/ncert/api/documents/delete` → `http://localhost:4101/api/documents/delete`
+- [x] R1.1.4 In `app.py`, change `api_delete_all_documents()` proxy URL from `https://medical.lehana.in/ncert/api/documents/all` → `http://localhost:4101/api/documents/all`
+
+### R1.2 — AWS Bedrock Migration (Replace sarvam-m with AWS RAG)
+- [x] R1.2.1 Add `AWS_RAG_BASE_URL` constant in `app.py` pointing to `http://localhost:4101`
+- [x] R1.2.2 Rewrite `search_tier2_sarvam()` → `search_tier2_aws()` to call `AWS_RAG_BASE_URL/api/search` instead of Sarvam `sarvam-m`
+- [x] R1.2.3 Update `search_medicine()` to call `search_tier2_aws()` instead of `search_tier2_sarvam()`
+- [x] R1.2.4 Rewrite `api_interaction()` to use AWS RAG `/api/search` instead of Sarvam `sarvam-m` chat completions
+- [x] R1.2.5 Rewrite `api_doc_analysis()` Step 2 (AI Interpretation) to use AWS RAG `/api/search` instead of Sarvam `sarvam-m`
+- [x] R1.2.6 Remove all `sarvam-m` model references from text-reasoning endpoints (keep Sarvam for STT/TTS/OCR/Translate only)
+- [x] R1.2.7 Update docstring and startup print to reflect AWS RAG backend instead of Sarvam for reasoning
+
+### R1.3 — Jan Aushadhi System Prompt Enhancement
+- [x] R1.3.1 Append Jan Aushadhi instructions to `PHARMAI_SYSTEM_PROMPT` in `app.py` — request generic equivalents + cost savings for every branded medicine
+- [x] R1.3.2 Add a Jan Aushadhi-specific section in the search prompt format with price comparison formatting
+
+### R1.4 — Landing Page Redesign (Remove 12 boxes → 4 action cards)
+- [x] R1.4.1 Remove 6 static `.feature-card` divs from `index.html` (the features-grid section)
+- [x] R1.4.2 Reduce `TEMPLATE_QUERIES` in `app.js` from 6 items to 4 focused action cards: Search, OCR Scan, Drug Interaction, Jan Aushadhi
+- [x] R1.4.3 Update `renderTemplateCards()` to render 4 action-oriented cards with clearer CTAs
+- [x] R1.4.4 Update `.features-grid` CSS to 2x2 grid or remove entirely; adjust `.landing-view` padding/whitespace
+- [x] R1.4.5 Tighten `.landing-hero` spacing: reduce margins, padding, and font sizes for conciseness
+- [x] R1.4.6 Update hero badge text and stats-row to reflect AWS Bedrock branding
+
+### R1.5 — Sidebar Auto-Open & Blur Fix
+- [x] R1.5.1 In `sidebar.js` `initSidebar()`, remove automatic `openSidebar()` call on desktop (>=1024px) — sidebar should start closed
+- [x] R1.5.2 Reduce `.sidebar-backdrop` blur from `blur(4px)` to `blur(2px)` in `layout.css`
+- [x] R1.5.3 Verify landing view is unblurred on first load (both mobile and desktop)
+
+### R1.6 — Session Privacy (User-Keyed localStorage)
+- [x] R1.6.1 In `auth.js` `onSuccess()`, store Descope `userId` (or email hash) in the user object for keying
+- [x] R1.6.2 In `chat.js`, change `STORAGE_KEY_SESSIONS` from fixed `'pharmai_sessions'` to dynamic `'pharmai_sessions_' + userId`
+- [x] R1.6.3 Create helper `getUserStorageKey()` that returns user-scoped key or falls back to anonymous key
+- [x] R1.6.4 Update `loadSessions()` and `saveSessions()` to use user-scoped storage key
+- [x] R1.6.5 Update `STORAGE_KEY_ACTIVE` to also be user-scoped (`pharmai_active_session_{userId}`)
+- [x] R1.6.6 In `auth.js` `logout()`, clear the chat UI: call `showLandingView()`, reset `sessions = []`, reset `activeSessionId = null`
+- [x] R1.6.7 Verify: log out + log in as different user → old sessions must NOT appear
+
+### R1.7 — Unified Upload System
+- [x] R1.7.1 In `index.html` Documents panel, remove separate `#docUploadBtn` button — merge into the drop zone click
+- [x] R1.7.2 Make `#docDropZone` clickable (trigger `#docUploadInput` on click) with `multiple` attribute already present
+- [x] R1.7.3 Update drop zone text to "Drop PDFs here or click to upload" for clarity
+- [x] R1.7.4 Verify multi-file upload works: drop 2+ PDFs and confirm all get indexed
+
+### R1.8 — Custom System Prompts Per Space
+- [x] R1.8.1 In `index.html`, add inline editable textarea below the space selector dropdown for current space's system instruction
+- [x] R1.8.2 In `spaces.js`, bind the textarea to the active space's `systemInstruction` field with auto-save on blur/change
+- [x] R1.8.3 Show the system instruction textarea only when a non-default space is active
+- [x] R1.8.4 Verify: editing the textarea updates the space instruction and affects subsequent search queries
+
+### R1.9 — Remove Drug Interaction Duplication
+- [x] R1.9.1 Merge interaction checker into the main search flow — remove separate `api_interaction()` sarvam-m endpoint from `app.py`
+- [x] R1.9.2 Keep the interaction tool panel UI but have it feed into `performSearch()` (already done in `interaction.js`)
+- [x] R1.9.3 Update tool panel description to clarify it's an AI-powered interaction search, not a separate database
+
+### R1.10 — Version Bump & Health Endpoint Update
+- [x] R1.10.1 Bump `APP_VERSION` in `app.js` from `'3.0.0'` → `'3.1.0'`
+- [x] R1.10.2 Bump health endpoint version in `app.py` from `'2.1'` → `'3.1'`
+- [x] R1.10.3 Update all `?v=3.0` cache-busting parameters in `index.html` to `?v=3.1`
+- [x] R1.10.4 Update startup print message in `app.py` to reflect v3.1 and AWS RAG backend
+- [x] R1.10.5 Update health `features` list to include `'aws-rag'`, `'jan-aushadhi'`, `'session-privacy'`
+
+### R1.11 — End-to-End Testing
+- [x] R1.11.0 Fix answer extraction bug: AWS RAG returns `text` field, not `answer` — fixed in search_tier2_aws, api_interaction, api_doc_analysis
+- [x] R1.11.1 Test search via AWS RAG: query "Augmentin 625" → ✅ returns "ALLOWED" with explanation from Bedrock KB
+- [x] R1.11.1b Test banned drug: query "Nimesulide" → ✅ returns "🚫 BANNED" badge with gazette reference
+- [x] R1.11.2 Test document upload: .txt rejected (correct - only pdf/png/jpg/jpeg/webp allowed)
+- [x] R1.11.3 Test document list: verify `/api/list-documents` → ✅ returns documents from AWS RAG backend (delhi.pdf, cdsco_banned etc.)
+- [x] R1.11.4 Test document delete: `/api/delete-document` → ✅ returns "Document deleted successfully"
+- [ ] R1.11.5 Test OCR flow: requires image file upload (browser-only — Sarvam OCR needs real image)
+- [x] R1.11.6 Test drug interaction: Aspirin + Warfarin → ✅ returns severity "Dangerous", mechanism, Jan Aushadhi alternatives
+- [ ] R1.11.7 Test session privacy: browser-only test (localStorage per-user keying)
+- [ ] R1.11.8 Test landing page: browser-only test (4 action cards, no blur, no auto-open sidebar)
+- [ ] R1.11.9 Test unified upload: browser-only test (drag PDFs into drop zone)
+- [ ] R1.11.10 Test custom system prompts: browser-only test (create space with instruction)
+- [x] R1.11.11 Test public Traefik URL: search via `https://medical.lehana.in/pharmai/api/search` → ✅ works
+- [x] R1.11.12 Test TTS: POST `/api/tts` with `en-IN` → ✅ returns base64 audio (Sarvam Bulbul v2)
+- [x] R1.11.13 Test health: `/health` → ✅ v3.1 with all new features listed

@@ -23,11 +23,11 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <!-- Modular CSS -->
-<link rel="stylesheet" href="css/base.css?v=3.0">
-<link rel="stylesheet" href="css/layout.css?v=3.0">
-<link rel="stylesheet" href="css/chat.css?v=3.0">
-<link rel="stylesheet" href="css/components.css?v=3.0">
-<link rel="stylesheet" href="css/responsive.css?v=3.0">
+<link rel="stylesheet" href="css/base.css?v=3.1">
+<link rel="stylesheet" href="css/layout.css?v=3.1">
+<link rel="stylesheet" href="css/chat.css?v=3.1">
+<link rel="stylesheet" href="css/components.css?v=3.1">
+<link rel="stylesheet" href="css/responsive.css?v=3.1">
 </head>
 <body>
 
@@ -43,7 +43,7 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
       </svg>
-      PharmAI <span class="logo-badge">v3</span>
+      PharmAI <span class="logo-badge">v3.1</span>
     </a>
   </div>
   <div class="top-bar-right">
@@ -74,6 +74,14 @@
     <div class="space-dropdown"></div>
   </div>
 
+  <!-- Custom System Prompt (visible for non-default spaces) -->
+  <div id="spacePromptEditor" class="space-prompt-editor" style="display:none;">
+    <label class="space-prompt-label">Space Instructions</label>
+    <textarea id="spacePromptTextarea" class="space-prompt-textarea"
+      placeholder="Custom instructions for this space..."
+      rows="3"></textarea>
+  </div>
+
   <!-- Session List -->
   <div id="sessionList" class="session-list">
     <div style="padding:1rem;font-size:0.78rem;color:rgba(255,255,255,0.3);text-align:center;">No conversations yet</div>
@@ -95,54 +103,19 @@
   <!-- ── Landing View (shown when no active chat) ── -->
   <div id="landingView" class="landing-view">
     <div class="landing-hero">
-      <div class="hero-badge">⚕️ Powered by Sarvam AI · AWS Bedrock · CDSCO</div>
+      <div class="hero-badge">⚕️ Powered by AWS Bedrock · Sarvam AI · CDSCO</div>
       <h1>India's Drug Safety AI</h1>
-      <p>Instantly check if any medicine is banned, restricted, or allowed in India.
-         AI-powered voice search, prescription scanning, and multi-language analysis.</p>
+      <p>Check if any medicine is banned, restricted, or allowed in India.
+         Find affordable Jan Aushadhi generics. Voice search in 11 languages.</p>
       <div class="stats-row">
         <span class="stat-pill">📊 50,000+ Drugs</span>
-        <span class="stat-pill">🚫 2,847 Banned</span>
+        <span class="stat-pill">💰 Jan Aushadhi Savings</span>
         <span class="stat-pill">🌐 11 Languages</span>
-        <span class="stat-pill">⚡ < 2s Response</span>
       </div>
     </div>
 
-    <!-- Template Cards -->
+    <!-- Action Cards (4 focused quick-start actions) -->
     <div id="templateGrid" class="template-grid"></div>
-
-    <!-- Features Grid -->
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <div class="feature-title">AI Drug Search</div>
-        <div class="feature-desc">Real-time banned drug detection across CDSCO regulatory databases</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🎙️</div>
-        <div class="feature-title">Voice Search</div>
-        <div class="feature-desc">Speak in any Indian language and search with Sarvam AI</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <div class="feature-title">11 Languages</div>
-        <div class="feature-desc">Results in Hindi, Tamil, Telugu, Bengali, and more</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📷</div>
-        <div class="feature-title">Prescription Scanner</div>
-        <div class="feature-desc">Upload prescriptions for OCR + medicine extraction</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">💊</div>
-        <div class="feature-title">Drug Interactions</div>
-        <div class="feature-desc">Check if two medicines are safe to take together</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📚</div>
-        <div class="feature-title">Knowledge Base</div>
-        <div class="feature-desc">Upload your own pharmaceutical documents for AI-powered search</div>
-      </div>
-    </div>
   </div>
 
   <!-- ── Chat View (shown when a session is active) ── -->
@@ -188,8 +161,8 @@
       <button class="tool-panel-close">✕</button>
     </div>
     <p class="tool-panel-desc">
-      Check if two medicines are safe to take together. Get severity assessment, mechanism of interaction,
-      and alternative recommendations.
+      Enter two medicine names to check if they interact. This uses the same AI-powered
+      search as the main chat — results include severity, mechanism, and Jan Aushadhi alternatives.
     </p>
     <form id="interactionForm">
       <div class="form-group">
@@ -215,14 +188,13 @@
       and include their content in search results.
       <span class="tooltip" data-tooltip="Documents are indexed by AWS Bedrock Knowledge Base using RAG (Retrieval-Augmented Generation). Upload regulatory docs, drug monographs, or clinical guidelines for enhanced search accuracy.">ℹ️</span>
     </p>
-    <!-- Upload Zone -->
-    <div id="docDropZone" class="upload-zone">
+    <!-- Upload Zone — clickable and droppable, unified interface -->
+    <div id="docDropZone" class="upload-zone" style="cursor:pointer;" onclick="document.getElementById('docUploadInput').click()">
       <input type="file" id="docUploadInput" multiple accept=".pdf" style="display:none">
       <div class="icon">📋</div>
-      <div class="text">Drop PDF documents here</div>
-      <div class="sub">PDF only · Max 50MB each</div>
+      <div class="text">Drop PDF documents here or click to upload</div>
+      <div class="sub">PDF only · Max 50MB each · Multiple files supported</div>
     </div>
-    <button id="docUploadBtn" class="btn-primary" style="margin-top:0.75rem;width:100%">📤 Select Files to Upload</button>
     <div id="uploadProgress" style="display:none;margin-top:0.75rem;"></div>
     <!-- Document List -->
     <div id="documentList" style="margin-top:1.5rem;"></div>
@@ -256,10 +228,11 @@
       <p class="tool-panel-desc">
         PharmAI is an AI-powered pharmaceutical safety platform for India.
         It checks whether medicines are banned, restricted, or allowed under CDSCO/FSSAI regulations.
-        Powered by Sarvam AI for voice, translation, and analysis in 11 Indian languages,
-        with AWS Bedrock Knowledge Base for document-enhanced search.
+        Powered by AWS Bedrock Knowledge Base for intelligent search,
+        Sarvam AI for voice and translation in 11 Indian languages,
+        and Jan Aushadhi generic medicine savings.
       </p>
-      <p style="color:var(--text-tertiary);font-size:0.78rem;margin-top:0.5rem;">Version 3.0.0</p>
+      <p style="color:var(--text-tertiary);font-size:0.78rem;margin-top:0.5rem;">Version 3.1.0</p>
     </div>
   </div>
 
@@ -335,19 +308,19 @@
 <!-- ═══════════════ MODULAR JAVASCRIPT ═══════════════ -->
 <!-- Load order: utilities → notifications → auth → settings → spaces → chat →
      search → sidebar → voice → ocr → documents → interaction → export → app -->
-<script src="js/utils.js?v=3.0"></script>
-<script src="js/notifications.js?v=3.0"></script>
-<script src="js/auth.js?v=3.0"></script>
-<script src="js/settings.js?v=3.0"></script>
-<script src="js/spaces.js?v=3.0"></script>
-<script src="js/chat.js?v=3.0"></script>
-<script src="js/search.js?v=3.0"></script>
-<script src="js/sidebar.js?v=3.0"></script>
-<script src="js/voice.js?v=3.0"></script>
-<script src="js/ocr.js?v=3.0"></script>
-<script src="js/documents.js?v=3.0"></script>
-<script src="js/interaction.js?v=3.0"></script>
-<script src="js/export.js?v=3.0"></script>
-<script src="js/app.js?v=3.0"></script>
+<script src="js/utils.js?v=3.1"></script>
+<script src="js/notifications.js?v=3.1"></script>
+<script src="js/auth.js?v=3.1"></script>
+<script src="js/settings.js?v=3.1"></script>
+<script src="js/spaces.js?v=3.1"></script>
+<script src="js/chat.js?v=3.1"></script>
+<script src="js/search.js?v=3.1"></script>
+<script src="js/sidebar.js?v=3.1"></script>
+<script src="js/voice.js?v=3.1"></script>
+<script src="js/ocr.js?v=3.1"></script>
+<script src="js/documents.js?v=3.1"></script>
+<script src="js/interaction.js?v=3.1"></script>
+<script src="js/export.js?v=3.1"></script>
+<script src="js/app.js?v=3.1"></script>
 </body>
 </html>
