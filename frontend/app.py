@@ -340,8 +340,8 @@ def api_tts():
             json={
                 'inputs': [text],
                 'target_language_code': lang,
-                'speaker': 'meera',
-                'model': 'bulbul:v3',
+                'speaker': 'anushka',
+                'model': 'bulbul:v2',
                 'enable_preprocessing': True,
             },
             timeout=30,
