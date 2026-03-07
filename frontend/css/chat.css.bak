@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PharmAI Chat — Message bubbles, citations, typing indicator
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Message Bubbles ─── */
+.chat-msg {
+  display: flex;
+  gap: 0.6rem;
+  animation: fadeInUp 0.3s ease;
+  max-width: 100%;
+}
+
+/* User message — right-aligned */
+.chat-msg.user {
+  justify-content: flex-end;
+}
+.chat-msg.user .msg-bubble {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 75%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* AI message — left-aligned */
+.chat-msg.assistant {
+  justify-content: flex-start;
+}
+.chat-msg.assistant .msg-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 0.8rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.chat-msg.assistant .msg-bubble {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+  max-width: 85%;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* System message — centered */
+.chat-msg.system {
+  justify-content: center;
+}
+.chat-msg.system .msg-bubble {
+  background: transparent;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+}
+
+/* ─── Message Content (Markdown) ─── */
+.msg-content { word-break: break-word; }
+.msg-content h1, .msg-content h2, .msg-content h3 {
+  color: var(--primary-dark);
+  margin: 0.75rem 0 0.3rem;
+  font-size: 1rem;
+}
+.msg-content h3 { font-size: 0.95rem; }
+.msg-content strong { color: var(--primary-dark); }
+.msg-content ul, .msg-content ol { padding-left: 1.3rem; margin: 0.3rem 0; }
+.msg-content li { margin: 0.15rem 0; }
+.msg-content p { margin: 0.35rem 0; }
+.msg-content code {
+  background: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* ─── Status Badge on AI Messages ─── */
+.msg-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.msg-medicine-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem; font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.status-banned { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+.status-approved { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+.status-restricted { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+.status-controlled { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.source-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem; font-weight: 600;
+  background: #f0fdfa;
+  color: var(--primary);
+  border: 1px solid #99f6e4;
+}
+
+/* ─── Citations ─── */
+.msg-citations {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #f1f5f9;
+}
+.citation-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+.citation-item {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+  padding: 0.3rem 0;
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+.citation-num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.citation-text { line-height: 1.4; }
+.citation-doc { font-weight: 600; color: var(--primary-dark); }
+
+/* Inline citation markers */
+.cite-ref {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 700;
+  vertical-align: super;
+  margin: 0 1px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.cite-ref:hover { transform: scale(1.2); }
+
+/* ─── Message Actions ─── */
+.msg-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.chat-msg:hover .msg-actions { opacity: 1; }
+
+.msg-action-btn {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  color: var(--text-light);
+  font-size: 0.7rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.msg-action-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.msg-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.msg-action-btn.loading::after {
+  content: ''; width: 10px; height: 10px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+  margin-left: 0.3rem;
+}
+
+/* ─── Typing Indicator ─── */
+.typing-indicator {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.75rem 1.25rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+  max-width: 200px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.typing-dots {
+  display: flex; gap: 3px;
+}
+.typing-dots span {
+  width: 7px; height: 7px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+.typing-text {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}

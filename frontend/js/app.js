@@ -75,9 +75,9 @@ const TEMPLATE_QUERIES = [
     action: 'ocr',
   },
   {
-    icon: '💊',
-    title: 'Drug Interaction',
-    query: 'Check interaction between Aspirin and Warfarin',
+    icon: '⚖️',
+    title: 'Compare Medicines',
+    query: 'Compare Paracetamol and Ibuprofen',
   },
   {
     icon: '💰',
@@ -134,10 +134,9 @@ function setupSearchBar() {
 // ─── Sidebar Tool Buttons Setup ─────────────────────────────────────────────
 
 function setupSidebarToolButtons() {
-  document.getElementById('toolOcr')?.addEventListener('click', () => showToolPanel('ocr'));
-  document.getElementById('toolInteraction')?.addEventListener('click', () => showToolPanel('interaction'));
-  document.getElementById('toolDocuments')?.addEventListener('click', () => showToolPanel('documents'));
-  document.getElementById('toolSettings')?.addEventListener('click', () => showToolPanel('settings'));
+  document.getElementById('toolOcr')?.addEventListener('click', () => { showToolPanel('ocr'); closeSidebar(); });
+  document.getElementById('toolDocuments')?.addEventListener('click', () => { showToolPanel('documents'); closeSidebar(); });
+  document.getElementById('toolSettings')?.addEventListener('click', () => { showToolPanel('settings'); closeSidebar(); });
 
   // Close tool panel buttons
   document.querySelectorAll('.tool-panel-close').forEach(btn => {
@@ -213,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initVoice();          // STT/TTS
   initOcr();            // Prescription scanner
   initDocuments();      // KB document management
-  initInteraction();    // Drug interaction checker
   setupScrollFab();     // Scroll-to-bottom button
 
   // Render landing view templates

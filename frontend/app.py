@@ -490,47 +490,6 @@ def api_ocr():
         return _cors_json({'error': str(e)}, 500)
 
 
-@app.route('/api/interaction', methods=['POST', 'OPTIONS'])
-@app.route('/pharmai/api/interaction', methods=['POST', 'OPTIONS'])
-def api_interaction():
-    """Drug Interaction Checker — Uses AWS Bedrock Knowledge Base.
-    
-    WHY AWS RAG instead of Sarvam Chat: The Knowledge Base contains curated
-    CDSCO/FSSAI drug interaction data, providing more accurate and India-specific
-    interaction analysis than a generic chat model.
-    """
-    if request.method == 'OPTIONS':
-        return _cors_preflight()
-    data = request.get_json(force=True)
-    med_a = data.get('medicine_a', '').strip()
-    med_b = data.get('medicine_b', '').strip()
-    if not med_a or not med_b:
-        return jsonify({'error': 'Both medicine names required'}), 400
-    prompt = (
-        f"Drug-Drug Interaction Analysis: {med_a} and {med_b}. "
-        "Are they safe to take together in India? "
-        "Provide: interaction type, severity (Safe/Caution/Dangerous), "
-        "mechanism, clinical significance, and recommendation. "
-        "Also suggest Jan Aushadhi (generic) alternatives if available. Use markdown."
-    )
-    try:
-        res = requests.post(
-            f'{AWS_RAG_BASE_URL}/api/search',
-            json={'query': prompt, 'session_id': f'pharmai-interaction-{int(time.time())}'},
-            timeout=60,
-        )
-        if res.status_code == 200:
-            rj = res.json()
-            # AWS RAG returns 'text' field with summary, 'results.summary' for detail
-            content = rj.get('text') or rj.get('answer') or rj.get('response') or rj.get('result', '')
-            if not content and isinstance(rj.get('results'), dict):
-                content = rj['results'].get('summary', '')
-            return _cors_json({'answer': content or 'No interaction data available.'})
-        return _cors_json({'answer': 'No interaction data available.'})
-    except Exception as e:
-        return _cors_json({'error': str(e)}, 500)
-
-
 @app.route('/api/doc-analysis', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/doc-analysis', methods=['POST', 'OPTIONS'])
 def api_doc_analysis():
@@ -595,14 +554,16 @@ def api_doc_analysis():
 #  ROUTES — Document Upload & Management
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.route('/api/upload-files', methods=['POST'])
-@app.route('/pharmai/api/upload-files', methods=['POST'])
+@app.route('/api/upload-files', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/upload-files', methods=['POST', 'OPTIONS'])
 def api_upload_files():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
     if 'files' not in request.files:
-        return jsonify({'success': False, 'message': 'No files provided'}), 400
+        return _cors_json({'success': False, 'message': 'No files provided'}, 400)
     files = request.files.getlist('files')
     if not files or all(f.filename == '' for f in files):
-        return jsonify({'success': False, 'message': 'No files selected'}), 400
+        return _cors_json({'success': False, 'message': 'No files selected'}, 400)
     uploaded = []
     for f in files:
         if f and f.filename and allowed_file(f.filename):
@@ -611,7 +572,7 @@ def api_upload_files():
             f.save(fpath)
             uploaded.append(fpath)
     if not uploaded:
-        return jsonify({'success': False, 'message': 'No valid files uploaded'}), 400
+        return _cors_json({'success': False, 'message': 'No valid files uploaded'}, 400)
     index_results = []
     for fpath in uploaded:
         try:
@@ -631,7 +592,7 @@ def api_upload_files():
             except OSError:
                 pass
     ok = sum(1 for r in index_results if r['indexed'])
-    return jsonify({'success': ok > 0, 'message': f'Indexed {ok}/{len(uploaded)} file(s)', 'count': len(uploaded), 'results': index_results})
+    return _cors_json({'success': ok > 0, 'message': f'Indexed {ok}/{len(uploaded)} file(s)', 'count': len(uploaded), 'results': index_results})
 
 
 @app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
@@ -672,6 +633,19 @@ def api_delete_all_documents():
     if request.method == 'OPTIONS':
         return _cors_preflight()
     try:
+        # Fetch all documents first
+        list_res = requests.get(f'{AWS_RAG_BASE_URL}/api/documents', timeout=30)
+        if list_res.status_code == 200:
+            docs = list_res.json().get('documents', [])
+            deleted_count = 0
+            for doc in docs:
+                doc_id = doc.get('document_id') or doc.get('id')
+                if doc_id:
+                    requests.post(f'{AWS_RAG_BASE_URL}/api/documents/delete', json={'documentId': doc_id}, timeout=30)
+                    deleted_count += 1
+            return _cors_json({'success': True, 'message': f'Deleted {deleted_count} documents.', 'count': deleted_count}, 200)
+            
+        # Fallback to direct call if GET failed
         res = requests.delete(f'{AWS_RAG_BASE_URL}/api/documents/all', timeout=60)
         return _cors_json(res.json(), res.status_code)
     except Exception as e:
@@ -690,7 +664,7 @@ def health():
         'service': 'PharmAI Portal',
         'version': '3.1',
         'timestamp': time.time(),
-        'features': ['aws-rag', 'jan-aushadhi', 'session-privacy', '2-tier-search', 'session-history', 'spaces', 'stt', 'tts', 'translate', 'ocr', 'prescription-scan', 'interaction-check', 'doc-analysis', 'kb-upload'],
+        'features': ['aws-rag', 'jan-aushadhi', 'session-privacy', '2-tier-search', 'session-history', 'spaces', 'stt', 'tts', 'translate', 'ocr', 'prescription-scan', 'doc-analysis', 'kb-upload'],
     })
 
 

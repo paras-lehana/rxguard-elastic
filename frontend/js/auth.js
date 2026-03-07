@@ -22,6 +22,15 @@ class DescopeAuth {
         this.user = JSON.parse(saved);
         this.isLoggedIn = true;
         this.updateUI();
+        
+        // Asynchronously validate the Descope session
+        setTimeout(async () => {
+          const token = this.sdk.getSessionToken();
+          if (!token) {
+            console.warn('Cached user found but Descope token invalid. Logging out.');
+            this.logout();
+          }
+        }, 100);
         return;
       }
 
@@ -52,6 +61,14 @@ class DescopeAuth {
     document.getElementById('loginBtn')?.addEventListener('click', () => this.showModal());
     document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
     document.getElementById('closeModal')?.addEventListener('click', () => this.hideModal());
+    
+    // Global fallback for logout button in case of z-index/propagation issues
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && (target.id === 'logoutBtn' || target.closest('#logoutBtn'))) {
+        this.logout();
+      }
+    });
 
     // Close on backdrop click
     document.getElementById('authModal')?.addEventListener('click', (e) => {

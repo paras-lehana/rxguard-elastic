@@ -112,7 +112,7 @@ async function deleteDocument(docId) {
     const res = await fetch(apiUrl('/api/delete-document'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document_id: docId }),
+      body: JSON.stringify({ documentId: docId }),
     });
 
     const data = await res.json();

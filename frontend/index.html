@@ -90,7 +90,6 @@
   <!-- Sidebar Footer: Tools -->
   <div class="sidebar-footer">
     <button id="toolOcr" class="sidebar-tool-btn" title="Prescription Scanner" aria-label="Open Prescription Scanner">📷</button>
-    <button id="toolInteraction" class="sidebar-tool-btn" title="Drug Interactions" aria-label="Check Drug Interactions">💊</button>
     <button id="toolDocuments" class="sidebar-tool-btn" title="Knowledge Base" aria-label="Manage Knowledge Base">📚<span id="docCountBadge" class="badge" style="display:none"></span></button>
     <button id="toolSettings" class="sidebar-tool-btn" title="Settings" aria-label="Open Settings">⚙️</button>
   </div>
@@ -116,6 +115,62 @@
 
     <!-- Action Cards (4 focused quick-start actions) -->
     <div id="templateGrid" class="template-grid"></div>
+
+    <!-- NEW: Quick Tools -->
+    <div class="quick-tools-section" style="max-width: 850px; margin: 2rem auto 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; width: 100%;">
+      <div class="quick-tool-card" onclick="document.getElementById('toolOcr').click()" style="background: var(--bg-white); padding: 1rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); cursor: pointer; display: flex; align-items: center; gap: 1rem; transition: background 0.2s;">
+        <div style="font-size: 1.5rem;">📸</div>
+        <div style="text-align: left;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Upload Prescription</h4>
+          <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">Extract medicines via AI</p>
+        </div>
+      </div>
+      <div class="quick-tool-card" onclick="document.getElementById('toolDocuments').click()" style="background: var(--bg-white); padding: 1rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); cursor: pointer; display: flex; align-items: center; gap: 1rem; transition: background 0.2s;">
+        <div style="font-size: 1.5rem;">📚</div>
+        <div style="text-align: left;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Library & KB</h4>
+          <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">Manage custom documents</p>
+        </div>
+      </div>
+      <div class="quick-tool-card" onclick="document.getElementById('voiceBtn').click()" style="background: var(--bg-white); padding: 1rem; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); cursor: pointer; display: flex; align-items: center; gap: 1rem; transition: background 0.2s;">
+        <div style="font-size: 1.5rem;">🎤</div>
+        <div style="text-align: left;">
+          <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Voice Search</h4>
+          <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">Ask in 11 Indian languages</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: Featured Searches / Trending -->
+    <div class="trending-section" style="max-width: 850px; margin: 1rem auto 2rem; width: 100%;">
+      <h3 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.8rem; text-align: left; font-weight: 600;">Trending Searches</h3>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <span class="trending-pill" onclick="document.getElementById('chatInput').value='Paracetamol 500mg'; document.getElementById('chatForm').dispatchEvent(new Event('submit'))">Paracetamol 500mg</span>
+        <span class="trending-pill" onclick="document.getElementById('chatInput').value='Augmentin 625 price'; document.getElementById('chatForm').dispatchEvent(new Event('submit'))">Augmentin 625</span>
+        <span class="trending-pill" onclick="document.getElementById('chatInput').value='Is Nimesulide banned in India?'; document.getElementById('chatForm').dispatchEvent(new Event('submit'))">Nimesulide</span>
+        <span class="trending-pill" onclick="document.getElementById('chatInput').value='Metformin side effects'; document.getElementById('chatForm').dispatchEvent(new Event('submit'))">Metformin</span>
+        <span class="trending-pill" onclick="document.getElementById('chatInput').value='Pantoprazole DSR'; document.getElementById('chatForm').dispatchEvent(new Event('submit'))">Pantoprazole</span>
+      </div>
+    </div>
+
+    <!-- NEW: How it works -->
+    <div class="how-it-works-section" style="max-width: 850px; margin: 2rem auto; width: 100%;">
+      <h3 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; text-align: left; font-weight: 600;">How It Works</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+        <div style="padding: 1.2rem; background: var(--gray-50); border-radius: var(--radius-lg); text-align: left;">
+          <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;"><span style="background: var(--primary-100); color: var(--primary-dark); width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">1</span> Ask Query</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">Type or speak your medicine query clearly in English or local languages.</div>
+        </div>
+        <div style="padding: 1.2rem; background: var(--gray-50); border-radius: var(--radius-lg); text-align: left;">
+          <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;"><span style="background: var(--primary-100); color: var(--primary-dark); width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">2</span> AI Search</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">AI searches 50,000+ drugs & the official CDSCO regulatory database.</div>
+        </div>
+        <div style="padding: 1.2rem; background: var(--gray-50); border-radius: var(--radius-lg); text-align: left;">
+          <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;"><span style="background: var(--primary-100); color: var(--primary-dark); width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem;">3</span> Get Insights</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">See ban status, Jan Aushadhi generic alternatives, and safety warnings instantly.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ── Chat View (shown when a session is active) ── -->
@@ -138,10 +193,10 @@
       Upload a prescription image. AI will extract medicine names, dosages, and frequencies
       for an interactive safety checklist.
     </p>
-    <div id="ocrDropZone" class="upload-zone">
-      <input type="file" id="ocrFileInput" accept="image/*" style="display:none">
+    <div id="ocrDropZone" class="upload-zone" style="cursor: pointer" onclick="document.getElementById('ocrFileInput').click()">
+      <input type="file" id="ocrFileInput" accept="image/*" style="display:none" onclick="event.stopPropagation()">
       <div class="icon">📸</div>
-      <div class="text">Drop a prescription image here</div>
+      <div class="text">Click to upload or drop a prescription image</div>
       <div class="sub">JPG, PNG, WebP · Max 10MB</div>
     </div>
     <button id="ocrCameraBtn" class="btn-secondary" style="margin-top:0.75rem;width:100%">📱 Use Camera</button>
@@ -152,29 +207,6 @@
     </div>
     <div id="ocrResultArea"></div>
     <div id="medicineChecklist" style="margin-top:1rem;"></div>
-  </div>
-
-  <!-- ── Drug Interaction Checker ── -->
-  <div id="toolPanel-interaction" class="tool-panel" style="display:none">
-    <div class="tool-panel-header">
-      <h2>💊 Drug Interaction Checker</h2>
-      <button class="tool-panel-close">✕</button>
-    </div>
-    <p class="tool-panel-desc">
-      Enter two medicine names to check if they interact. This uses the same AI-powered
-      search as the main chat — results include severity, mechanism, and Jan Aushadhi alternatives.
-    </p>
-    <form id="interactionForm">
-      <div class="form-group">
-        <label class="form-label">Medicine A</label>
-        <input id="interDrug1" type="text" class="form-input" placeholder="e.g., Warfarin" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Medicine B</label>
-        <input id="interDrug2" type="text" class="form-input" placeholder="e.g., Aspirin" required>
-      </div>
-      <button type="submit" class="btn-primary">🔬 Check Interaction</button>
-    </form>
   </div>
 
   <!-- ── Documents / KB Upload ── -->
@@ -190,9 +222,9 @@
     </p>
     <!-- Upload Zone — clickable and droppable, unified interface -->
     <div id="docDropZone" class="upload-zone" style="cursor:pointer;" onclick="document.getElementById('docUploadInput').click()">
-      <input type="file" id="docUploadInput" multiple accept=".pdf" style="display:none">
+      <input type="file" id="docUploadInput" multiple accept=".pdf" style="display:none" onclick="event.stopPropagation()">
       <div class="icon">📋</div>
-      <div class="text">Drop PDF documents here or click to upload</div>
+      <div class="text">Click to upload PDF documents</div>
       <div class="sub">PDF only · Max 50MB each · Multiple files supported</div>
     </div>
     <div id="uploadProgress" style="display:none;margin-top:0.75rem;"></div>
@@ -319,7 +351,6 @@
 <script src="js/voice.js?v=3.1"></script>
 <script src="js/ocr.js?v=3.1"></script>
 <script src="js/documents.js?v=3.1"></script>
-<script src="js/interaction.js?v=3.1"></script>
 <script src="js/export.js?v=3.1"></script>
 <script src="js/app.js?v=3.1"></script>
 </body>

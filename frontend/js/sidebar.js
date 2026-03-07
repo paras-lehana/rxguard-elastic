@@ -72,6 +72,32 @@ function initSidebar() {
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   hamburgerBtn?.addEventListener('click', toggleSidebar);
 
+  // Hover to Peek Logic
+  let hoverOpenTimeout;
+  let hoverCloseTimeout;
+  const sidebar = document.getElementById('sidebar');
+
+  hamburgerBtn?.addEventListener('mouseenter', () => {
+    clearTimeout(hoverCloseTimeout);
+    hoverOpenTimeout = setTimeout(() => {
+      openSidebar();
+    }, 200);
+  });
+
+  hamburgerBtn?.addEventListener('mouseleave', () => {
+    clearTimeout(hoverOpenTimeout);
+  });
+
+  sidebar?.addEventListener('mouseenter', () => {
+    clearTimeout(hoverCloseTimeout);
+  });
+
+  sidebar?.addEventListener('mouseleave', () => {
+    hoverCloseTimeout = setTimeout(() => {
+      closeSidebar();
+    }, 500);
+  });
+
   // Backdrop click to close
   const backdrop = document.getElementById('sidebarBackdrop');
   backdrop?.addEventListener('click', closeSidebar);
