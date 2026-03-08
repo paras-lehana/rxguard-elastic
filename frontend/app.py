@@ -145,12 +145,16 @@ def _sarvam_async_ocr(file_bytes, filename):
     file_url = list(dl_urls.values())[0].get("file_url")
 
     # 7. Extract ZIP
+    import re
     zip_res = requests.get(file_url)
     try:
         with zipfile.ZipFile(BytesIO(zip_res.content)) as z:
             for name in z.namelist():
                 if name.endswith('.md'):
-                    return {"text": z.read(name).decode('utf-8'), "raw": {"job_id": job_id}}
+                    raw_text = z.read(name).decode('utf-8')
+                    # Strip base64 image tags to prevent token limits
+                    clean_text = re.sub(r'!\[.*?\]\(data:image/[^\)]+\)', '', raw_text)
+                    return {"text": clean_text, "raw": {"job_id": job_id}}
     except Exception as e:
         return {"error": f"Failed to unzip: {str(e)}"}
     return {"error": "No .md file found in results zip."}
@@ -293,22 +297,64 @@ def search_tier2_aws(query, history=None, space_context=None):
                     answer = summary
             
             if answer:
+                if "unable to assist you with this request" in answer:
+                    print("[SEARCH T2] AWS RAG refused (empty KB). Falling back to Tier 3.")
+                    return None
                 return {'source': 'aws-bedrock', 'answer': answer}
         print(f"[SEARCH T2] AWS RAG status={res.status_code}")
     except Exception as e:
         print(f"[SEARCH T2] AWS RAG error: {e}")
     return None
 
+def search_tier3_llm(query, history=None, space_context=None):
+    """Tier 3 — OpenRouter Fallback.
+    Handles general AI chat directly when vector DB is empty.
+    """
+    api_key = os.getenv('OPENROUTER_API_KEY', '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')
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    
+    messages = [
+        {"role": "system", "content": "You are PharmAI, a helpful AI pharmaceutical assistant. Be concise."}
+    ]
+    if space_context:
+        messages.append({"role": "system", "content": f"Context focus: {space_context}"})
+    
+    if history and isinstance(history, list):
+        for h in history[-4:]:
+            if h.get('role') in ('user', 'assistant'):
+                messages.append({"role": h['role'], "content": h.get('content', '')})
+    
+    messages.append({"role": "user", "content": query})
+
+    try:
+        res = requests.post(url, headers=headers, json={
+            "model": "google/gemini-2.5-flash-lite",
+            "messages": messages
+        }, timeout=30)
+        
+        if res.status_code == 200:
+            data = res.json()
+            answer = data['choices'][0]['message']['content']
+            return {'source': 'openrouter-fallback', 'answer': answer}
+    except Exception as e:
+        print(f"[SEARCH T3] OpenRouter error: {e}")
+    return None
+
 
 def search_medicine(query, session_id, history=None, space_context=None):
-    """Execute the full 2-tier search fallback chain with optional context.
+    """Execute the full 3-tier search fallback chain with optional context.
     Tier 1: N8N RAG Pipeline (structured drug lookup)
     Tier 2: AWS Bedrock Knowledge Base (general pharma AI search)
+    Tier 3: OpenRouter LLM (general AI conversation)
     """
     result = search_tier1_n8n(query, session_id)
     if result:
         return result
     result = search_tier2_aws(query, history=history, space_context=space_context)
+    if result:
+        return result
+    result = search_tier3_llm(query, history=history, space_context=space_context)
     if result:
         return result
     return {

@@ -48,8 +48,8 @@ async function handleOcrFileSelect(file) {
   };
   reader.readAsDataURL(file);
 
-  // Process OCR
-  await processOcrImage(file);
+  // Process OCR in background (don't await)
+  processOcrImage(file);
 }
 
 function renderOcrPreview() {
@@ -72,11 +72,14 @@ function renderOcrPreview() {
 async function processOcrImage(imageFile) {
   const loading = document.getElementById('ocrLoading');
   const resultArea = document.getElementById('ocrResultArea');
+
+  // Show a non-blocking toast, and hide any blocking loading indicator
+  toast('Scanning Prescription... Parsing text in background.', 'info');
+  
   if (loading) {
-    loading.style.display = '';
-    loading.innerHTML = '<div class="loading-spinner"></div><p>Parsing text... this may take up to 15-20 seconds.</p>';
+    loading.style.display = 'none';
   }
-  if (resultArea) resultArea.innerHTML = '';
+  if (resultArea) resultArea.innerHTML = '<p class="text-muted"><div class="loading-spinner sidebar-spinner"></div> Parsing prescription in background...</p>';
 
   try {
     // Convert to base64 for API
@@ -89,9 +92,9 @@ async function processOcrImage(imageFile) {
     });
 
     const data = await res.json();
-    if (loading) loading.style.display = 'none';
 
     if (data.text || data.ocr_text) {
+      toast('Prescription parsed successfully!', 'success');
       const ocrText = data.text || data.ocr_text;
       ocrResult = { text: ocrText, medicines: [] };
       renderOcrText(ocrText);
@@ -99,13 +102,13 @@ async function processOcrImage(imageFile) {
       // Auto-extract medicines
       await extractMedicines(ocrText);
     } else {
-      toast('Could not read prescription', 'error');
+      toast('Could not read prescription text.', 'error');
       if (resultArea) resultArea.innerHTML = '<p>No text detected. Try a clearer image.</p>';
     }
   } catch (err) {
-    if (loading) loading.style.display = 'none';
-    toast('OCR failed', 'error');
+    toast('OCR failed during background parsing.', 'error');
     console.error('OCR error:', err);
+    if (resultArea) resultArea.innerHTML = '<p class="text-danger">Failed to parse prescription.</p>';
   }
 }
 

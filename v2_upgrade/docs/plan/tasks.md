@@ -1016,3 +1016,23 @@
 - [x] Write R4 Plan Document
 - [x] Remove sequential iterative delete call in `/api/delete-all-documents` route located in `frontend/app.py`
 - [x] Issue direct cross-container POST to the AWS RAG backend and parse counts to UI
+
+---
+
+## Phase 16: Phase R6 - Resilience, Safety, and Async UX
+> _Implement safeguards against base64 bloating, Handle AWS empty KB blocks natively, and improve Scanner UI UX._
+
+- [ ] 55. Implement Sarvam Base64 Stripper
+  - [ ] 55.1 Go to `_sarvam_async_ocr` in `app.py`.
+  - [ ] 55.2 Apply Python `re.sub` regex isolating and cleanly slicing `![Image](data:image/jpeg;base64, ...)` bloat to prevent token limit crashes before returning the text.
+
+- [ ] 56. Build AWS Empty KB Fallback Protocol
+  - [ ] 56.1 Identify exactly where "Sorry, I am unable to assist you with this request." rejection is caught in `search_tier2_aws`.
+  - [ ] 56.2 Add a new function `search_tier3_llm` to fallback on standard `PHARMAI_SYSTEM_PROMPT` querying Sarvam or Claude without RAG.
+  - [ ] 56.3 Return gracefully so users searching for valid medicines still receive full medical interaction checks independent of DB state.
+
+- [ ] 57. Upgrade Scanner UX to Non-Blocking Status
+  - [ ] 57.1 Overhaul `js/ocr.js` `processOcrImage` to not block UI.
+  - [ ] 57.2 Launch asynchronous global native `toast('Scanning document in background...', 'info')` popup instead of `ocrLoading` block.
+  - [ ] 57.3 Return users to a free-roaming UI allowing usage of chat modules while backend processes OCR.
+  - [ ] 57.4 Execute a final visual `toast('Scan Complete! Click to View Medicines.', 'success')` trigger capable of recalling the user context immediately and switching back to OCR tab.
