@@ -35,3 +35,4 @@ aiofiles>=23.2.1
 # Optional: For Google Drive integration  
 # google-api-python-client>=2.100.0
 # google-auth>=2.23.0
+Pillow

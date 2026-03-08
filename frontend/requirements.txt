@@ -10,3 +10,5 @@ python-dotenv>=1.0.0
 
 # JSON handling (built-in with Python)
 # os, time modules (built-in with Python)
+
+Pillow

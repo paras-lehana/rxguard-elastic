@@ -20,7 +20,7 @@ services:
 
     networks:
       default:
-        ipv4_address: 172.18.0.34
+        ipv4_address: 172.18.0.38
 
     expose:
       - "5000"
