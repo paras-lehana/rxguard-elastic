@@ -26,6 +26,9 @@ Endpoints:
 
 from flask import Flask, send_from_directory, request, redirect, jsonify
 import os
+import zipfile
+from io import BytesIO
+from PIL import Image
 import requests
 import json
 import base64
@@ -81,6 +84,79 @@ def sarvam_headers(content_type='application/json'):
     }
 
 
+def _sarvam_async_ocr(file_bytes, filename):
+    import time
+    import requests
+    import zipfile
+    from io import BytesIO
+    from PIL import Image
+
+    if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        try:
+            img = Image.open(BytesIO(file_bytes)).convert('RGB')
+            pdf_bytes = BytesIO()
+            img.save(pdf_bytes, format='PDF', resolution=100.0)
+            file_bytes = pdf_bytes.getvalue()
+            filename = filename.rsplit('.', 1)[0] + '.pdf'
+        except Exception as e:
+            return {"error": f"Failed to convert image to PDF: {str(e)}"}
+
+    headers = {'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json'}
+    # 1. Init Job
+    payload = {"job_parameters": {"language": "en-IN", "output_format": "md"}}
+    res = requests.post(f"{SARVAM_BASE}/doc-digitization/job/v1", headers=headers, json=payload)
+    if not res.ok: return {"error": f"Job init failed: {res.text}"}
+    job_id = res.json().get('job_id')
+
+    # 2. Get Upload URLs
+    res = requests.post(f"{SARVAM_BASE}/doc-digitization/job/v1/upload-files", headers=headers, json={"job_id": job_id, "files": [filename]})
+    if not res.ok: return {"error": f"Upload URL failed: {res.text}"}
+    upload_url = res.json().get("upload_urls", {}).get(filename).get("file_url")
+
+    # 3. PUT bytes to Azure
+    put_headers = {"x-ms-blob-type": "BlockBlob", "Content-Type": "application/pdf"}
+    up_res = requests.put(upload_url, data=file_bytes, headers=put_headers)
+    if not up_res.ok: return {"error": f"Azure PUT failed: {up_res.text}"}
+
+    # 4. Start Job
+    res = requests.post(f"{SARVAM_BASE}/doc-digitization/job/v1/{job_id}/start", headers=headers)
+    if not res.ok: return {"error": f"Task start failed: {res.text}"}
+
+    # 5. Poll
+    status_data = {}
+    for _ in range(30):
+        time.sleep(3)
+        res = requests.get(f"{SARVAM_BASE}/doc-digitization/job/v1/{job_id}/status", headers={"api-subscription-key": SARVAM_API_KEY})
+        if res.ok:
+            status_data = res.json()
+            if status_data.get('job_state') in ['Completed', 'Success', 'Failed']: break
+    if status_data.get('job_state') not in ['Completed', 'Success']:
+        return {"error": f"Job didn't complete. State: {status_data.get('job_state')}"}
+
+    # 6. Download Links
+    job_details = status_data.get("job_details", [])
+    output_files = [o.get("file_name") for d in job_details for o in d.get("outputs", [])]
+    if not output_files: return {"error": "No output files in job details."}
+
+    res = requests.post(f"{SARVAM_BASE}/doc-digitization/job/v1/{job_id}/download-files", headers=headers, json={"files": output_files})
+    if not res.ok: return {"error": f"Download links failed: {res.text}"}
+    
+    dl_urls = res.json().get("download_urls", {})
+    file_url = list(dl_urls.values())[0].get("file_url")
+
+    # 7. Extract ZIP
+    zip_res = requests.get(file_url)
+    try:
+        with zipfile.ZipFile(BytesIO(zip_res.content)) as z:
+            for name in z.namelist():
+                if name.endswith('.md'):
+                    return {"text": z.read(name).decode('utf-8'), "raw": {"job_id": job_id}}
+    except Exception as e:
+        return {"error": f"Failed to unzip: {str(e)}"}
+    return {"error": "No .md file found in results zip."}
+
+
+
 # ─── N8N Rejection Rule (CRITICAL) ──────────────────────────────────────────
 def is_useless_n8n_response(text):
     """
@@ -108,7 +184,10 @@ PHARMAI_SYSTEM_PROMPT = (
     "regulatory status in India (such as whether it is allowed, restricted, or banned by CDSCO/FSSAI), "
     "safety details (side effects, contraindications, drug interactions), "
     "and usage guidelines.\n\n"
-    "**💰 Jan Aushadhi (Generic) Alternatives:**\n"
+    "**� Bulk Regulatory Lookup:**\n"
+    "If given a list of multiple medicines, perform a bulk regulatory lookup. "
+    "List each medicine individually and definitively state if it is ALLOWED, RESTRICTED, or BANNED by CDSCO.\n\n"
+    "**�💰 Jan Aushadhi (Generic) Alternatives:**\n"
     "For EVERY branded medicine mentioned, mention if an equivalent generic medicine is available "
     "under Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP).\n"
     "Do NOT fabricate prices or percentage savings if you are not certain. "
@@ -288,10 +367,18 @@ def api_search():
     session_id = data.get('sessionId', f'pharmai-web-{int(time.time())}')
     history = data.get('history')           # Optional: conversation history for context
     space_context = data.get('space_context')  # Optional: space persona instruction
+    extract_medicines = data.get('extract_medicines', False)
     if not query:
         return jsonify({'status': 'error', 'error': 'No query provided'}), 400
     print(f"[SEARCH] query='{query}' session={session_id} history_len={len(history) if history else 0}")
-    result = search_medicine(query, session_id, history=history, space_context=space_context)
+    if extract_medicines:
+        # Bypass Tier 1 completely, ensure strict JSON array output via AWS Bedrock
+        strict_query = query + "\n\nCRITICAL: You MUST output ONLY a valid JSON array. No markdown blocks, no chat text, just raw JSON like [{\"name\": \"...\", \"dosage\": \"...\", \"frequency\": \"...\"}]."
+        result = search_tier2_aws(strict_query, history=None, space_context=None)
+        if not result:
+            result = {'source': 'error', 'answer': '[]'}
+    else:
+        result = search_medicine(query, session_id, history=history, space_context=space_context)
     return _cors_json({
         'status': 'success' if result['source'] != 'error' else 'error',
         **result,
@@ -429,55 +516,38 @@ def api_ocr():
     if request.method == 'OPTIONS':
         return _cors_preflight()
 
-    # Check if JSON-based request (base64 image from v2 frontend)
-    if request.is_json:
-        data = request.get_json(force=True)
-        image_b64 = data.get('image', '')
-        if not image_b64:
-            return jsonify({'error': 'No image provided'}), 400
-        try:
+    try:
+        file_bytes = None
+        filename = "document.pdf"
+        
+        # Check if JSON-based request (base64 image from v2 frontend)
+        if request.is_json:
+            data = request.get_json(force=True)
+            image_b64 = data.get('image', '')
+            if not image_b64:
+                return jsonify({'error': 'No image provided'}), 400
             if ',' in image_b64:
                 image_b64 = image_b64.split(',', 1)[1]
-            img_bytes = base64.b64decode(image_b64)
-            # Write to temp file for Sarvam API
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                tmp.write(img_bytes)
-                tmp_path = tmp.name
-            with open(tmp_path, 'rb') as f:
-                res = requests.post(
-                    f'{SARVAM_BASE}/parse/document',
-                    headers={'api-subscription-key': SARVAM_API_KEY},
-                    files={'file': ('prescription.jpg', f, 'image/jpeg')},
-                    timeout=60,
-                )
-            os.unlink(tmp_path)
-            rj = res.json()
-            extracted = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
-            if not extracted and isinstance(rj.get('pages'), list):
-                extracted = '\n'.join(p.get('text', '') for p in rj['pages'])
-            return _cors_json({'text': extracted, 'raw': rj})
-        except Exception as e:
-            return _cors_json({'error': str(e)}, 500)
-
-    # Legacy: multipart file upload
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    doc = request.files['file']
-    try:
-        res = requests.post(
-            f'{SARVAM_BASE}/parse/document',
-            headers={'api-subscription-key': SARVAM_API_KEY},
-            files={'file': (doc.filename, doc.stream, doc.content_type or 'application/octet-stream')},
-            timeout=60,
-        )
-        rj = res.json()
-        extracted = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
-        if not extracted and isinstance(rj.get('pages'), list):
-            extracted = '\n'.join(p.get('text', '') for p in rj['pages'])
+            import base64
+            file_bytes = base64.b64decode(image_b64)
+            filename = "document.jpg" # Base64 usually comes from image
+        elif 'file' in request.files:
+            doc = request.files['file']
+            file_bytes = doc.read()
+            filename = doc.filename
+        else:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        result = _sarvam_async_ocr(file_bytes, filename)
+        if "error" in result:
+            return _cors_json({'error': result["error"]}, 500)
+            
+        extracted = result.get("text", "")
+        rj = result.get("raw", {})
         return _cors_json({'text': extracted, 'raw': rj})
+        
     except Exception as e:
         return _cors_json({'error': str(e)}, 500)
-
 
 @app.route('/api/doc-analysis', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/doc-analysis', methods=['POST', 'OPTIONS'])
@@ -488,23 +558,24 @@ def api_doc_analysis():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     doc = request.files['file']
+    
     # Step 1: OCR
     ocr_text = ''
     try:
-        ocr_res = requests.post(
-            f'{SARVAM_BASE}/parse/document',
-            headers={'api-subscription-key': SARVAM_API_KEY},
-            files={'file': (doc.filename, doc.stream, doc.content_type or 'application/octet-stream')},
-            timeout=60,
-        )
-        rj = ocr_res.json()
-        ocr_text = rj.get('text', '') or rj.get('content', '') or rj.get('extracted_text', '')
-        if not ocr_text and isinstance(rj.get('pages'), list):
-            ocr_text = '\n'.join(p.get('text', '') for p in rj['pages'])
+        file_bytes = doc.read()
+        filename = doc.filename
+        
+        ocr_result = _sarvam_async_ocr(file_bytes, filename)
+        if "error" in ocr_result:
+            return _cors_json({'error': f'OCR failed: {ocr_result["error"]}'}, 500)
+            
+        ocr_text = ocr_result.get("text", "")
+
     except Exception as e:
         return _cors_json({'error': f'OCR failed: {e}'}, 500)
     if not ocr_text.strip():
         return _cors_json({'error': 'Could not extract text from document.'}, 400)
+
     # Step 2: AI Interpretation via AWS Bedrock Knowledge Base
     analysis_prompt = (
         f"I have a medical document with the following extracted text:\n\n"

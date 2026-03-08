@@ -500,6 +500,33 @@
 
 ---
 
+## Phase 15: Urgent OCR Refactor (Phase R5)
+> _Migrate from deprecated Sarvam sync OCR to strictly validated Async Jobs with AWS Bedrock extraction rules._
+
+- [x] 51. Refactor `api_ocr` for Sarvam Async Job
+  - [x] 51.1 Generate presigned URL via `/doc-digitization/job/v1`
+  - [x] 51.2 Upload image to provided S3 URL
+  - [x] 51.3 Trigger job with job_id via `/doc-digitization/job/v1/{job_id}` 
+  - [x] 51.4 Implement blocking `time.sleep(1)` loop polling `/doc-digitization/job/v1/{job_id}` up to 10s
+  - [x] 51.5 Download and reconstruct OCR text from output payload
+
+- [x] 52. Adapt Frontend `ocr.js` State Persistence
+  - [x] 52.1 Ensure "Extracting Text..." UI loader remains active for ~15 seconds without timing out
+  - [x] 52.2 Check JS timeout thresholds on backend API calls to prevent front-end disconnect during the longer polling stage
+  - [x] 52.3 Ensure error messaging for asynchronous failure cases bubble up correctly
+
+- [x] 53. Implement Bedrock JSON Medicine Extraction
+  - [x] 53.1 Inside backend extraction (`api_prescription_parse` or `app.py` wrapper): change LLM prompt to purely format extraction as an array of JSON objects
+  - [x] 53.2 Strict prompt injection: `{"name": "...", "dosage": "...", "frequency": "..."}`
+  - [x] 53.3 Bypass Sarvam's textual LLM for extraction—route directly to Bedrock Claude for entity extraction to guarantee structured layout
+
+- [x] 54. Bedrock Interactive Compliance Search 
+  - [x] 54.1 Update `/api/search` System Prompt to iterate over multiple medicine inputs accurately
+  - [x] 54.2 Verify frontend mapping `parseMedicineList()` works seamlessly with Bedrock's output to render the checkbox list
+
+
+---
+
 ## Phase 15: Role-Based Defaults
 > _Different default views based on user role_
 
@@ -979,3 +1006,13 @@
 - [x] 4.2 Jan Aushadhi UI Setup: In `frontend/index.html`, duplicate/create a tool panel for Jan Aushadhi (akin to the prescription scanner / KB). Add a sidebar button to trigger it. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.
 - [x] 4.3 Add Jan Aushadhi PDF ingestion inside this same UI panel to explicitly allow queries running over those KB files exclusively, enabling real facts extraction. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.
 - [x] 4.4 Add UI components in the Jan Aushadhi panel to allow location of nearby stores and getting full medicine lists via RAG. Completed: Built dedicated UI panel with Store Locator link and specific Knowledge Base PDF ingestion components.
+
+## R3: Bulk Deletion Backend API
+- [x] Create `POST /api/documents/delete_all` in AWS RAG
+- [x] Integrate document soft/hard deletions
+- [x] Format output correctly (`deleted_count`, `failed_count`)
+
+## R4: Bulk Deletion Frontend Proxy Integration
+- [x] Write R4 Plan Document
+- [x] Remove sequential iterative delete call in `/api/delete-all-documents` route located in `frontend/app.py`
+- [x] Issue direct cross-container POST to the AWS RAG backend and parse counts to UI

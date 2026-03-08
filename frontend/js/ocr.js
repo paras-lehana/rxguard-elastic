@@ -72,7 +72,10 @@ function renderOcrPreview() {
 async function processOcrImage(imageFile) {
   const loading = document.getElementById('ocrLoading');
   const resultArea = document.getElementById('ocrResultArea');
-  if (loading) loading.style.display = '';
+  if (loading) {
+    loading.style.display = '';
+    loading.innerHTML = '<div class="loading-spinner"></div><p>Parsing text... this may take up to 15-20 seconds.</p>';
+  }
   if (resultArea) resultArea.innerHTML = '';
 
   try {
