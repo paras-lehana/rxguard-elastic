@@ -978,6 +978,26 @@ def api_delete_all_documents():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  External Links & Redirects
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/demo')
+@app.route('/pharmai/demo')
+def redirect_to_demo():
+    """Redirects to the project demo video."""
+    # TODO: Change this URL to the actual YouTube demo video link
+    DEMO_VIDEO_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    return redirect(DEMO_VIDEO_URL)
+
+@app.route('/apk')
+@app.route('/pharmai/apk')
+def redirect_to_apk():
+    """Redirects to the Google Drive link containing the mobile APK."""
+    # TODO: Change this URL to the actual Drive link containing the APK
+    APK_DRIVE_URL = "https://drive.google.com/drive/folders/dummy-link-for-apk"
+    return redirect(APK_DRIVE_URL)
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  HEALTH
 # ══════════════════════════════════════════════════════════════════════════════
 
