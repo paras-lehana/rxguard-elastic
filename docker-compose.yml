@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.pharmai-portal.rule=HostRegexp(`^(vps-)?pharmai\\.(lehana\\.in|aidhunik\\.com)$$`)"
       - "traefik.http.routers.pharmai-portal.entrypoints=websecure"
       - "traefik.http.routers.pharmai-portal.tls=true"
-      - "traefik.http.routers.pharmai-portal.priority=110"
+      - "traefik.http.routers.pharmai-portal.priority=120"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]

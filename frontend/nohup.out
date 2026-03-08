@@ -764,3 +764,4 @@ Port 8002 is in use by another program. Either identify and stop that program, o
 167.99.59.107 - - [01/Mar/2026 19:37:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
 127.0.0.1 - - [08/Mar/2026 07:16:38] "GET /pharmai/health HTTP/1.1" 200 -
 127.0.0.1 - - [08/Mar/2026 10:55:34] "[33mPOST /api/janaushadhi/query HTTP/1.1[0m" 404 -
+127.0.0.1 - - [08/Mar/2026 11:05:38] "[33mPOST /api/janaushadhi/query HTTP/1.1[0m" 404 -
