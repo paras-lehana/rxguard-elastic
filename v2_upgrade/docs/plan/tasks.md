@@ -1067,14 +1067,14 @@
   - [x] 60.6 Enforce a strict structured JSON output layer post-RAG for Medicine queries (normalized array format: `medicines: [{ generic_name, original_name, mrp, savings_percentage }]`).
   - [x] 60.7 Integrate with the existing `/api/kb/upload` pipeline to ensure smooth ingestion of the two PDF files (Medicine and Kendra Locations) to the AWS RAG infrastructure.
 
-- [ ] 61. Frontend Rendering Logic
-  - [ ] 61.1 Update `frontend/js/main.js` (or the relevant main controller for Jan Aushadhi).
-  - [ ] 61.2 Implement an async fetch call to `/api/janaushadhi/query` handling user input from both tabs.
-  - [ ] 61.3 Add a loading state UI for both the "Find Alternatives" and "Find a Kendra" actions.
-  - [ ] 61.4 Process the structured JSON responses (medicines vs locations arrays).
-  - [ ] 61.5 Bind `medicines: [{...}]` payload to the Tab 1 Results table DOM elements.
-  - [ ] 61.6 Bind `locations: [{...}]` payload to the Tab 2 Results store cards DOM elements.
-  - [ ] 61.7 Handle edge cases, empty states, and errors (e.g., if no kendra is found, show a friendly fallback message).
+- [x] 61. Frontend Rendering Logic - Completed: Implemented dynamic fetch and structured DOM rendering for locator cards and generic savings cards in janaushadhi.js
+  - [x] 61.1 Update `frontend/js/main.js` (or the relevant main controller for Jan Aushadhi).
+  - [x] 61.2 Implement an async fetch call to `/api/janaushadhi/query` handling user input from both tabs.
+  - [x] 61.3 Add a loading state UI for both the "Find Alternatives" and "Find a Kendra" actions.
+  - [x] 61.4 Process the structured JSON responses (medicines vs locations arrays).
+  - [x] 61.5 Bind `medicines: [{...}]` payload to the Tab 1 Results table DOM elements.
+  - [x] 61.6 Bind `locations: [{...}]` payload to the Tab 2 Results store cards DOM elements.
+  - [x] 61.7 Handle edge cases, empty states, and errors (e.g., if no kendra is found, show a friendly fallback message).
 
 - [ ] 62. Verification & Testing
   - [ ] 62.1 Run local server using `flask run` (or existing startup script).
