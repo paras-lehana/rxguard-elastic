@@ -428,69 +428,220 @@ def api_search():
 @app.route('/api/janaushadhi/query', methods=['POST', 'OPTIONS'])
 @app.route('/pharmai/api/janaushadhi/query', methods=['POST', 'OPTIONS'])
 def api_janaushadhi_query():
+    """
+    Jan Aushadhi Agentic RAG Pipeline (Phase R9).
+    
+    Medicine Flow:  User Input → LLM (identify generic salts) → KB (fetch details) → LLM (curate HTML table)
+    Location Flow:  User Input → KB (fetch kendra addresses) → LLM (curate HTML table)
+    
+    Returns {"success": true, "type": "...", "html": "<styled HTML table>"} on success.
+    The frontend renders the HTML directly — no client-side JSON parsing needed.
+    """
     if request.method == 'OPTIONS':
         return _cors_preflight()
     try:
+        import time as _time
+        start_time = _time.time()
+
         data = request.json or {}
-        query = data.get('query', '')
+        query = data.get('query', '').strip()
         intent_type = data.get('type', '')
 
         if not query:
             return jsonify({"success": False, "error": "No query provided"}), 400
 
-        full_query = ""
-        system_instruction = ""
+        print(f"[JanAushadhi] Incoming: type={intent_type}, query='{query}'")
 
         if intent_type == 'medicine_alternative':
-            system_instruction = "You are a Jan Aushadhi Expert. Query the Knowledge base strictly using this Medicine pattern. Provide a JSON list formatted exactly like this: [{\"generic_name\": \"...\", \"original_name\": \"...\", \"mrp\": \"...\", \"savings_percentage\": \"...\"}]. Return ONLY valid JSON array."
-            full_query = f"Find the Jan Aushadhi equivalent and MRP for {query}. Only output valid JSON array."
+            html = _janaushadhi_medicine_flow(query)
         elif intent_type == 'kendra_locator':
-            system_instruction = "You are a Locator Expert. Go over the Kendra PDF list. Provide a JSON list formatted exactly like this: [{\"name\": \"...\", \"address\": \"...\", \"pin\": \"...\"}]. Return ONLY valid JSON array with up to 15 closest locations."
-            full_query = f"Provide the exact addresses of all Jan Aushadhi Kendras located in {query}. Return ONLY valid JSON array."
+            html = _janaushadhi_location_flow(query)
         else:
             return jsonify({"success": False, "error": f"Invalid type: {intent_type}"}), 400
 
-        search_payload = f"[System: {system_instruction}] {full_query}"
+        elapsed = round(_time.time() - start_time, 2)
+        print(f"[JanAushadhi] Completed in {elapsed}s, html_length={len(html)}")
 
-        res = requests.post(
-            f'{AWS_RAG_BASE_URL}/api/search',
-            json={'query': search_payload, 'session_id': f'janaushadhi-{int(time.time())}'},
-            timeout=60,
-        )
-
-        if not res.ok:
-            return jsonify({"success": False, "error": f"AWS RAG returned {res.status_code}"}), res.status_code
-
-        response_data = res.json()
-        answer = response_data.get('text') or response_data.get('answer') or response_data.get('response') or response_data.get('result', '')
-
-        # parse answer to JSON
-        import re
-        json_array = []
-        # try simple json.loads first
-        try:
-            json_array = json.loads(answer)
-        except json.JSONDecodeError:
-            # Maybe inside markdown code blocks
-            match = re.search(r'```(?:json)?\s*(\[\s*\{.*?\}\s*\])\s*```', answer, re.DOTALL)
-            if match:
-                try:
-                    json_array = json.loads(match.group(1))
-                except Exception:
-                    pass
-            else:
-                # Try finding array directly
-                match = re.search(r'\[\s*\{.*?\}\s*\]', answer, re.DOTALL)
-                if match:
-                    try:
-                        json_array = json.loads(match.group(0))
-                    except Exception:
-                        pass
-        
-        return _cors_json({"success": True, "type": intent_type, "data": json_array, "raw_response": answer})
+        return _cors_json({"success": True, "type": intent_type, "html": html})
         
     except Exception as e:
+        print(f"[JanAushadhi] ERROR: {str(e)}")
         return _cors_json({"success": False, "error": str(e)}, 500)
+
+
+# ── Jan Aushadhi Helper Functions ────────────────────────────────────────────
+
+def _llm_chat(system_prompt, user_message):
+    """
+    Call the pure LLM endpoint (AWS Bedrock Claude via /api/chat).
+    No Knowledge Base retrieval — just direct LLM conversation.
+    Used for: identifying generic salts, curating final HTML responses.
+    """
+    try:
+        payload = {
+            "messages": [
+                {"role": "user", "content": [{"type": "text", "text": user_message}]}
+            ],
+            "system": system_prompt,
+        }
+        res = requests.post(
+            f'{AWS_RAG_BASE_URL}/api/chat',
+            json=payload,
+            timeout=30,
+        )
+        if res.ok:
+            return res.json().get('response', '')
+        else:
+            print(f"[JanAushadhi] LLM chat failed: HTTP {res.status_code}")
+            return ''
+    except Exception as e:
+        print(f"[JanAushadhi] LLM chat error: {str(e)}")
+        return ''
+
+
+def _kb_search(query, system_prompt=None):
+    """
+    Call the Jan Aushadhi RAG endpoint (/api/janaushadhi/search).
+    Searches the Knowledge Base with a generic prompt (no CDSCO overlay).
+    Used for: fetching medicine details, kendra locations from uploaded PDFs.
+    """
+    try:
+        payload = {"query": query}
+        if system_prompt:
+            payload["system_prompt"] = system_prompt
+        res = requests.post(
+            f'{AWS_RAG_BASE_URL}/api/janaushadhi/search',
+            json=payload,
+            timeout=45,
+        )
+        if res.ok:
+            return res.json().get('text', '')
+        else:
+            print(f"[JanAushadhi] KB search failed: HTTP {res.status_code}")
+            return ''
+    except Exception as e:
+        print(f"[JanAushadhi] KB search error: {str(e)}")
+        return ''
+
+
+def _janaushadhi_medicine_flow(query):
+    """
+    Medicine Alternative Pipeline:
+      Step 1 — LLM: Identify the generic salt/chemical name from the brand name.
+      Step 2 — KB:  Search the Jan Aushadhi Knowledge Base for products with that salt.
+      Step 3 — LLM: Curate a styled HTML table combining user query + KB results.
+    
+    If KB has no data (empty or "sorry"), the LLM curator uses its own pharma knowledge
+    and clearly indicates that pricing is not from the database.
+    """
+    # ── Step 1: LLM — Identify Generic Salt ──────────────────────
+    print(f"[JanAushadhi:Medicine] Step 1 — Identifying generic salt for '{query}'")
+    generic_salts = _llm_chat(
+        system_prompt=(
+            "You are a pharmaceutical expert. The user will give you a medicine brand name. "
+            "Identify the generic salt/chemical compound name(s) for this medicine. "
+            "Reply with ONLY the generic salt name(s), comma-separated if multiple, nothing else. "
+            "Do NOT include dosage forms or strengths unless the user specified them. "
+            "Example: User says 'Crocin' → you reply 'Paracetamol (Acetaminophen)'. "
+            "Example: User says 'Combiflam' → you reply 'Ibuprofen, Paracetamol'."
+        ),
+        user_message=f"What is the generic salt for: {query}"
+    )
+    print(f"[JanAushadhi:Medicine] Step 1 done: salts='{generic_salts}'")
+
+    # ── Step 2: KB — Search for Jan Aushadhi products ────────────
+    kb_query = f"Find Jan Aushadhi medicines containing {generic_salts or query}. List the product name, composition, pack size, and MRP."
+    print(f"[JanAushadhi:Medicine] Step 2 — KB search: '{kb_query[:80]}'")
+    kb_text = _kb_search(kb_query)
+    kb_useful = kb_text and len(kb_text) > 30 and 'sorry' not in kb_text.lower() and 'unable to assist' not in kb_text.lower()
+    print(f"[JanAushadhi:Medicine] Step 2 done: kb_len={len(kb_text)}, useful={kb_useful}")
+
+    # ── Step 3: LLM — Curate HTML table ──────────────────────────
+    if kb_useful:
+        curate_context = f"Knowledge Base results:\n{kb_text}"
+        data_note = ""
+    else:
+        curate_context = "The Knowledge Base had no data for this medicine."
+        data_note = " Since our database doesn't have specific pricing, use your pharmaceutical knowledge to provide generic alternative information and clearly note that prices should be verified at the nearest Jan Aushadhi Kendra."
+
+    print(f"[JanAushadhi:Medicine] Step 3 — Curating HTML response")
+    html = _llm_chat(
+        system_prompt=(
+            f"You are a Jan Aushadhi medicine advisor helping Indian patients find affordable generic alternatives. "
+            f"The user searched for '{query}'. The generic salt is '{generic_salts or 'unknown'}'. "
+            f"{curate_context} "
+            f"Create a helpful HTML response with: "
+            f"1) A brief intro paragraph (2-3 sentences) explaining what the generic alternative is and how Jan Aushadhi helps save money. "
+            f"2) An HTML <table> with these columns: Jan Aushadhi Product | Generic Salt/Composition | Pack Size | MRP (₹) | Estimated Savings. "
+            f"Style the table inline: border-collapse:collapse; width:100%. "
+            f"Header row: background:#10b981; color:white; padding:10px 14px; text-align:left; font-weight:600. "
+            f"Data cells: padding:8px 14px; border-bottom:1px solid #e5e7eb. "
+            f"Even rows: background:#f0fdf4. "
+            f"3) A small note at the bottom encouraging the user to consult a doctor before substituting medicines. "
+            f"{data_note} "
+            f"Output ONLY valid HTML. No markdown fences. No explanatory text outside the HTML."
+        ),
+        user_message=f"Create the Jan Aushadhi alternatives table for: {query}"
+    )
+    print(f"[JanAushadhi:Medicine] Step 3 done: html_len={len(html)}")
+
+    return html or '<p style="color:#b91c1c;">Unable to generate response. Please try again.</p>'
+
+
+def _janaushadhi_location_flow(query):
+    """
+    Kendra Locator Pipeline:
+      Step 1 — KB:  Search the Knowledge Base for Kendras in the user's location.
+      Step 2 — LLM: Curate a styled HTML table with Google Maps direction links.
+    
+    If KB has no data, the LLM provides general guidance on finding Kendras.
+    """
+    # ── Step 1: KB — Search for Kendras ──────────────────────────
+    kb_query = f"List all Jan Aushadhi Kendras located in {query}. Include store name, owner name, full address, and PIN code."
+    print(f"[JanAushadhi:Location] Step 1 — KB search: '{kb_query[:80]}'")
+    kb_text = _kb_search(kb_query)
+    kb_useful = kb_text and len(kb_text) > 30 and 'sorry' not in kb_text.lower() and 'unable to assist' not in kb_text.lower()
+    print(f"[JanAushadhi:Location] Step 1 done: kb_len={len(kb_text)}, useful={kb_useful}")
+
+    # ── Step 2: LLM — Curate HTML table with Maps links ─────────
+    if kb_useful:
+        curate_context = f"Knowledge Base results:\n{kb_text}"
+        data_note = ""
+    else:
+        curate_context = "The Knowledge Base had no Kendra data for this location."
+        data_note = (
+            " Since our database doesn't have Kendras for this location, provide general guidance: "
+            "tell the user to visit https://janaushadhi.gov.in for the official PMBJP Kendra directory, "
+            "or search Google Maps for 'Jan Aushadhi Kendra near [location]'. "
+            "Still create a helpful HTML response with these suggestions formatted nicely."
+        )
+
+    print(f"[JanAushadhi:Location] Step 2 — Curating HTML response")
+    html = _llm_chat(
+        system_prompt=(
+            f"You are a Jan Aushadhi Kendra locator assistant helping users find nearby PMBJP stores in India. "
+            f"The user is looking for Kendras in '{query}'. "
+            f"{curate_context} "
+            f"Create a helpful HTML response with: "
+            f"1) A brief intro paragraph (1-2 sentences) about Jan Aushadhi Kendras in {query}. "
+            f"2) An HTML <table> with columns: Kendra Name | Full Address | PIN Code | Directions. "
+            f"For the Directions column, create a clickable link: "
+            f"<a href='https://www.google.com/maps/dir/?api=1&destination=ENCODED_ADDRESS' target='_blank' "
+            f"style='background:#10b981;color:white;padding:4px 10px;border-radius:4px;text-decoration:none;font-size:0.85rem;'>🗺️ Get Directions</a> "
+            f"where ENCODED_ADDRESS is the URL-encoded full address string. "
+            f"Style the table inline: border-collapse:collapse; width:100%. "
+            f"Header row: background:#10b981; color:white; padding:10px 14px; text-align:left; font-weight:600. "
+            f"Data cells: padding:8px 14px; border-bottom:1px solid #e5e7eb. "
+            f"Even rows: background:#f0fdf4. "
+            f"3) A note that the user can click 'Get Directions' to open Google Maps navigation. "
+            f"{data_note} "
+            f"Output ONLY valid HTML. No markdown fences. No explanatory text outside the HTML."
+        ),
+        user_message=f"Create the Kendra locator table for: {query}"
+    )
+    print(f"[JanAushadhi:Location] Step 2 done: html_len={len(html)}")
+
+    return html or '<p style="color:#b91c1c;">Unable to generate location response. Please try again.</p>'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
