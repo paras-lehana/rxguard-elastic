@@ -597,9 +597,15 @@ def _janaushadhi_location_flow(query):
     If KB has no data, the LLM provides general guidance on finding Kendras.
     """
     # ── Step 1: KB — Search for Kendras ──────────────────────────
-    kb_query = f"List all Jan Aushadhi Kendras located in {query}. Include store name, owner name, full address, and PIN code."
-    print(f"[JanAushadhi:Location] Step 1 — KB search: '{kb_query[:80]}'")
-    kb_text = _kb_search(kb_query)
+    kb_query = query  # Send raw location string for accurate Bedrock chunk retrieval
+    kb_system_prompt = (
+        f"You are a helpful pharmaceutical knowledge assistant. The user is searching for Jan Aushadhi Kendras in '{query}'. "
+        "Review the retrieved document chunks. If you find Kendras in or near this location, "
+        "list them all, including store name, owner name, full address, and PIN code. "
+        "If none are found, clearly state that you are unable to assist."
+    )
+    print(f"[JanAushadhi:Location] Step 1 — KB search: '{kb_query[:8000]}'")
+    kb_text = _kb_search(query=kb_query, system_prompt=kb_system_prompt)
     kb_useful = kb_text and len(kb_text) > 30 and 'sorry' not in kb_text.lower() and 'unable to assist' not in kb_text.lower()
     print(f"[JanAushadhi:Location] Step 1 done: kb_len={len(kb_text)}, useful={kb_useful}")
 
