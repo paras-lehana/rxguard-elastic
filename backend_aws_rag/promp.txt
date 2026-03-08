@@ -1,0 +1,162 @@
+# COMPLETE PROMPT FOR AI CODING AGENT - BANNED PHARMA RAG API (AWS BEDROCK + KENDRA)
+
+Build a production-ready FastAPI Python application + Docker that replaces Google Gemini File Search with AWS Bedrock Knowledge Base (Kendra GenAI Index) for Indian pharmaceutical regulatory compliance. EXACTLY 4 endpoints matching existing frontend. CRITICAL: Use custom RAG prompt for CDSCO banned drugs analysis.
+
+## PROJECT CONTEXT
+Replace this Gemini File Search API: https://medical.lehana.in/ncert/api/*
+Frontend expects EXACT response format for banned drugs compliance checking
+Documents: cdsco_banned_*.pdf, delhi.pdf, cdsco_scheduled_01July2024.pdf
+
+## CRITICAL: NO S3 BUCKET - Direct Kendra ingestion
+User uploads PDF → temp file → Bedrock Agent API → Kendra indexes directly
+
+## ENDPOINTS (EXACT MATCH - Frontend dependent)
+POST /api/index # Upload PDF → Kendra indexes (matches old /api/index)
+GET /api/documents # List Kendra documents (matches old /api/documents)
+POST /api/documents/delete # Delete document by ID (matches old format)
+POST /api/search # RAG search → STRUCTURED JSON (matches old /api/search)
+
+text
+
+## SEARCH API - CUSTOM RAG PROMPT (MANDATORY)
+Use this EXACT system prompt in Bedrock retrieveAndGenerate:
+
+<OBJECTIVE_AND_PERSONA>
+On our government platform... [PASTE YOUR FULL OBJECTIVE_AND_PERSONA HERE]
+</INSTRUCTIONS>
+[PASTE YOUR FULL INSTRUCTIONS P1-P8 HERE]
+</CONSTRAINTS>
+[PASTE YOUR FULL CONSTRAINTS HERE]
+</OUTPUT_FORMAT>
+Based on the provided regulatory documents and files: {context}
+Query: {query}
+
+text
+
+## INPUT/OUTPUT SPEC (EXACT - Frontend breaks if changed)
+
+**1. POST /api/index** (multipart/form-data)
+```bash
+curl -X POST http://localhost:8000/api/index -F "file=@cdsco_banned_01Jan2018.pdf" -F 'metadata={"source": "CDSCO"}'
+Response:
+
+json
+{"message": "Document indexed successfully", "result": {"done": true, "documentName": "KB-XXX/documents/YYY"}}
+2. GET /api/documents
+Response:
+
+json
+{
+  "documents": [{"name": "KB-XXX/documents/YYY", "displayName": "cdsco_banned_01Jan2018.pdf", "state": "ACTIVE", "metadata": [...]}],
+  "total": 1
+}
+3. POST /api/documents/delete
+
+json
+{"documentId": "KB-XXX/documents/YYY"}
+Response: {"message": "Document deleted successfully"}
+
+4. POST /api/search ← MOST CRITICAL
+Request:
+
+json
+{"query": "Is nimesulide banned in India?", "sessionId": "pharma-001"}
+Response (EXACT FORMAT - Frontend parses this):
+
+json
+{
+  "query": "Is nimesulide banned in India?",
+  "medicine_searched": "nimesulide",
+  "total_results": "1",
+  "current_status": "banned",
+  "results": {
+    "gazette_id": "GSR 91(E)",
+    "pdf_name": "cdsco_banned_01Jan2018.pdf",
+    "medicine_name": "nimesulide",
+    "date_of_ban": "10 Feb 2011",
+    "summary": "Nimesulide banned by CDSCO under Section 26A Drugs and Cosmetics Act 1940 via GSR 91(E)",
+    "drug_category": "single_drug",
+    "schedule_classification": "N/A",
+    "source_banned": "file",
+    "source_scheduled_file": "cdsco_banned_01Jan2018.pdf",
+    "keyword": "nimesulide",
+    "reasoning": "Found in CDSCO banned drugs list...",
+    "itemid": "N/A"
+  },
+  "text": "Nimesulide is banned...",
+  "sessionId": "pharma-001"
+}
+CONFIGURATION (External - No code changes)
+.env
+
+text
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+AWS_REGION=us-east-1
+BEDROCK_KB_ID=KB-XXXXXXXXXXXXX
+BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+KENDRA_INDEX_ARN=arn:aws:kendra:...
+PORT=3101
+FOLDER STRUCTURE
+text
+app/
+├── main.py                 # FastAPI app
+├── config.py              # Load .env + validation
+├── api/
+│   └── endpoints/
+│       ├── index.py       # POST /api/index
+│       ├── documents.py   # GET /api/documents + DELETE
+│       └── search.py      # POST /api/search (CUSTOM PROMPT)
+├── core/
+│   └── bedrock_service.py # boto3 clients + RAG logic
+├── models/
+│   └── pydantic_schemas.py # Request/Response validation
+└── utils/
+    └── custom_prompt.py   # YOUR FULL RAG PROMPT
+requirements.txt
+Dockerfile
+docker-compose.yml
+.env.example
+TECHNICAL REQUIREMENTS
+text
+✅ FastAPI + uvicorn + python-multipart + boto3 + pydantic
+✅ NO S3 - Direct Kendra ingestion via Bedrock Agent APIs
+✅ Custom system prompt in /api/search (your full <OBJECTIVE_AND_PERSONA>)
+✅ EXACT JSON response format (frontend dependent)
+✅ Temporary file handling for uploads (delete after indexing)
+✅ Docker multi-stage + docker-compose
+✅ CORS enabled
+✅ Structured logging
+✅ OpenAPI docs at /docs
+✅ Health check /health
+DOCKER
+text
+services:
+  api:
+    build: .
+    ports: ["3101:3101"]
+    env_file: .env
+    volumes: [".env:/app/.env"]
+SUCCESS CRITERIA
+docker-compose up → http://localhost:3101/docs works
+
+curl -X POST /api/index -F file=@pdf → indexes to Kendra
+
+curl -X GET /api/documents → lists Kendra documents
+
+curl -X POST /api/search '{"query": "nimesulide"}' → EXACT JSON format
+
+Change KB_ID in .env → docker-compose restart → works
+
+Frontend https://medical.lehana.in/ncert works unchanged
+
+Boto3 APIs TO USE
+bedrock-agent-runtime.retrieve_and_generate() → /api/search
+
+bedrock-agent.list_knowledge_base_documents() → /api/documents
+
+bedrock-agent.start_ingestion_job() → /api/index
+
+Temp file → Kendra direct ingestion
+
+GENERATE COMPLETE WORKING CODE. Real boto3 calls. No placeholders. Production-ready.

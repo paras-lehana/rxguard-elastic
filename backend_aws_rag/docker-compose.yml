@@ -1,0 +1,39 @@
+# ============================================================
+# Docker Compose — Banned Pharma RAG API
+# ============================================================
+# Usage:
+#   docker-compose up --build       # Build and start
+#   docker-compose up -d            # Detached mode
+#   docker-compose logs -f api      # Follow logs
+#   docker-compose down             # Stop and remove
+# ============================================================
+
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knowledge-base-aws
+    ports:
+      - "${PORT:-4101}:4101"
+    env_file:
+      - .env
+    volumes:
+      - .env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4101/health')" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.5"
