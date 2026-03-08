@@ -37,10 +37,19 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.pharmai-portal.loadbalancer.server.port=5000"
+      # Router 1: pharmai.lehana.in / pharmai.aidhunik.com (direct subdomain)
       - "traefik.http.routers.pharmai-portal.rule=HostRegexp(`^(vps-)?pharmai\\.(lehana\\.in|aidhunik\\.com)$$`)"
       - "traefik.http.routers.pharmai-portal.entrypoints=websecure"
       - "traefik.http.routers.pharmai-portal.tls=true"
       - "traefik.http.routers.pharmai-portal.priority=120"
+      # Router 2: medical.lehana.in/pharmai/* / medical.aidhunik.com/pharmai/*
+      - "traefik.http.routers.pharmai-portal-medical.rule=(HostRegexp(`^(vps-)?medical\\.(lehana\\.in|aidhunik\\.com)$$`)) && PathPrefix(`/pharmai`)"
+      - "traefik.http.routers.pharmai-portal-medical.entrypoints=websecure"
+      - "traefik.http.routers.pharmai-portal-medical.tls=true"
+      - "traefik.http.routers.pharmai-portal-medical.priority=120"
+      - "traefik.http.routers.pharmai-portal-medical.middlewares=pharmai-portal-strip"
+      # Middleware: strip /pharmai prefix so Flask sees /api/*, /health, etc.
+      - "traefik.http.middlewares.pharmai-portal-strip.stripprefix.prefixes=/pharmai"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]

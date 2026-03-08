@@ -153,7 +153,7 @@ window.searchJaQuery = async function(type) {
 
     try {
         // ── API Call ────────────────────────────────────────────
-        const response = await fetch('/api/janaushadhi/query', {
+        const response = await fetch(apiUrl('/api/janaushadhi/query'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: query, type: type })
