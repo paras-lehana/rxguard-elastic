@@ -21,6 +21,7 @@ An advanced **Retrieval Augmented Generation (RAG)** system specifically designe
 ## 🚀 Features
 
 ### Core Capabilities
+- **Jan Aushadhi Agentic RAG**: Multi-step pipeline to find generic alternatives and locate PMBJP Kendras for affordable healthcare. [See Feature Documentation](docs/JAN_AUSHADHI.md)
 - **Government Pharmaceutical Compliance Analysis**: Automated drug regulatory status checking
 - **CDSCO Regulatory Document Processing**: Analysis of official Indian drug regulations  
 - **Drug Ban Detection**: Identifies banned substances according to latest gazette notifications
@@ -275,6 +276,19 @@ $sources:
 3. **Slow queries**: Enable caching and check embedding model performance
 
 ## 📊 API Reference
+
+### POST `/api/janaushadhi/query` (Jan Aushadhi Hub)
+Agentic RAG orchestrator for generic medicines and Kendras.
+
+**Request Body:**
+```json
+{
+  "query": "Crocin", 
+  "type": "medicine_alternative" // or "kendra_locator"
+}
+```
+
+**Response:** HTML representation containing alternatives and price savings directly injected into the frontend.
 
 ### POST /v1/retrieve
 Query pharmaceutical documents using natural language.
