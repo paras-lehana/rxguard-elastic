@@ -306,20 +306,15 @@ def search_tier2_aws(query, history=None, space_context=None):
         print(f"[SEARCH T2] AWS RAG error: {e}")
     return None
 
-def search_tier3_llm(query, history=None, space_context=None):
-    """Tier 3 — OpenRouter Fallback.
-    Handles general AI chat directly when vector DB is empty.
+def search_tier3_bedrock_direct(query, history=None, space_context=None):
+    """Tier 3 — AWS Bedrock Direct Fallback.
+    Handles general AI chat directly via our chat API endpoint.
     """
-    api_key = os.getenv('OPENROUTER_API_KEY', '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')
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    
-    messages = [
-        {"role": "system", "content": "You are PharmAI, a helpful AI pharmaceutical assistant. Be concise."}
-    ]
+    system_prompt = "You are PharmAI, a helpful AI pharmaceutical assistant. Be concise."
     if space_context:
-        messages.append({"role": "system", "content": f"Context focus: {space_context}"})
+        system_prompt += f"\nContext focus: {space_context}"
     
+    messages = []
     if history and isinstance(history, list):
         for h in history[-4:]:
             if h.get('role') in ('user', 'assistant'):
@@ -328,17 +323,16 @@ def search_tier3_llm(query, history=None, space_context=None):
     messages.append({"role": "user", "content": query})
 
     try:
-        res = requests.post(url, headers=headers, json={
-            "model": "google/gemini-2.5-flash-lite",
+        res = requests.post(f'{AWS_RAG_BASE_URL}/api/chat', json={
+            "system": system_prompt,
             "messages": messages
         }, timeout=30)
         
         if res.status_code == 200:
             data = res.json()
-            answer = data['choices'][0]['message']['content']
-            return {'source': 'openrouter-fallback', 'answer': answer}
+            return {'source': 'bedrock-direct', 'answer': data.get('response', '')}
     except Exception as e:
-        print(f"[SEARCH T3] OpenRouter error: {e}")
+        print(f"[SEARCH T3] Bedrock chat error: {e}")
     return None
 
 
@@ -346,7 +340,7 @@ def search_medicine(query, session_id, history=None, space_context=None):
     """Execute the full 3-tier search fallback chain with optional context.
     Tier 1: N8N RAG Pipeline (structured drug lookup)
     Tier 2: AWS Bedrock Knowledge Base (general pharma AI search)
-    Tier 3: OpenRouter LLM (general AI conversation)
+    Tier 3: AWS Bedrock Direct (general AI conversation)
     """
     result = search_tier1_n8n(query, session_id)
     if result:
@@ -354,7 +348,7 @@ def search_medicine(query, session_id, history=None, space_context=None):
     result = search_tier2_aws(query, history=history, space_context=space_context)
     if result:
         return result
-    result = search_tier3_llm(query, history=history, space_context=space_context)
+    result = search_tier3_bedrock_direct(query, history=history, space_context=space_context)
     if result:
         return result
     return {
@@ -420,7 +414,7 @@ def api_search():
     if extract_medicines:
         # Bypass Tier 1 completely, ensure strict JSON array output via AWS Bedrock
         strict_query = query + "\n\nCRITICAL: You MUST output ONLY a valid JSON array. No markdown blocks, no chat text, just raw JSON like [{\"name\": \"...\", \"dosage\": \"...\", \"frequency\": \"...\"}]."
-        result = search_tier2_aws(strict_query, history=None, space_context=None)
+        result = search_tier3_bedrock_direct(strict_query, history=None, space_context=None)
         if not result:
             result = {'source': 'error', 'answer': '[]'}
     else:
@@ -429,6 +423,74 @@ def api_search():
         'status': 'success' if result['source'] != 'error' else 'error',
         **result,
     })
+
+
+@app.route('/api/janaushadhi/query', methods=['POST', 'OPTIONS'])
+@app.route('/pharmai/api/janaushadhi/query', methods=['POST', 'OPTIONS'])
+def api_janaushadhi_query():
+    if request.method == 'OPTIONS':
+        return _cors_preflight()
+    try:
+        data = request.json or {}
+        query = data.get('query', '')
+        intent_type = data.get('type', '')
+
+        if not query:
+            return jsonify({"success": False, "error": "No query provided"}), 400
+
+        full_query = ""
+        system_instruction = ""
+
+        if intent_type == 'medicine_alternative':
+            system_instruction = "You are a Jan Aushadhi Expert. Query the Knowledge base strictly using this Medicine pattern. Provide a JSON list formatted exactly like this: [{\"generic_name\": \"...\", \"original_name\": \"...\", \"mrp\": \"...\", \"savings_percentage\": \"...\"}]. Return ONLY valid JSON array."
+            full_query = f"Find the Jan Aushadhi equivalent and MRP for {query}. Only output valid JSON array."
+        elif intent_type == 'kendra_locator':
+            system_instruction = "You are a Locator Expert. Go over the Kendra PDF list. Provide a JSON list formatted exactly like this: [{\"name\": \"...\", \"address\": \"...\", \"pin\": \"...\"}]. Return ONLY valid JSON array with up to 15 closest locations."
+            full_query = f"Provide the exact addresses of all Jan Aushadhi Kendras located in {query}. Return ONLY valid JSON array."
+        else:
+            return jsonify({"success": False, "error": f"Invalid type: {intent_type}"}), 400
+
+        search_payload = f"[System: {system_instruction}] {full_query}"
+
+        res = requests.post(
+            f'{AWS_RAG_BASE_URL}/api/search',
+            json={'query': search_payload, 'session_id': f'janaushadhi-{int(time.time())}'},
+            timeout=60,
+        )
+
+        if not res.ok:
+            return jsonify({"success": False, "error": f"AWS RAG returned {res.status_code}"}), res.status_code
+
+        response_data = res.json()
+        answer = response_data.get('text') or response_data.get('answer') or response_data.get('response') or response_data.get('result', '')
+
+        # parse answer to JSON
+        import re
+        json_array = []
+        # try simple json.loads first
+        try:
+            json_array = json.loads(answer)
+        except json.JSONDecodeError:
+            # Maybe inside markdown code blocks
+            match = re.search(r'```(?:json)?\s*(\[\s*\{.*?\}\s*\])\s*```', answer, re.DOTALL)
+            if match:
+                try:
+                    json_array = json.loads(match.group(1))
+                except Exception:
+                    pass
+            else:
+                # Try finding array directly
+                match = re.search(r'\[\s*\{.*?\}\s*\]', answer, re.DOTALL)
+                if match:
+                    try:
+                        json_array = json.loads(match.group(0))
+                    except Exception:
+                        pass
+        
+        return _cors_json({"success": True, "type": intent_type, "data": json_array, "raw_response": answer})
+        
+    except Exception as e:
+        return _cors_json({"success": False, "error": str(e)}, 500)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -625,7 +687,7 @@ def api_doc_analysis():
     # Step 2: AI Interpretation via AWS Bedrock Knowledge Base
     analysis_prompt = (
         f"I have a medical document with the following extracted text:\n\n"
-        f"---\n{ocr_text[:3000]}\n---\n\n"
+        f"---\n{ocr_text[:15000]}\n---\n\n"
         "Please analyze this document and provide:\n"
         "1. **Document Type** (prescription, blood test, X-ray report, etc.)\n"
         "2. **Key Findings** from the document\n"

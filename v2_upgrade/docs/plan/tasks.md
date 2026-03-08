@@ -1036,3 +1036,56 @@
   - [ ] 57.2 Launch asynchronous global native `toast('Scanning document in background...', 'info')` popup instead of `ocrLoading` block.
   - [ ] 57.3 Return users to a free-roaming UI allowing usage of chat modules while backend processes OCR.
   - [ ] 57.4 Execute a final visual `toast('Scan Complete! Click to View Medicines.', 'success')` trigger capable of recalling the user context immediately and switching back to OCR tab.
+
+---
+
+## Phase R7: Jan Aushadhi Full Implementation
+> _Redesign the Jan Aushadhi tool within the existing pharmai_portal with an accurate RAG knowledge base for generic alternatives and kendra locators._
+
+- [x] 58. Frontend UI Redesign (Jan Aushadhi Panel) - Completed: Redesigned the Jan Aushadhi tool window to a clean tabbed structure with specific input fields for medicines and kendras.
+  - [x] 58.1 Update `frontend/index.html` to locate the existing Jan Aushadhi `<div id="janAushadhiPanel">`.
+  - [x] 58.2 Create a clean, modern tabbed interface within the panel for "Find Alternatives" and "Find a Kendra".
+  - [x] 58.3 Build Tab 1 (Find Alternatives): Add an input field for the prescribed medicine name.
+  - [x] 58.4 Build Tab 1 Results Container: Create a dynamic table/grid displaying the original medicine, Jan Aushadhi generic equivalent, MRP, and computed savings.
+  - [x] 58.5 Build Tab 2 (Find a Kendra): Add an input field for City/State.
+  - [x] 58.6 Build Tab 2 Results Container: Create a scrollable list of store result cards.
+  - [x] 58.7 Add a "Get Directions" button to each locator card template.
+  - [x] 58.8 Implement Smart URL construction for the "Get Directions" button (`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`) with `target="_blank"`.
+
+- [x] 59. Backend Intent Router - Completed: Built the /api/janaushadhi/query endpoint interfacing with AWS RAG, enforcing structured JSON with robust regex fallbacks.
+  - [x] 59.1 Create a new endpoint in `frontend/app.py`, e.g., `@app.route('/api/janaushadhi/query', methods=['POST'])`.
+  - [x] 59.2 Implement LLM Intent Classification logic inside the endpoint.
+  - [x] 59.3 Pass the incoming query to an LLM router to classify the request as either `medicine_alternative` or `kendra_locator`.
+  - [x] 59.4 Extract the relevant entity from the query (Medicine Pattern vs City/State Pattern) using the LLM.
+
+- [x] 60. RAG Integrations for Medicine and Locate - Completed: Built the /api/janaushadhi/query endpoint interfacing with AWS RAG, enforcing structured JSON with robust regex fallbacks.
+  - [x] 60.1 Implement logic for Medicine Query (`medicine_alternative`): Route query to the AWS RAG backend specifically targeting the Medicine PDF.
+  - [x] 60.2 Construct Medicine RAG prompt: "Find the Jan Aushadhi equivalent and MRP for {medicine}".
+  - [x] 60.3 Implement logic for Location Query (`kendra_locator`): Route query to the AWS RAG specifically targeting the Location PDF.
+  - [x] 60.4 Construct Location RAG prompt: "Provide the exact addresses of all Jan Aushadhi Kendras located in {City/State}".
+  - [x] 60.5 Enforce a strict structured JSON output layer post-RAG for Location queries (normalized array format: `locations: [{ name, address, pin }]`).
+  - [x] 60.6 Enforce a strict structured JSON output layer post-RAG for Medicine queries (normalized array format: `medicines: [{ generic_name, original_name, mrp, savings_percentage }]`).
+  - [x] 60.7 Integrate with the existing `/api/kb/upload` pipeline to ensure smooth ingestion of the two PDF files (Medicine and Kendra Locations) to the AWS RAG infrastructure.
+
+- [ ] 61. Frontend Rendering Logic
+  - [ ] 61.1 Update `frontend/js/main.js` (or the relevant main controller for Jan Aushadhi).
+  - [ ] 61.2 Implement an async fetch call to `/api/janaushadhi/query` handling user input from both tabs.
+  - [ ] 61.3 Add a loading state UI for both the "Find Alternatives" and "Find a Kendra" actions.
+  - [ ] 61.4 Process the structured JSON responses (medicines vs locations arrays).
+  - [ ] 61.5 Bind `medicines: [{...}]` payload to the Tab 1 Results table DOM elements.
+  - [ ] 61.6 Bind `locations: [{...}]` payload to the Tab 2 Results store cards DOM elements.
+  - [ ] 61.7 Handle edge cases, empty states, and errors (e.g., if no kendra is found, show a friendly fallback message).
+
+- [ ] 62. Verification & Testing
+  - [ ] 62.1 Run local server using `flask run` (or existing startup script).
+  - [ ] 62.2 Test UI by typing a city (e.g., "Kerkera, Haryana") and confirm the Google Maps link successfully resolves to the generated text address.
+  - [ ] 62.3 Test UI by typing a common drug (e.g., "Paracetamol 500mg").
+  - [ ] 62.4 Verify the returned generic matches the uploaded RAG PDF and not raw LLM hallucination.
+
+## Phase R8: Bedrock Direct chat, OCR constraints and removal of OpenRouter fallback
+
+- [x] 58. Create `/api/chat` route in `AWS_RAG_CURD`. Use `boto3` client to call Anthropic Claude via Bedrock `InvokeModel` API block.
+- [x] 59. Update `pharmai_portal/frontend/app.py` to remove OpenRouter / Gemini traces completely.
+- [x] 60. Create `search_tier3_bedrock_direct()` mapped to the new `/api/chat` endpoint in `pharmai_portal/frontend/app.py`.
+- [x] 61. In `pharmai_portal/frontend/app.py`, under the `extract_medicines` flow, reroute it to use this new Direct Chat Bedrock function instead of `search_tier2_aws`.
+- [x] 62. In `pharmai_portal/frontend/app.py`, expand the max token limit in `doc-analysis` from 3,000 characters to 15,000.
