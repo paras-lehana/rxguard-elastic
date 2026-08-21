@@ -80,7 +80,7 @@ def extract_drugs(text):
 
 def classify_ban_status(text):
     """
-    Coarse regulatory status for the chunk.
+    Coarse regulatory status from the chunk's own text.
 
     'unknown' is a real and common answer — most gazette pages are preamble or
     schedules. Labelling those as bans would poison every downstream verdict.
@@ -90,6 +90,37 @@ def classify_ban_status(text):
         if re.search(pattern, lowered):
             return status
     return 'unknown'
+
+
+# Filenames and headers that establish a whole document as a prohibition list.
+_DOC_PROHIBITION_RE = re.compile(
+    r'prohibit|banned|withdrawn|section\s*26\s*a|26A', re.IGNORECASE)
+
+
+def detect_document_ban_context(header_text, filename):
+    """
+    Decide whether the DOCUMENT as a whole is a prohibition list.
+
+    This exists because the most important notifications are bare tables:
+
+        S. No. | Drugs Name                          | Notification No. | & Date
+        1.     | Nimesulide+ Paracetamol dispersible | S.O. 2394 (E)    | 02.06.2023
+
+    That row contains no word like "banned" or "prohibited", so chunk-local
+    classification returns 'unknown' — and the retrieval layer then tells the
+    user it cannot establish ban status for a combination sitting in a
+    government prohibition table. The prohibition is stated by the document's
+    title and by section 26A of the Drugs and Cosmetics Act under which it is
+    issued, not repeated on every row.
+
+    Both signals are checked: the front-matter text and the filename. Chunks
+    inherit this only when their own text is inconclusive, and the inherited
+    verdict is tagged `ban_status_source='document'` so an explanation can say
+    honestly where the status came from.
+    """
+    if _DOC_PROHIBITION_RE.search(header_text or ''):
+        return True
+    return bool(_DOC_PROHIBITION_RE.search(filename or ''))
 
 
 def extract_gazette_id(text):
@@ -143,6 +174,7 @@ def ingest_pdf(path, embed=True):
         header += pdf[page_num].get_text() or ''
     doc_gazette_id = extract_gazette_id(header)
     doc_date = extract_date(header)
+    doc_is_prohibition_list = detect_document_ban_context(header, filename)
 
     for page_index in range(pdf.page_count):
         raw = pdf[page_index].get_text() or ''
@@ -152,6 +184,17 @@ def ingest_pdf(path, embed=True):
 
         for chunk_index, chunk in enumerate(split_page(text)):
             drugs = extract_drugs(chunk)
+
+            # Chunk-local wording wins; the document-level verdict is a
+            # fallback, and only when the chunk actually names drugs. A
+            # prohibition list's cover page or column headers name nothing and
+            # must not be marked as a ban.
+            ban_status = classify_ban_status(chunk)
+            ban_status_source = 'chunk'
+            if ban_status == 'unknown' and doc_is_prohibition_list and drugs:
+                ban_status = 'banned'
+                ban_status_source = 'document'
+
             docs.append({
                 'chunk_id': f'{filename}:p{page_index + 1}:c{chunk_index}',
                 'source_file': filename,
@@ -159,7 +202,8 @@ def ingest_pdf(path, embed=True):
                 'title': f'{filename} page {page_index + 1}',
                 'text': chunk,
                 'drugs': drugs,
-                'ban_status': classify_ban_status(chunk),
+                'ban_status': ban_status,
+                'ban_status_source': ban_status_source,
                 'gazette_id': extract_gazette_id(chunk) or doc_gazette_id,
                 'notification_date': extract_date(chunk) or doc_date,
                 'embedding': embed_text(chunk) if embed else None,

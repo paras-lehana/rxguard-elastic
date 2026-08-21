@@ -1,0 +1,83 @@
+# RxGuard Elasticsearch — core retrieval engine for the PharmAI drug-interaction platform
+#
+# Dedicated single-node cluster. Deliberately NOT named `elasticsearch` so that
+# other services on the box which point at the (currently dead) platform host
+# `https://elasticsearch:9200` are not silently rewired to this one.
+#
+# Indices created by: /root/repo/pharmai_portal/scripts/bootstrap_elastic.py
+#   rxguard-gazettes     CDSCO gazette chunks   (BM25 + dense_vector kNN)
+#   rxguard-interactions drug-pair interaction knowledge base
+#   rxguard-fhir         FHIR Patient / MedicationRequest resources
+#   rxguard-audit        append-only, hash-chained audit trail
+#
+# Security: basic auth ON, TLS OFF. The cluster is never published through
+# Traefik and binds only to the docker network, so HTTP inside the bridge is
+# acceptable and avoids self-signed-cert friction for every client.
+#
+# Deploy: cd /root/docker/rxguard-es && docker compose up -d
+
+services:
+  rxguard-es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: rxguard-es
+    init: true
+    restart: unless-stopped
+
+    environment:
+      - discovery.type=single-node
+      - cluster.name=rxguard
+      - node.name=rxguard-es-01
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      # ML disabled: ELSER would need a licence trial that expires mid-judging.
+      # Semantic search uses dense_vector + kNN, which is basic-licence (free).
+      - xpack.ml.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=false
+
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+
+    # Loopback only. Lets host-side ingest/bootstrap scripts reach the cluster
+    # without ever exposing it to the internet — there is no Traefik router for
+    # this service and there must not be one.
+    ports:
+      - "127.0.0.1:9200:9200"
+
+    volumes:
+      - rxguard-es-data:/usr/share/elasticsearch/data
+
+    networks:
+      - root_default
+
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -s -u elastic:$${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health
+          | grep -q '"status":"green"\|"status":"yellow"'
+      interval: 600s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+volumes:
+  rxguard-es-data:
+    name: rxguard-es-data
+
+networks:
+  root_default:
+    external: true

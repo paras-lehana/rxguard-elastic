@@ -1,12 +1,13 @@
 # Prompt Log — PharmAI / RxGuard Portal
 
 > **Purpose**: Indexed record of all prompts, decisions, and outcomes for this project.
-> **Last updated**: 2026-08-21
+> **Last updated**: 2026-08-21 (second pass)
 
 | # | Date | Time | Topic | Type | Status | Link |
 |---|------|------|-------|------|--------|------|
 | 1 | 2026-08-21 | 12:35 | Locate the banned pharma project | Research | 📋 Logged Only | [→](#2026-08-21-1235---locate-the-banned-pharma-project) |
 | 2 | 2026-08-21 | 12:45 | Recast onto Elastic + AWS for hackathon | Feature | ⚠️ Partial | [→](#2026-08-21-1245---recast-onto-elastic--aws-for-hackathon) |
+| 3 | 2026-08-21 | 14:05 | Close out deferred items | Refactor | ✅ Done | [→](#2026-08-21-1405---close-out-deferred-items) |
 
 ---
 
@@ -166,5 +167,67 @@ answered. Nothing was modified.
 5. **Investigate the Traefik restart-recovery delay**; it poisons the CDN cache on every deploy.
 6. **Shorten Cloudflare's error-response TTL zone-wide** so a transient origin 404 cannot persist for four hours.
 7. **Consider Kibana** purely for pitch-deck visuals of the gazette corpus.
+
+<br/>
+
+---
+
+## [2026-08-21 14:05] - Close out deferred items
+
+**Metadata**:
+- **Type**: Refactor
+- **Files Changed**: 9
+- **Project**: pharmai_portal
+- **Branch**: `elastic-hackathon`
+
+### Original Prompt
+> whatever is remaining, just do it gracefully and give me the link in last what to check / and also thereafter when you achieve everything i'll give you the requirement what i need to submit
+
+### Response Summary
+
+Worked the Agent Deferred table. Two items turned out to rest on **wrong premises
+of my own**, and retracting them was the right outcome rather than building on them:
+
+- **"4 of 10 PDFs are scanned images needing OCR" — false.** Every PDF in the
+  corpus has a text layer and zero embedded images. The single-chunk files are
+  short one-page notifications, correctly extracted. Checking before building
+  avoided writing an OCR pipeline for content that was never missing.
+- **"The login modal blocks first load" — false.** It opens only on button click
+  and already closed via × and backdrop. I had clicked into it myself during
+  testing. Added Escape-key dismissal as a real if smaller improvement.
+
+Investigating the first of those surfaced the **actual** defect behind the
+symptom: CDSCO prohibition tables list a combination and its notification number
+but never repeat the word "prohibited" per row, so chunk-local classification
+marked the corpus's single most important piece of evidence `unknown` — and
+search truthfully reported it could not establish the ban status of a combination
+sitting in a government prohibition table. Chunks now inherit a document-level
+verdict when their own text is inconclusive *and* they name known salts, tagged
+`ban_status_source='document'`. Prohibition-classified chunks: 119 → 212.
+
+Then wrote `scripts/mine_banned_fdcs.py`, which reads prohibition tables back
+**out** of Elasticsearch and seeds `rxguard-interactions` with cited banned FDCs.
+The first run produced 38 pairs including **two false bans on legal medicines** —
+`ibuprofen+paracetamol` (Combiflam) harvested from the prose line "FDC of
+Ibuprofen + Paracetamol is not indicated in cold", and `paracetamol+caffeine`
+harvested from a five-component row because the component check only looked
+forward from the match. Both are the worst error class this product has: telling
+a pharmacist to refuse a legal medicine. Added two guards — a row must cite its
+own S.O./G.S.R. number, and component count is measured across the whole drug
+name — then read all 33 surviving rows individually before committing. 8 → 40
+interaction pairs, 33 of them with statutory citations traceable to a chunk id.
+
+Also: gunicorn replaces the Flask dev server (2 workers × 4 threads, 600s timeout
+sized for N×N screens); `/api/corpus/stats` and `/api/corpus/search` expose the
+index and raw hybrid retrieval with no LLM in the path; the search prompt was
+tightened so a badge reading "banned" accompanies an answer that says banned;
+and the false "scanned images" limitation was struck from the submission document
+with the correction stated rather than silently removed.
+
+Browser-verified at 390×844: zero console errors, 🚫 BANNED badge matching its
+own body text, real S.O. 2394(E) citation. Repo made public for judge access.
+
+**Verified negative cases** (these matter more than the positives):
+`Combiflam + Amoxicillin` → `unknown`, not `banned_fdc`.
 
 <br/>

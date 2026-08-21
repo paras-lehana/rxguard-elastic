@@ -1,0 +1,29 @@
+# PharmAI Frontend Portal v2.0
+# Flask app serving the PharmAI drug safety portal
+# Code mounted from: /root/repo/pharmai_portal/frontend
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# gunicorn, not the Flask dev server.
+#
+# Timeout is generous because an N*N medication screen issues one LLM call per
+# drug pair sequentially — 12 drugs is 66 calls — and the default 30s would kill
+# the request mid-screen. Two workers with four threads each keeps the portal
+# responsive while a long screen is in flight, without multiplying the embedding
+# model's memory footprint across many processes.
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", \
+     "--workers", "2", "--threads", "4", \
+     "--timeout", "600", "--graceful-timeout", "30", \
+     "--access-logfile", "-", "--error-logfile", "-", \
+     "app:app"]

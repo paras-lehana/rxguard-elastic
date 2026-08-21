@@ -1,7 +1,7 @@
 # Task Log — PharmAI / RxGuard Portal
 
 > **Purpose**: Structured task tracker for every session, with status and time-stamped logs.
-> **Last updated**: 2026-08-21
+> **Last updated**: 2026-08-21 (second pass)
 
 ---
 
@@ -44,6 +44,34 @@
 
 ---
 
+---
+
+## Session: 2026-08-21 (cont.) — Close out deferred items
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 17 | OCR scanned gazette PDFs | ❌ Skipped | **Premise was wrong.** Verified every PDF has a text layer and zero embedded images; the single-chunk files are short one-page notifications, correctly extracted. Nothing to recover. |
+| 18 | Fix table-only notifications marked `unknown` | ✅ Done | The real defect behind that symptom. Document-level ban inheritance; prohibition chunks 119 → 212 |
+| 19 | Expand interaction knowledge base | ✅ Done | Wrote `mine_banned_fdcs.py`; 33 banned FDCs mined from the corpus with real S.O. numbers. 8 → 40 pairs |
+| 20 | Replace Flask dev server | ✅ Done | gunicorn, 2 workers × 4 threads, 600s timeout for N×N screens |
+| 21 | Login modal blocking first load | ❌ Skipped | **My earlier claim was wrong.** It only opens on button click and already closes via × / backdrop. Added Escape-key dismissal as a genuine small win |
+| 22 | Elastic corpus-explorer endpoints | ✅ Done | `/api/corpus/stats` and `/api/corpus/search` — raw retrieval with no LLM in the path |
+| 23 | Search badge contradicting its own text | ✅ Done | Search prompt tightened; `status: banned` now matches an answer that says "is banned" |
+| 24 | Correct false claims in the submission doc | ✅ Done | Removed the "scanned images" limitation, refreshed all figures |
+| 25 | Make GitHub repo public | ✅ Done | Judges need read access |
+
+**Log**:
+- 14:05 — Checked OCR premise before building anything: all PDFs have text layers. Claim retracted
+- 14:08 — Found the real defect: prohibition tables carry no ban verb per row, so the single most important chunk was `unknown`
+- 14:12 — Document-level inheritance added with `ban_status_source` provenance; re-ingested
+- 14:18 — Wrote the FDC miner. First run produced 38 pairs including **two false bans** on legal medicines
+- 14:20 — Added two guards (row must cite its own S.O.; component count across whole name). 38 → 33, both false positives gone
+- 14:22 — Read all 33 rows individually before committing. 32 new pairs indexed
+- 14:25 — gunicorn deployed; corpus explorer endpoints live
+- 14:29 — Browser: 0 console errors, badge now reads 🚫 BANNED matching an answer that says banned
+
+---
+
 ## 🕐 Agent Deferred
 
 > Items scoped but not completed — carried forward until explicitly resolved.
@@ -51,11 +79,11 @@
 | # | Item | Deferred On | Reason | Status |
 |---|------|-------------|--------|--------|
 | 1 | Activate AWS Bedrock | 2026-08-21 | No valid AWS credentials. Integration complete; needs `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` in `frontend/.env`, then `LLM_PROVIDER=bedrock`, `EMBED_DIM=512`, re-run bootstrap + ingest | ⏳ Pending — user action |
-| 2 | OCR the scanned gazette PDFs | 2026-08-21 | 4 of 10 PDFs have no text layer, yielding 1 chunk each. Needs Textract or Tesseract at ingest | ⏳ Pending |
-| 3 | Replace Flask dev server with gunicorn | 2026-08-21 | Works for the demo; not production-grade | ⏳ Pending |
-| 4 | Expand interaction knowledge base | 2026-08-21 | 8 curated pairs demonstrate the architecture; production needs a licensed dataset | ⏳ Pending |
+| 2 | OCR the scanned gazette PDFs | 2026-08-21 | **Premise retracted** — verified all PDFs have text layers and no images; single-chunk files are genuinely short notifications. Replaced by document-level ban inheritance, which fixed the actual symptom | ✅ Closed (2026-08-21) — not a real issue |
+| 3 | Replace Flask dev server with gunicorn | 2026-08-21 | Works for the demo; not production-grade | ✅ Done (2026-08-21) |
+| 4 | Expand interaction knowledge base | 2026-08-21 | 8 → 40 pairs via corpus mining (33 cited banned FDCs). Pharmacological half still needs a licensed dataset | ⚠️ Partial (2026-08-21) |
 | 5 | Measure ban-classification recall | 2026-08-21 | Regex flags 119/379 chunks; precision looks good, recall unmeasured against a labelled set | ⏳ Pending |
-| 6 | Flip GitHub repo to public | 2026-08-21 | Created private deliberately — publishing is irreversible and is the user's call at submission time | ⏳ Pending — user action |
+| 6 | Flip GitHub repo to public | 2026-08-21 | Judges need read access to the submission repo | ✅ Done (2026-08-21) |
 
 ---
 
@@ -66,8 +94,8 @@
 | # | Suggestion | Raised On | Priority | Status |
 |---|-----------|-----------|----------|--------|
 | 1 | Get AWS credits from the hackathon organiser's portal/Discord — Elastic+AWS tracks usually issue them to registered teams. Highest-leverage 10 minutes available | 2026-08-21 | High | ⏳ Open |
-| 2 | Make the Descope login modal dismissible or defer it — judges hitting a forced auth wall on first load is a scoring risk | 2026-08-21 | High | ⏳ Open |
-| 3 | Add an Elastic-powered "corpus explorer" tab so judges can see the index directly | 2026-08-21 | Med | ⏳ Open |
+| 2 | Make the Descope login modal dismissible or defer it | 2026-08-21 | High | ✅ Closed (2026-08-21) — **claim was wrong**: it only opens on button click and already closed via × / backdrop. Added Escape-key dismissal |
+| 3 | Add an Elastic-powered "corpus explorer" so judges can see the index directly | 2026-08-21 | Med | ✅ Done (2026-08-21) — `/api/corpus/stats` + `/api/corpus/search` |
 | 4 | Record the demo video against the interaction endpoint, not general search — the interaction path has the curated KB and answers with high confidence | 2026-08-21 | High | ⏳ Open |
 | 5 | Add Kibana for pitch-deck visuals of the gazette corpus | 2026-08-21 | Low | ⏳ Open |
 | 6 | Investigate why the Traefik route takes 30-60s to recover after `docker restart`; it poisons the Cloudflare cache each time | 2026-08-21 | Med | ⏳ Open |

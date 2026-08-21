@@ -151,6 +151,10 @@ INDEX_DEFS = {
             # filter rather than a full-text guess.
             'drugs': {'type': 'keyword'},
             'ban_status': {'type': 'keyword'},
+            # Whether ban_status came from this chunk's own wording or was
+            # inherited from the document being a prohibition list. Surfaced in
+            # explanations so a verdict never overstates its own evidence.
+            'ban_status_source': {'type': 'keyword'},
             'notification_date': {'type': 'date',
                                   'format': 'yyyy-MM-dd||yyyy||epoch_millis'},
             'embedding': _dense_vector(),

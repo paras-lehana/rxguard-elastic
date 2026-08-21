@@ -27,3 +27,8 @@ fastembed>=0.4.0
 
 # Gazette PDF text extraction for the ingestion pipeline.
 pymupdf>=1.24.0
+
+# Production WSGI server. The Flask development server is single-threaded and
+# prints a warning on every boot; with N*N medication screens issuing many
+# sequential LLM calls, concurrent workers matter for a live demo.
+gunicorn>=21.2.0

@@ -75,6 +75,13 @@ class DescopeAuth {
       if (e.target.id === 'authModal') this.hideModal();
     });
 
+    // Close on Escape. The Descope web component renders its own focus trap and
+    // covers the page, so without a keyboard exit a visitor who opened the modal
+    // by accident has to hit a small × to get back to the product.
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.hideModal();
+    });
+
     // Descope web component success/error events
     const wc = document.querySelector('descope-wc');
     if (wc) {

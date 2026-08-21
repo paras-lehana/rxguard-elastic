@@ -88,8 +88,8 @@ not degrade — it refuses to answer, by design.
 
 | Index | Documents | Role |
 |---|---|---|
-| `rxguard-gazettes` | **379** chunks from 10 CDSCO notifications, **137** distinct gazette IDs, **63** distinct salts, **119** chunks classified as prohibitions | The regulatory corpus |
-| `rxguard-interactions` | 5 curated, cited drug-pair records | Pharmacological knowledge base |
+| `rxguard-gazettes` | **379** chunks from 10 CDSCO notifications, **137** distinct gazette IDs, **63** distinct salts, **212** chunks classified as prohibitions | The regulatory corpus |
+| `rxguard-interactions` | **40** cited drug-pair records — 8 hand-curated pharmacological, **33 banned FDCs mined from the corpus itself** | Pharmacological + regulatory knowledge base |
 | `rxguard-fhir` | Ingested Patient / MedicationRequest / MedicationStatement resources | Structured clinical input |
 | `rxguard-audit` | Append-only, hash-chained | Immutable decision ledger |
 
@@ -119,6 +119,40 @@ index*, not bolted onto a prompt.
 fields. This converts "is this drug banned?" from a semantic similarity guess
 into an exact filtered lookup — the difference between an answer a pharmacist
 can act on and one they cannot.
+
+**Document-level status inheritance, tagged as such.** The most important
+notifications are bare tables whose rows name a combination and a notification
+number but never the word "prohibited" — the prohibition is stated by the title
+and the enabling section. Chunk-local keyword classification therefore marked the
+single most important piece of evidence in the corpus `unknown`, and search
+truthfully replied that it could not establish the ban status of a combination
+sitting in a government prohibition table. Chunks now inherit the document's
+verdict when their own text is inconclusive *and* they name known salts, carrying
+`ban_status_source='document'` so an explanation can state exactly how the status
+was established. Prohibition-classified chunks went from 119 to 212.
+
+**The index feeds itself.** `scripts/mine_banned_fdcs.py` queries Elasticsearch
+for prohibition-classified chunks, parses the notification tables, and writes the
+two-component combinations back into `rxguard-interactions` — 33 banned FDCs,
+each carrying its real S.O. number, its source file, and the chunk id it came
+from. Nothing is hand-copied, so every regulatory record is traceable to primary
+evidence. Elasticsearch is both the source and the destination of that pipeline.
+
+Two guards in that miner exist because the first run produced false bans, which
+on this product is the worst possible error:
+
+- **A row must cite its own notification number.** The corpus contains the prose
+  line *"FDC of Ibuprofen + Paracetamol is not indicated in cold"* — a clinical
+  remark, not a prohibition. Ibuprofen + Paracetamol (Combiflam) is licensed and
+  widely sold; emitting it as `banned_fdc` would tell a pharmacist to refuse a
+  legal medicine.
+- **Component count is measured across the whole drug name.** A five-component
+  row — `Dextromethorphan + Phenylephrine + Cetirizine + Paracetamol + Caffeine`
+  — must not yield "Paracetamol + Caffeine is banned". The first implementation
+  only looked for further `+` signs *after* the matched pair and so missed the
+  ones before it.
+
+All 33 surviving rows were then read individually before being committed.
 
 **Source-diversity capping in the retrieval window.** The corpus is lopsided:
 one notification contributes 284 of 379 chunks, and its near-duplicate pages
@@ -151,6 +185,7 @@ change — and because it is the API the agent tool-use loop builds on.
 |---|---|---|
 | **Ingestion Agent** | Gazette PDF → chunks → salt extraction → ban classification → vectors → Elasticsearch | `scripts/ingest_gazettes.py` |
 | **Interaction Agent** | Retrieve, reason, grade severity, cite | `search_gazettes`, `lookup_interaction_pair` (Bedrock toolConfig) |
+| **FDC Mining Agent** | Read prohibition tables back out of Elasticsearch, extract two-component banned combinations with their statutory citations, seed the interaction index | `scripts/mine_banned_fdcs.py` |
 | **Audit Agent** | Hash-chain each verdict before it is returned | `services/audit_service.py` |
 
 On the Bedrock path the Interaction Agent chooses its own retrieval strategy
@@ -324,6 +359,12 @@ curl -s -X POST $BASE/api/fhir/analyze -d @bundle.json \
 
 # 5. Prove the audit chain
 curl -s $BASE/api/audit/verify | jq
+
+# 6. See the index itself — counts, salts, analyzer, how ban status was decided
+curl -s $BASE/api/corpus/stats | jq '{cluster, retrieval, gazettes, interactions}'
+
+# 7. Raw hybrid retrieval with NO LLM in the path — judge the retrieval alone
+curl -s "$BASE/api/corpus/search?q=nimesulide+paracetamol+dispersible&size=3" | jq
 ```
 
 ### Verified result — grounding, not fluency
@@ -375,18 +416,33 @@ gaps is easier to trust on everything else.
 
 1. **AWS Bedrock is not executing** — no valid credentials. Integration is
    complete; activation is one environment variable. `/health` never hides this.
-2. **Some gazette PDFs are scanned images.** 4 of 10 files yielded a single text
-   chunk because they have no text layer. Real fix is OCR at ingest (Textract on
-   the AWS path); today those notifications are under-represented.
-3. **The interaction knowledge base has 5 curated pairs**, not a commercial
-   database. Enough to demonstrate the architecture and cover the demo cases; a
-   production deployment would license a full interaction dataset.
+2. **Table-only notifications carry no prohibition verb.** Several CDSCO
+   notifications are bare tables — `Nimesulide+ Paracetamol dispersible tablets |
+   S.O. 2394 (E) | 02.06.2023` — with the prohibition stated by the document
+   title and the enabling section, never repeated per row. Chunk-local keyword
+   classification therefore returned `unknown` for the single most important
+   evidence in the corpus. Chunks now inherit a document-level verdict when
+   their own text is inconclusive *and* they name known salts, tagged
+   `ban_status_source='document'` so an explanation never overstates its
+   evidence. This raised prohibition-classified chunks from 119 to 212.
+   (An earlier draft of this document attributed the single-chunk files to
+   missing text layers. That was wrong: every PDF in the corpus has a text
+   layer and zero embedded images — those files are simply short one-page
+   notifications, correctly extracted.)
+3. **The interaction knowledge base holds 40 pairs**, not a commercial
+   database: 8 hand-curated pharmacological records plus 32 banned FDCs mined
+   from the corpus itself (see §4). Enough to demonstrate the architecture and
+   cover real regulatory ground; a production deployment would license a full
+   interaction dataset for the pharmacological half.
 4. **Ban classification is regex-based** over prohibition keywords. It flags 119
    of 379 chunks; precision is good, recall is unmeasured against a labelled set.
 5. **Tamper-evident, not tamper-proof** — see §5. A privileged operator can edit
    an entry; they cannot do it undetectably.
-6. **Flask development server.** Fine for a demo; a production deployment needs
-   gunicorn behind Traefik.
+6. **Pharmacological coverage is narrower than regulatory coverage.** The
+   regulatory half is strong — 212 prohibition-classified chunks and 33 banned
+   FDCs with statutory citations. The pharmacological half rests on 8 curated
+   records, so a pair that is clinically risky but not regulated will often
+   return `unknown`.
 7. **`unknown` is a real and frequent verdict** for pairs outside the corpus.
    This is the intended behaviour for a patient-safety tool, but it means
    coverage is narrower than a commercial checker.

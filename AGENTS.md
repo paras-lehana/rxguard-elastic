@@ -30,11 +30,20 @@ Flask portal (frontend/app.py, container pharma-frontend, port 5000)
   ├── services/audit_service.py       append-only SHA-256 hash chain
   ├── services/llm_provider.py        Bedrock Converse | platform fallback
   ├── services/embeddings.py          Titan v2 | local ONNX | hashed floor
+  ├── services/gazette_ingest.py      PDF -> chunks -> salts -> ban status
   └── services/config.py              all env resolution
 
+scripts/
+  bootstrap_elastic.py   create indices + seed curated pharmacological pairs
+  ingest_gazettes.py     bulk corpus load (thin CLI over gazette_ingest)
+  mine_banned_fdcs.py    read prohibition tables back OUT of Elastic and seed
+                         rxguard-interactions with cited banned FDCs
+
 rxguard-es (Elasticsearch 8.17.0, container-only + 127.0.0.1:9200)
-  rxguard-gazettes      379 CDSCO chunks   rxguard-interactions   8 curated pairs
-  rxguard-fhir          ingested resources  rxguard-audit          hash chain
+  rxguard-gazettes      379 chunks (212 prohibition-classified)
+  rxguard-interactions  40 pairs (8 curated + 32 mined from the corpus)
+  rxguard-fhir          ingested resources
+  rxguard-audit         append-only hash chain
 ```
 
 **Retrieval always precedes reasoning.** There is no code path where the model
@@ -88,6 +97,24 @@ answers without Elasticsearch context. Do not add one.
 10. **Never delete `rxguard-es-data`** without the 3-step volume gate. It holds
     the ingested corpus and the entire audit chain.
 
+11. **A false ban is worse than a missed ban.** Telling a pharmacist to refuse a
+    legal medicine causes immediate harm. Any change to `mine_banned_fdcs.py` or
+    ban classification must preserve both guards: a row must cite its own
+    S.O./G.S.R. number (prose lines like "FDC of Ibuprofen + Paracetamol is not
+    indicated in cold" are not prohibitions), and component count must be
+    measured across the whole drug name (a five-component row must not yield a
+    pair). Read every mined row before committing.
+
+12. **Never let a status badge be inferred from prose.** `/api/search` returns a
+    structured `status`; the UI consumes it directly. Substring-matching an
+    answer for "banned" once badged 🚫 BANNED onto text that said no ban
+    information was found. The `detectDrugStatus` fallback in `utils.js` is
+    legacy-only and must stay negation-aware.
+
+13. **`ban_status_source` must survive.** A chunk whose status was inherited from
+    the document carries `ban_status_source='document'`. Dropping that field lets
+    an explanation overstate its own evidence.
+
 ---
 
 ## Browser Test Cases
@@ -116,6 +143,11 @@ URL at mobile viewport 390×844.** `curl` and healthchecks are not a substitute.
 | R2 | `Crocin 650` normalises to `paracetamol`, not `paracetamol 650` | A bare strength left in the token broke the exact pair lookup |
 | R3 | Search for "nimesulide and paracetamol banned" cites ≥3 *distinct* source files | One 284-chunk notification monopolised the window, so the system claimed no coverage of a combination it had indexed |
 | R4 | Tamper an audit entry via ES `_update`, then `verify` | Must report `verified: false` with the exact `broken_at_seq` |
+| R5 | `Combiflam` + `Amoxicillin` must NOT return `banned_fdc` | A prose line about ibuprofen+paracetamol was mined as a ban; Combiflam is legal and widely sold |
+| R6 | `paracetamol` + `caffeine` must NOT return `banned_fdc` | Extracted from a five-component prohibition row by a forward-only `+` check |
+| R7 | Search "is nimesulide and paracetamol banned" → `status: banned` **and** an answer that says so | Badge and body text contradicted each other in both directions |
+| R8 | `/api/corpus/stats` shows `by_ban_status_source` with a non-zero `document` count | Document-level inheritance is what makes table-only notifications findable |
+| R9 | Every stylesheet serves `content-type: text/css` | A sheet served as `text/plain` is refused by the browser while still returning 200 |
 
 ---
 
@@ -135,8 +167,17 @@ curl -s -X POST https://medical.lehana.in/pharmai/api/interaction \
   | jq '{severity, is_banned_fdc, cited_evidence_ids}'
 # MUST be severity=banned_fdc with non-empty citations
 
-# 3. Audit chain intact
+# 3. NEGATIVE case — a legal combination must not be flagged banned
+curl -s -X POST https://medical.lehana.in/pharmai/api/interaction \
+  -H 'Content-Type: application/json' \
+  -d '{"medicine_a":"Combiflam","medicine_b":"Amoxicillin"}' | jq '.severity'
+# MUST NOT be banned_fdc
+
+# 4. Audit chain intact
 curl -s https://medical.lehana.in/pharmai/api/audit/verify | jq .verified   # true
+
+# 5. Index transparency
+curl -s https://medical.lehana.in/pharmai/api/corpus/stats | jq '.gazettes.by_ban_status_source'
 
 # 4. Browser test cases 1-10 above, mobile 390x844, on the LIVE public URL
 ```
@@ -167,7 +208,20 @@ ES_URL=http://localhost:9200 .venv/bin/python scripts/bootstrap_elastic.py
 ES_URL=http://localhost:9200 .venv/bin/python scripts/ingest_gazettes.py
 ```
 
+```bash
+# Seed regulatory pairs by mining the corpus. Dry-run FIRST and read the rows —
+# a false ban is the worst error this system can make.
+ES_URL=http://localhost:9200 .venv/bin/python scripts/mine_banned_fdcs.py
+ES_URL=http://localhost:9200 .venv/bin/python scripts/mine_banned_fdcs.py --commit
+```
+
 `--recreate` on bootstrap **destroys all indexed data including the audit chain.**
+
+### Serving
+
+gunicorn, 2 workers x 4 threads, 600s timeout. The long timeout is required
+because an N*N medication screen issues one LLM call per pair sequentially — 12
+drugs is 66 calls — and gunicorn's 30s default would kill it mid-screen.
 
 ### Activating AWS Bedrock
 
@@ -186,9 +240,13 @@ credential does not cost a doomed Bedrock round-trip on every request.
 
 ### Known issues
 
-- **4 of 10 gazette PDFs are scanned images** with no text layer, yielding one
-  chunk each. Real fix is OCR at ingest (Textract on the AWS path).
-- **Flask development server** in production. Needs gunicorn.
+- **The single-chunk gazette files are NOT scanned images.** Every PDF in the
+  corpus has a text layer and zero embedded images; those files are short
+  one-page notifications, correctly extracted. Do not add OCR expecting to
+  recover content that is not missing.
+- **Pharmacological coverage is thinner than regulatory coverage** — 8 curated
+  records vs 33 cited banned FDCs. A clinically risky but unregulated pair will
+  often return `unknown`.
 - **`/api/medications/screen` is O(n²) LLM calls** — 12 drugs is 66 calls. Capped
   at 12 for that reason.
 - Ban classification is regex-based; precision is good, recall unmeasured against

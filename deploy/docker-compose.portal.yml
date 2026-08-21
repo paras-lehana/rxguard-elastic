@@ -1,0 +1,49 @@
+# PharmAI Frontend Portal v2.0
+# Route: medical.lehana.in/pharmai
+# Code: /root/repo/pharmai_portal/frontend
+# Backend: Flask app with 2-tier search (N8N→Sarvam), STT, TTS, translate, OCR
+
+services:
+  pharma-frontend:
+    build:
+      context: /root/repo/pharmai_portal/frontend
+      dockerfile: /root/docker/pharma-frontend/Dockerfile
+    container_name: pharma-frontend
+    init: true
+    restart: "no"
+    volumes:
+    - /root/repo/pharmai_portal/frontend:/app:ro
+    env_file:
+    - /root/repo/pharmai_portal/frontend/.env
+    networks:
+    - root_default
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.pharma-frontend.rule=(Host(`medical.lehana.in`) || Host(`medical.aidhunik.com`))
+      && PathPrefix(`/pharmai`)"
+    - "traefik.http.routers.pharma-frontend.entrypoints=websecure"
+    - "traefik.http.routers.pharma-frontend.tls=true"
+    - "traefik.http.routers.pharma-frontend.priority=110"
+    - "traefik.http.routers.pharma-frontend.middlewares=pharma-strip@file"
+    - "traefik.http.services.pharma-frontend.loadbalancer.server.port=5000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
+
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - curl -f http://localhost:5000/health || wget -qO- 
+        http://localhost:5000/health || python3 -c 'import urllib.request; 
+        urllib.request.urlopen("http://localhost:5000/health")' || python -c 
+        'import urllib.request; 
+        urllib.request.urlopen("http://localhost:5000/health")' || exit 1
+      interval: 600s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+networks:
+  root_default:
+    external: true

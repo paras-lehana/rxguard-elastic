@@ -339,7 +339,13 @@ Return a single JSON object:
 to appear in the passages. If the evidence does not establish the status of that
 specific subject, `status` is "unknown" — even when the passages discuss bans on
 other drugs or other combinations. This field drives a prominent badge in the
-user interface, so a wrong value actively misinforms a pharmacist."""
+user interface, so a wrong value actively misinforms a pharmacist.
+
+If the evidence establishes a prohibition on the subject in ANY dosage form,
+`status` is "banned". Note the formulation limits in `answer`, but do not
+downgrade `status` to "unknown" because other formulations are unaddressed — a
+pharmacist needs to know the combination is restricted, and a badge reading
+"unknown" above an answer reading "is prohibited" contradicts itself."""
 
 # Context window for the search answer, and the per-file cap that keeps one
 # oversized notification from consuming it. See search_elastic_grounded.
@@ -961,6 +967,117 @@ def api_delete_all_documents():
     if request.method == 'OPTIONS':
         return _cors_preflight()
     return _cors_json(_CORPUS_READONLY, 403)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ROUTES — Corpus explorer (Elasticsearch transparency)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/corpus/stats', methods=['GET'])
+@app.route('/pharmai/api/corpus/stats', methods=['GET'])
+def api_corpus_stats():
+    """
+    What is actually in the index, straight from Elasticsearch aggregations.
+
+    Exists so the claim "Elasticsearch is the core" is verifiable rather than
+    asserted: a reviewer can see the real document counts, the salts covered,
+    how ban status was established, and the analyzer in use — without shell
+    access to the cluster.
+    """
+    if not RXGUARD_AVAILABLE:
+        return _rxguard_required()
+    client = elastic_service.es_client()
+    if client is None or not elastic_service.es_available():
+        return _cors_json({'error': 'Elasticsearch unavailable'}, 503)
+
+    try:
+        agg = client.search(
+            index=rx_config.IDX_GAZETTES, size=0,
+            aggs={
+                'by_status': {'terms': {'field': 'ban_status'}},
+                # How the status was decided: the chunk's own wording, or
+                # inherited from the document being a prohibition list.
+                'by_status_source': {'terms': {'field': 'ban_status_source'}},
+                'by_file': {'terms': {'field': 'source_file', 'size': 50}},
+                'distinct_salts': {'cardinality': {'field': 'drugs'}},
+                'distinct_gazettes': {'cardinality': {'field': 'gazette_id'}},
+                'top_salts': {'terms': {'field': 'drugs', 'size': 25}},
+            },
+        )['aggregations']
+
+        interactions = client.search(
+            index=rx_config.IDX_INTERACTIONS, size=0,
+            aggs={'by_severity': {'terms': {'field': 'severity'}}},
+        )['aggregations']
+
+        return _cors_json({
+            'cluster': elastic_service.cluster_info(),
+            'retrieval': {
+                'strategy': 'hybrid BM25 + kNN, reciprocal rank fusion',
+                'analyzer': 'pharma_text (asciifolding, english_stop, pharma_synonyms)',
+                'vector_field': 'embedding',
+                'vector_dims': rx_config.EMBED_DIM,
+                'similarity': 'cosine',
+                'licence': 'basic (free) — RRF fused in-process, no trial features',
+            },
+            'gazettes': {
+                'distinct_salts': agg['distinct_salts']['value'],
+                'distinct_gazette_ids': agg['distinct_gazettes']['value'],
+                'by_ban_status': {b['key']: b['doc_count']
+                                  for b in agg['by_status']['buckets']},
+                'by_ban_status_source': {b['key']: b['doc_count']
+                                         for b in agg['by_status_source']['buckets']},
+                'salts_covered': [b['key'] for b in agg['top_salts']['buckets']],
+                'files': [{'file': b['key'], 'chunks': b['doc_count']}
+                          for b in agg['by_file']['buckets']],
+            },
+            'interactions': {
+                'by_severity': {b['key']: b['doc_count']
+                                for b in interactions['by_severity']['buckets']},
+            },
+            'embeddings': embeddings.backend_report(),
+        })
+    except Exception as exc:
+        return _cors_json({'error': str(exc)}, 500)
+
+
+@app.route('/api/corpus/search', methods=['GET'])
+@app.route('/pharmai/api/corpus/search', methods=['GET'])
+def api_corpus_search():
+    """
+    Raw hybrid-retrieval output with no LLM in the path.
+
+    Deliberately unsummarised: it shows exactly which documents Elasticsearch
+    returns and at what fused score, so the retrieval layer can be judged on its
+    own merits rather than through a model's paraphrase.
+    """
+    if not RXGUARD_AVAILABLE:
+        return _rxguard_required()
+    query = (request.args.get('q') or '').strip()
+    if not query:
+        return _cors_json({'error': 'q parameter required'}, 400)
+    size = min(int(request.args.get('size', 10)), 50)
+
+    hits = elastic_service.hybrid_search(rx_config.IDX_GAZETTES, query, size=size)
+    return _cors_json({
+        'query': query,
+        'engine': 'elasticsearch',
+        'strategy': 'hybrid BM25 + kNN, reciprocal rank fusion',
+        'embedding_backend': embeddings.active_backend(),
+        'hit_count': len(hits),
+        'hits': [{
+            'id': h['_id'],
+            'fused_score': round(h.get('_score', 0), 6),
+            'source_file': h.get('source_file'),
+            'page': h.get('page'),
+            'gazette_id': h.get('gazette_id'),
+            'ban_status': h.get('ban_status'),
+            'ban_status_source': h.get('ban_status_source'),
+            'notification_date': h.get('notification_date'),
+            'drugs': h.get('drugs'),
+            'excerpt': (h.get('text') or '')[:400],
+        } for h in hits],
+    })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
