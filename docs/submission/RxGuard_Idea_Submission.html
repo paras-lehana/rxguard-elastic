@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RxGuard - Idea Submission</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #1a2332;
+    background: #ffffff;
+  }
+  .page {
+    width: 210mm;
+    height: 296mm;
+    padding: 16mm 18mm 14mm 18mm;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .kicker {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9.5pt;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #0b6e6e;
+    margin-bottom: 4mm;
+  }
+  h1 {
+    font-size: 27pt;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 1.5mm;
+  }
+  .tagline {
+    font-size: 13.5pt;
+    color: #3d4a5c;
+    font-style: italic;
+    margin-bottom: 3mm;
+  }
+  .meta {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    color: #5a6a7e;
+    padding-bottom: 4mm;
+    border-bottom: 2.5px solid #0b6e6e;
+    margin-bottom: 6mm;
+  }
+  h2 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5pt;
+    font-weight: 700;
+    color: #0b6e6e;
+    margin: 5.5mm 0 2.2mm 0;
+  }
+  p {
+    font-size: 10.6pt;
+    line-height: 1.52;
+    margin-bottom: 2.6mm;
+    text-align: justify;
+  }
+  .lead { font-size: 11.2pt; }
+  strong { color: #10212e; }
+  .pullquote {
+    margin: 4mm 0;
+    padding: 3.5mm 5mm;
+    background: #f2f8f7;
+    border-left: 3.5px solid #0b6e6e;
+    font-size: 10.8pt;
+    line-height: 1.5;
+  }
+  .stats {
+    display: flex;
+    gap: 4mm;
+    margin: 4mm 0 2mm 0;
+  }
+  .stat {
+    flex: 1;
+    text-align: center;
+    padding: 3.2mm 1mm;
+    background: #f2f8f7;
+    border-radius: 2mm;
+  }
+  .stat b {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16pt;
+    color: #0b6e6e;
+  }
+  .stat span {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8pt;
+    color: #4a5a6e;
+    line-height: 1.3;
+    display: block;
+    margin-top: 1mm;
+  }
+  .diagram-wrap { margin: 3mm 0 4mm 0; }
+  .footer {
+    position: absolute;
+    bottom: 9mm;
+    left: 18mm;
+    right: 18mm;
+    border-top: 1px solid #cfd8e0;
+    padding-top: 2.5mm;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8.7pt;
+    color: #4a5a6e;
+    display: flex;
+    justify-content: space-between;
+  }
+  .footer b { color: #0b6e6e; }
+  .twocol { display: flex; gap: 7mm; }
+  .twocol > div { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ PAGE 1 ═══════════════════════════ -->
+<div class="page">
+  <div class="kicker">Idea Submission · Healthcare and Insurance Intelligence</div>
+  <h1>RxGuard</h1>
+  <div class="tagline">Drug interaction detection that knows Indian drug law</div>
+  <div class="meta">Built on Elasticsearch and AWS &nbsp;·&nbsp; Working prototype live at <b>medical.lehana.in/pharmai</b> &nbsp;·&nbsp; Code at <b>github.com/Akum030/elastic_drugs</b></div>
+
+  <h2>The blind spot every existing tool shares</h2>
+  <p class="lead">Ask any drug interaction checker about Nimesulide and Paracetamol. It will tell you they are fine together. Both molecules are legal, and both sit on every pharmacy shelf in India. What no app will tell you is that their fixed-dose combination has been <strong>banned by CDSCO since 2016</strong>.</p>
+  <p>The ban lives inside a government gazette PDF, in a table that never uses the word "banned" in a single row. Google does not index it. We asked a leading AI model and it answered confidently, and wrongly. Meanwhile the stakes are real. A pharmacist who stocks the combination risks losing their licence under section 26A of the Drugs and Cosmetics Act. A patient who takes it risks liver injury. An insurer who pays a claim on a prohibited therapy has nothing to stand on when that claim is later contested.</p>
+  <p>India prohibits dozens of fixed-dose combinations every year. The information exists. It is simply unreachable at the moment of decision. That gap is our product.</p>
+
+  <h2>What we built</h2>
+  <p>RxGuard screens every drug pair through <strong>two lenses at once</strong>. The clinical lens asks whether the molecules interact. The regulatory lens asks whether this exact combination is legal to sell in India. A pair can pass the first and fail the second, and that is precisely the case every existing tool misses.</p>
+  <div class="pullquote">One rule anchors the whole design. <strong>The AI never answers from memory.</strong> Every verdict is reasoned only over what Elasticsearch retrieves from the indexed gazette corpus, and every answer must cite the exact notification it rests on.</div>
+  <p>Ask about Nimesulide and Paracetamol and the answer is concrete. Banned, notification S.O. 712(E), dated 10.03.2016, traceable back to the source row in the government document, typos and all. If the evidence is not in the corpus, the system says so plainly instead of guessing. For a drug safety tool, an honest "unknown" is a feature, not a failure.</p>
+  <p>It also meets users where they actually are. Type "Nimulid" and "Crocin 650" the way a real pharmacist would, and brands resolve to salts before anything is looked up. Hand it a FHIR bundle from a hospital record and it screens the entire medication list pairwise, because the dangerous pair is usually the one nobody thought to ask about. Speak to it in Hindi. Photograph a handwritten prescription and let it read the drugs off the page.</p>
+  <p>And every single verdict is written to an <strong>append-only, hash-chained audit ledger</strong> inside Elasticsearch before the user ever sees it. We tested that claim by deliberately tampering with a stored record. Verification caught the edit and named the exact entry. That property is what turns an AI answer into evidence a claims adjudicator or a regulator can actually rely on.</p>
+
+  <div class="footer">
+    <span><b>RxGuard</b> · Idea Submission</span>
+    <span>Page 1 of 2</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 2 ═══════════════════════════ -->
+<div class="page">
+  <h2 style="margin-top:0">Architecture</h2>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1060 470" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#37485c"/>
+      </marker>
+    </defs>
+
+    <!-- Users -->
+    <rect x="10" y="130" width="185" height="150" rx="10" fill="#f2f8f7" stroke="#0b6e6e" stroke-width="2"/>
+    <text x="102" y="158" text-anchor="middle" font-size="15" font-weight="bold" fill="#10212e">Users</text>
+    <text x="102" y="180" text-anchor="middle" font-size="12.5" fill="#3d4a5c">Pharmacist · Patient · Insurer</text>
+    <text x="22" y="207" font-size="12" fill="#3d4a5c">→ typed brand names</text>
+    <text x="22" y="226" font-size="12" fill="#3d4a5c">→ Hindi voice query</text>
+    <text x="22" y="245" font-size="12" fill="#3d4a5c">→ prescription photo</text>
+    <text x="22" y="264" font-size="12" fill="#3d4a5c">→ FHIR bundle from EHR</text>
+
+    <!-- Portal -->
+    <rect x="255" y="150" width="170" height="110" rx="10" fill="#ffffff" stroke="#37485c" stroke-width="2"/>
+    <text x="340" y="182" text-anchor="middle" font-size="15" font-weight="bold" fill="#10212e">RxGuard Portal</text>
+    <text x="340" y="203" text-anchor="middle" font-size="12" fill="#3d4a5c">Flask + gunicorn</text>
+    <text x="340" y="222" text-anchor="middle" font-size="12" fill="#3d4a5c">live, mobile-friendly</text>
+    <text x="340" y="241" text-anchor="middle" font-size="12" fill="#3d4a5c">Indic voice + OCR</text>
+
+    <!-- Agent -->
+    <rect x="483" y="140" width="190" height="130" rx="10" fill="#eef2fb" stroke="#2b4a8b" stroke-width="2"/>
+    <text x="578" y="170" text-anchor="middle" font-size="15" font-weight="bold" fill="#10212e">Interaction Agent</text>
+    <text x="578" y="193" text-anchor="middle" font-size="12" fill="#3d4a5c">1. normalise brand → salt</text>
+    <text x="578" y="212" text-anchor="middle" font-size="12" fill="#3d4a5c">2. retrieve evidence</text>
+    <text x="578" y="231" text-anchor="middle" font-size="12" fill="#3d4a5c">3. reason and grade</text>
+    <text x="578" y="250" text-anchor="middle" font-size="12" fill="#3d4a5c">4. audit before display</text>
+
+    <!-- Elasticsearch -->
+    <rect x="740" y="18" width="305" height="205" rx="10" fill="#f2f8f7" stroke="#0b6e6e" stroke-width="2.5"/>
+    <text x="892" y="46" text-anchor="middle" font-size="15" font-weight="bold" fill="#0b6e6e">Elasticsearch 8.17 — the core</text>
+    <text x="756" y="74" font-size="12" fill="#3d4a5c">rxguard-gazettes · 379 CDSCO chunks</text>
+    <text x="756" y="94" font-size="12" fill="#3d4a5c">rxguard-interactions · 40 cited pairs</text>
+    <text x="756" y="114" font-size="12" fill="#3d4a5c">rxguard-fhir · patient medication data</text>
+    <text x="756" y="134" font-size="12" fill="#3d4a5c">rxguard-audit · SHA-256 hash chain</text>
+    <text x="756" y="162" font-size="12" font-weight="bold" fill="#10212e">hybrid retrieval per query</text>
+    <text x="756" y="181" font-size="12" fill="#3d4a5c">BM25 + dense-vector kNN, fused with</text>
+    <text x="756" y="200" font-size="12" fill="#3d4a5c">RRF over a custom pharma analyzer</text>
+
+    <!-- AWS -->
+    <rect x="740" y="255" width="305" height="160" rx="10" fill="#fdf6ec" stroke="#c77c1e" stroke-width="2.5"/>
+    <text x="892" y="283" text-anchor="middle" font-size="15" font-weight="bold" fill="#a3630f">AWS — the reasoning layer</text>
+    <text x="756" y="311" font-size="12" fill="#3d4a5c">Bedrock Nova Lite via Converse API</text>
+    <text x="756" y="331" font-size="12" fill="#3d4a5c">tool use — agent picks its retrieval</text>
+    <text x="756" y="351" font-size="12" fill="#3d4a5c">Titan Embed v2 for vectors</text>
+    <text x="756" y="371" font-size="12" fill="#3d4a5c">Bedrock Knowledge Base + Kendra</text>
+    <text x="756" y="391" font-size="12" fill="#3d4a5c">for gazette RAG in the backend</text>
+
+    <!-- Arrows -->
+    <line x1="195" y1="205" x2="252" y2="205" stroke="#37485c" stroke-width="2.5" marker-end="url(#arr)"/>
+    <line x1="425" y1="205" x2="480" y2="205" stroke="#37485c" stroke-width="2.5" marker-end="url(#arr)"/>
+
+    <line x1="673" y1="175" x2="737" y2="120" stroke="#0b6e6e" stroke-width="2.5" marker-end="url(#arr)"/>
+    <text x="700" y="120" font-size="11.5" fill="#0b6e6e" font-weight="bold" transform="rotate(-22 700 120)">retrieve</text>
+
+    <line x1="673" y1="235" x2="737" y2="300" stroke="#c77c1e" stroke-width="2.5" marker-end="url(#arr)"/>
+    <text x="688" y="292" font-size="11.5" fill="#a3630f" font-weight="bold" transform="rotate(30 688 292)">reason</text>
+
+    <!-- Audit note -->
+    <rect x="330" y="330" width="345" height="66" rx="8" fill="#ffffff" stroke="#8a97a5" stroke-width="1.6" stroke-dasharray="6 4"/>
+    <text x="502" y="357" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#10212e">Every verdict is hash-chained into the audit</text>
+    <text x="502" y="377" text-anchor="middle" font-size="12.5" fill="#3d4a5c">index before the user sees it — tamper-evident</text>
+    <line x1="578" y1="270" x2="530" y2="327" stroke="#8a97a5" stroke-width="2" marker-end="url(#arr)"/>
+
+    <text x="502" y="450" text-anchor="middle" font-size="12.5" fill="#5a6a7e">Reasoning happens only over retrieved evidence. There is no code path where the model answers unbacked.</text>
+  </svg>
+  </div>
+
+  <div class="twocol">
+    <div>
+      <h2>Why Elasticsearch is the core</h2>
+      <p>Four indices do four jobs. The gazette corpus is searched with hybrid retrieval, BM25 for exact salt names and notification numbers and vector kNN for the misspellings real users type, fused with reciprocal rank fusion over a custom pharma analyzer. The interaction knowledge base was partly <strong>mined out of the gazette tables themselves</strong>, 33 banned combinations each carrying its real notification number. Even the audit ledger is an Elasticsearch index with append-only writes and a SHA-256 hash chain.</p>
+    </div>
+    <div>
+      <h2>Why AWS is the reasoning layer</h2>
+      <p>Amazon Bedrock runs the thinking. Nova Lite works through the Converse API with tool use, so the agent chooses its own retrieval strategy against Elastic instead of following a fixed script. Titan Embed v2 generates the vectors, and the backend integrates Bedrock Knowledge Base with Amazon Kendra for gazette RAG. Sarvam AI is used narrowly for Hindi speech and prescription OCR, where no AWS equivalent exists.</p>
+    </div>
+  </div>
+
+  <h2>Working today, not a slide</h2>
+  <div class="stats">
+    <div class="stat"><b>379</b><span>gazette chunks indexed from CDSCO notifications</span></div>
+    <div class="stat"><b>212</b><span>chunks classified as prohibitions with provenance</span></div>
+    <div class="stat"><b>40</b><span>cited interaction pairs, 33 mined from the corpus</span></div>
+    <div class="stat"><b>100%</b><span>of verdicts hash-chained and verifiable via API</span></div>
+  </div>
+  <p>The live prototype answers on mobile with Hindi voice input. Every number above can be checked against the running system through its public health, corpus and audit endpoints.</p>
+
+  <h2>Where this goes</h2>
+  <p>Pharmacy chains need exactly this at the point of sale. Insurers need the audit trail for claims adjudication. And the approach generalises. Any country whose drug law lives in unstructured documents can be onboarded by pointing our ingestion agent at its regulator's archive.</p>
+
+  <div class="footer">
+    <span>Live demo <b>medical.lehana.in/pharmai</b> &nbsp;·&nbsp; Code <b>github.com/Akum030/elastic_drugs</b></span>
+    <span>Page 2 of 2</span>
+  </div>
+</div>
+
+</body>
+</html>
