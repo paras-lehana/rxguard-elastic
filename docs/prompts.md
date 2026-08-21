@@ -8,7 +8,7 @@
 | 1 | 2026-08-21 | 12:35 | Locate the banned pharma project | Research | 📋 Logged Only | [→](#2026-08-21-1235---locate-the-banned-pharma-project) |
 | 2 | 2026-08-21 | 12:45 | Recast onto Elastic + AWS for hackathon | Feature | ⚠️ Partial | [→](#2026-08-21-1245---recast-onto-elastic--aws-for-hackathon) |
 | 3 | 2026-08-21 | 14:05 | Close out deferred items | Refactor | ✅ Done | [→](#2026-08-21-1405---close-out-deferred-items) |
-| 4 | 2026-08-21 | 19:05 | Submission form answers + Akum030 repo push | Documentation | ⚠️ Partial | [→](#2026-08-21-1905---submission-form-answers--akum030-repo-push) |
+| 4 | 2026-08-21 | 19:05 | Submission form answers + Akum030 repo push | Documentation | ✅ Done | [→](#2026-08-21-1905---submission-form-answers--akum030-repo-push) |
 
 ---
 
@@ -250,8 +250,9 @@ Built a clean submission history: one squashed baseline commit honestly labelled
 "import PharmAI portal baseline (prior work, Feb-Mar 2026)" plus today's 4 real
 commits cherry-picked on top (branch `submission` in
 /root/backups/pharmai/subm-tree). Push to Akum030/elastic_drugs rejected —
-paras-lehana has READ only. Armed a 45-min background watcher that auto-accepts
-the collaborator invite and pushes to main. Delivered the four form answers
+paras-lehana has READ only. Armed a 45-min background watcher that auto-accepted
+the collaborator invite and pushed to main = 63864cf (verified via API: 5
+commits all dated 2026-08-21, baseline disclosed as prior work). Delivered the four form answers
 (theme, title, solution description, tech stack) in a natural founder voice,
 using the "plan to use" wording of the form so the Bedrock claim stays accurate
 at idea stage.

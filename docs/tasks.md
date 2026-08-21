@@ -78,7 +78,7 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 26 | Push today's commits to Akum030/elastic_drugs | 🔄 In Progress | Clean history built (1 disclosed baseline + 4 real commits) in /root/backups/pharmai/subm-tree, branch `submission`. Blocked on collaborator access (paras-lehana has READ). Auto-push watcher armed for 45 min |
+| 26 | Push today's commits to Akum030/elastic_drugs | ✅ Done | Collaborator invite auto-accepted by watcher; pushed to `main` = `63864cf`. History: 1 disclosed baseline + 4 today-dated commits, all key files verified on remote |
 | 27 | Write idea-submission form answers | ✅ Done | Theme, title, solution description, tech stack — founder voice, delivered in chat |
 
 **Log**:
@@ -117,3 +117,5 @@
 | 5 | Add Kibana for pitch-deck visuals of the gazette corpus | 2026-08-21 | Low | ⏳ Open |
 | 6 | Investigate why the Traefik route takes 30-60s to recover after `docker restart`; it poisons the Cloudflare cache each time | 2026-08-21 | Med | ⏳ Open |
 | 7 | Set a shorter Cloudflare `max-age` for error responses zone-wide, so a transient origin 404 cannot persist 4 hours | 2026-08-21 | Med | ⏳ Open |
+
+- Watcher fired: invite accepted, `submission` → `main` (63864cf). Verified via API: 5 commits, all 2026-08-21, HACKATHON_SUBMISSION.md/AGENTS.md/README.md present
