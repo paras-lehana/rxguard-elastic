@@ -1,11 +1,85 @@
-# 💊 PharmAI: The AI-Powered Pharmacovigilance & Accessibility Platform
+# 💊 PharmAI / RxGuard — Regulatory-Aware Drug Interaction Detection
 
+![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.17-005571?logo=elasticsearch&logoColor=white)
+![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock%20%7C%20Titan%20%7C%20Kendra-FF9900?logo=amazonaws&logoColor=white)
+![FHIR](https://img.shields.io/badge/FHIR-R4-E6007E)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.10%2B-green.svg)
-![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock%20%7C%20Kendra-FF9900.svg)
-![Sarvam AI](https://img.shields.io/badge/Indic%20AI-Sarvam-purple.svg)
 
-**PharmAI** is a groundbreaking, full-stack healthcare intelligence platform built for the **AI for Bharat Hackathon**. It tackles India's most pressing healthcare challenges: regulatory compliance of drugs (CDSCO gazettes) and the accessibility of affordable generic medicines (Jan Aushadhi) using cutting-edge Generative AI and Indic Language models.
+**Live demo:** https://medical.lehana.in/pharmai · **Submission:** [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md) · **Engineering rules:** [AGENTS.md](AGENTS.md)
+
+> Every drug interaction checker knows pharmacology. None of them knows Indian
+> regulatory law — because that knowledge only exists in un-indexed government
+> PDFs. **Nimesulide + Paracetamol** is a banned fixed-dose combination in India,
+> yet both molecules are individually legal and no international database flags
+> the pair. RxGuard screens both lenses at once, grounded in Elasticsearch and
+> reasoned over by AWS Bedrock, with every verdict written to a hash-chained
+> audit trail.
+
+---
+
+## Prior Work & Reused Components
+
+**Disclosed deliberately.** This is not a from-scratch project, and the honest
+account is more impressive than the alternative.
+
+**Pre-existing, built February–March 2026** (before this hackathon):
+- The PharmAI Flask portal — UI, Sarvam AI Indic voice (STT/TTS/translate),
+  prescription OCR, Jan Aushadhi generic lookup, Descope auth
+- `backend_aws_rag/` — FastAPI service integrating AWS Bedrock Knowledge Base
+  and Amazon Kendra
+- The collected CDSCO gazette PDF corpus
+
+**Built for this hackathon** — the entire Elastic and detection layer:
+- `frontend/services/` — Elasticsearch retrieval core (4 indices, custom
+  `pharma_text` analyzer, hybrid BM25 + kNN with reciprocal rank fusion), the
+  dual-lens interaction detection pipeline, FHIR R4 Bundle ingestion, the
+  append-only SHA-256 hash-chained audit trail, and the Bedrock provider layer
+  with its Converse tool-use loop
+- `scripts/` — gazette ingestion with salt extraction and ban classification,
+  index bootstrap with a curated interaction knowledge base
+- Elasticsearch 8.17 cluster, provisioned and populated with 379 gazette chunks
+- Rewiring the search and interaction endpoints off the old N8N→Sarvam chain and
+  onto Elasticsearch + Bedrock
+
+Commit history in this repository reflects both periods honestly. See
+[HACKATHON_SUBMISSION.md §8](HACKATHON_SUBMISSION.md) for a per-module breakdown.
+
+---
+
+## Quick Start
+
+```bash
+# 1. Elasticsearch (the retrieval core)
+cd /root/docker/rxguard-es && docker compose up -d
+
+# 2. Create indices and seed the interaction knowledge base
+cd /root/repo/pharmai_portal
+ES_URL=http://localhost:9200 .venv/bin/python scripts/bootstrap_elastic.py
+
+# 3. Ingest the CDSCO gazette corpus
+ES_URL=http://localhost:9200 .venv/bin/python scripts/ingest_gazettes.py
+
+# 4. Run the portal
+cd /root/docker/pharma-frontend && docker compose up -d --build
+```
+
+Verify: `curl -s https://medical.lehana.in/pharmai/health | jq '{elasticsearch, llm, audit_chain}'`
+
+---
+
+## API
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/interaction` | Drug pair → severity, mechanism, citations, audit entry |
+| `POST /api/medications/screen` | Medication list → N×N pairwise matrix |
+| `POST /api/fhir/analyze` | FHIR R4 Bundle → parsed, indexed, fully screened |
+| `GET /api/fhir/sample` | Demo Bundle to POST back to `/api/fhir/analyze` |
+| `POST /api/search` | Elastic-grounded gazette Q&A with resolvable citations |
+| `GET /api/audit/verify` | Recompute the whole hash chain |
+| `GET /api/audit/recent` | Recent audit entries |
+| `GET /health` | Live capability report — Elastic status, active LLM, chain state |
+| `POST /api/stt` `/api/tts` `/api/translate` `/api/ocr` | Sarvam Indic voice & OCR |
 
 ---
 
