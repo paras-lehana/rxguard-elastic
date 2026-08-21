@@ -102,9 +102,25 @@ function debounce(fn, delay = 300) {
 
 // ─── Detect Drug Status from Text ───────────────────────────────────────────
 // Scans AI response text to determine the drug's regulatory status for badge display
+// LEGACY FALLBACK ONLY. Prefer the `status` field the API now returns.
+//
+// Substring-matching prose for "banned" is unsafe: an answer saying "there is
+// no information regarding a ban" contains the word and used to be badged
+// 🚫 BANNED, contradicting its own body text. Negation and hedging phrases are
+// now checked first, and an ambiguous answer returns null so no badge renders —
+// showing nothing is always safer than showing the wrong verdict.
 function detectDrugStatus(text) {
   if (!text) return null;
   const lower = text.toLowerCase();
+
+  const hedges = [
+    'no information', 'not explicitly', 'does not state', 'do not state',
+    'does not answer', 'not covered', 'missing from', 'not found',
+    'insufficient', 'cannot determine', 'unable to determine',
+    'no evidence', 'not mention', 'no mention', 'not specify',
+  ];
+  if (hedges.some((h) => lower.includes(h))) return null;
+
   if (lower.includes('banned') || lower.includes('prohibited')) return 'banned';
   if (lower.includes('restricted') || lower.includes('controlled')) return 'restricted';
   if (lower.includes('approved') || lower.includes('allowed') || lower.includes('permitted')) return 'approved';

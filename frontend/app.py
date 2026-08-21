@@ -22,7 +22,8 @@ Endpoints:
   GET  /health                 → Health check
 """
 
-from flask import Flask, render_template_string, request, redirect, jsonify
+from flask import (Flask, render_template_string, request, redirect, jsonify,
+                   send_from_directory)
 import os
 import requests
 import json
@@ -247,6 +248,73 @@ def analyze():
     return render_template_string(load_template('result.html'))
 
 
+# ─── Static assets ───────────────────────────────────────────────────────────
+# index.html references css/*.css and js/*.js as relative paths, but those live
+# in frontend/css and frontend/js — not in Flask's default `static/` folder — so
+# without these routes every stylesheet and script 404s and the page renders as
+# unstyled HTML with no interactivity. /health and the JSON APIs stay perfectly
+# green while this is broken, which is why it survived: only loading the actual
+# page in a browser reveals it.
+#
+# Both path forms are registered because Traefik strips the /pharmai prefix
+# before the request reaches the container, but a direct hit (bare-metal run,
+# or a request that bypasses the strip middleware) arrives with it intact.
+
+_ASSET_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+# Assets are served under /assets/** and NOT the historical /css, /js paths.
+#
+# Why the rename: while the static routes were missing, Traefik returned
+# text/plain 404s for /pharmai/css/*, and Cloudflare cached those responses for
+# four hours (max-age=14400) independently at each edge POP. After the fix, some
+# edges still served the poisoned entry, so browsers refused the stylesheets
+# with a strict-MIME error while curl — hitting a different POP — saw a clean
+# text/css 200. Bumping ?v= did not reliably help and we have no Cloudflare API
+# credential to purge with. A path that has never been requested is guaranteed
+# clean at every edge.
+#
+# The short max-age means a future poisoned entry expires in minutes, not hours.
+# The legacy /css and /js routes are kept so any cached HTML still resolves.
+
+_ASSET_CACHE_SECONDS = 300
+
+
+def _serve_asset(subdir, filename, mimetype):
+    # mimetype is explicit rather than guessed: browsers enforce strict MIME
+    # checking on stylesheets and refuse a sheet served as text/plain, which
+    # kills the responsive layout while the request still returns 200.
+    response = send_from_directory(os.path.join(_ASSET_ROOT, subdir), filename,
+                                   mimetype=mimetype)
+    response.headers['Cache-Control'] = f'public, max-age={_ASSET_CACHE_SECONDS}'
+    return response
+
+
+@app.route('/assets/css/<path:filename>')
+@app.route('/pharmai/assets/css/<path:filename>')
+@app.route('/css/<path:filename>')
+@app.route('/pharmai/css/<path:filename>')
+def serve_css(filename):
+    return _serve_asset('css', filename, 'text/css')
+
+
+@app.route('/assets/js/<path:filename>')
+@app.route('/pharmai/assets/js/<path:filename>')
+@app.route('/js/<path:filename>')
+@app.route('/pharmai/js/<path:filename>')
+def serve_js(filename):
+    return _serve_asset('js', filename, 'application/javascript')
+
+
+@app.route('/favicon.ico')
+@app.route('/pharmai/favicon.ico')
+def favicon():
+    path = os.path.join(_ASSET_ROOT, 'favicon.ico')
+    if os.path.exists(path):
+        return send_from_directory(_ASSET_ROOT, 'favicon.ico')
+    return ('', 204)  # no icon shipped; 204 beats a noisy 404 in the console
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  ROUTES — Search API (2-tier)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -261,7 +329,17 @@ supply a gazette number, date or ban status that does not appear in the
 passages. An honest "the indexed corpus does not cover this" is correct; an
 invented citation is a patient-safety failure.
 
-Format as markdown. Be concise and concrete."""
+Return a single JSON object:
+{
+  "answer": "your markdown answer, concise and concrete, with inline [citations]",
+  "status": "banned|restricted|allowed|unknown"
+}
+
+`status` describes THE SUBJECT THE USER ASKED ABOUT, not any drug that happens
+to appear in the passages. If the evidence does not establish the status of that
+specific subject, `status` is "unknown" — even when the passages discuss bans on
+other drugs or other combinations. This field drives a prominent badge in the
+user interface, so a wrong value actively misinforms a pharmacist."""
 
 # Context window for the search answer, and the per-file cap that keeps one
 # oversized notification from consuming it. See search_elastic_grounded.
@@ -312,11 +390,22 @@ def search_elastic_grounded(query, actor='anonymous'):
         generation = llm_provider.generate(
             RXGUARD_SEARCH_PROMPT,
             f'QUESTION: {query}\n\nRETRIEVED PASSAGES:\n{passages}',
-            max_tokens=1200, temperature=0.2,
+            json_mode=True, max_tokens=1400, temperature=0.2,
         )
     except Exception as exc:
         print(f'[SEARCH] generation failed: {exc}')
         return None
+
+    # The status is taken from this structured field, never inferred from the
+    # prose. The UI previously substring-matched the answer text for "banned",
+    # which stamped a 🚫 BANNED badge on answers that said the corpus contained
+    # no ban information — a badge contradicting its own body text, on a
+    # patient-safety tool.
+    parsed = generation.json() or {}
+    answer_text = parsed.get('answer') or generation.text or ''
+    status = str(parsed.get('status', 'unknown')).lower()
+    if status not in ('banned', 'restricted', 'allowed', 'unknown'):
+        status = 'unknown'
 
     entry = audit_service.append(
         event_type='gazette_search', subject=query[:200],
@@ -327,7 +416,8 @@ def search_elastic_grounded(query, actor='anonymous'):
 
     return {
         'source': 'elasticsearch+' + generation.provider,
-        'answer': generation.text,
+        'answer': answer_text,
+        'status': status,
         'citations': [{
             'id': f"gazette:{h['_id']}",
             'gazette_id': h.get('gazette_id'),
@@ -752,26 +842,40 @@ def api_upload_files():
             uploaded.append(fpath)
     if not uploaded:
         return jsonify({'success': False, 'message': 'No valid files uploaded'}), 400
+    # Ingest straight into Elasticsearch using the same enrichment pipeline as
+    # the bulk CLI, so an uploaded notification produces identical evidence to a
+    # bulk-loaded one and is searchable the moment this call returns.
+    #
+    # This previously POSTed to `medical.lehana.in/ncert/api/index` — a retired
+    # education-project service — so uploads silently failed to index anywhere.
+    if not RXGUARD_AVAILABLE:
+        return _rxguard_required()
+
+    from services import gazette_ingest
+
     index_results = []
     for fpath in uploaded:
         try:
-            with open(fpath, 'rb') as fp:
-                res = requests.post(
-                    'https://medical.lehana.in/ncert/api/index',
-                    files={'file': (os.path.basename(fpath), fp, 'application/pdf')},
-                    data={'metadata': json.dumps({'source': 'CDSCO', 'type': 'pharmaceutical_document', 'year': str(time.localtime().tm_year)})},
-                    timeout=120,
-                )
-            index_results.append({'file': os.path.basename(fpath), 'indexed': res.status_code == 200})
+            index_results.append(gazette_ingest.ingest_upload(fpath))
         except Exception as e:
-            index_results.append({'file': os.path.basename(fpath), 'indexed': False, 'error': str(e)})
+            index_results.append({'file': os.path.basename(fpath),
+                                  'indexed': False, 'error': str(e)})
         finally:
             try:
                 os.remove(fpath)
             except OSError:
                 pass
+
     ok = sum(1 for r in index_results if r['indexed'])
-    return jsonify({'success': ok > 0, 'message': f'Indexed {ok}/{len(uploaded)} file(s)', 'count': len(uploaded), 'results': index_results})
+    chunks = sum(r.get('chunks', 0) for r in index_results)
+    return jsonify({
+        'success': ok > 0,
+        'message': (f'Indexed {ok}/{len(uploaded)} file(s) into Elasticsearch '
+                    f'({chunks} searchable chunks)'),
+        'count': len(uploaded),
+        'index': rx_config.IDX_GAZETTES,
+        'results': index_results,
+    })
 
 
 @app.route('/api/list-documents', methods=['GET', 'POST', 'OPTIONS'])
@@ -779,15 +883,68 @@ def api_upload_files():
 @app.route('/api/documents', methods=['GET', 'POST', 'OPTIONS'])
 @app.route('/pharmai/api/documents', methods=['GET', 'POST', 'OPTIONS'])
 def api_list_documents():
+    """
+    The indexed regulatory corpus, read from Elasticsearch.
+
+    Previously this proxied `medical.lehana.in/ncert/api/documents` — a leftover
+    from an unrelated education project which is no longer running, so the
+    Knowledge Base tab returned 503 and the UI threw on a non-iterable response.
+    Reading from `rxguard-gazettes` is both the correct source of truth and the
+    thing the tab should have been showing all along.
+    """
     if request.method == 'OPTIONS':
         return _cors_preflight()
+    if not RXGUARD_AVAILABLE:
+        return _rxguard_required()
+
+    client = elastic_service.es_client()
+    if client is None or not elastic_service.es_available():
+        return _cors_json([], 200)  # empty list keeps the UI renderable
+
     try:
-        res = requests.get('https://medical.lehana.in/ncert/api/documents', timeout=30)
-        if res.status_code == 200:
-            return _cors_json(res.json().get('documents', []))
-        return _cors_json({'error': f'API status {res.status_code}'}, res.status_code)
-    except Exception as e:
-        return _cors_json({'error': str(e)}, 503)
+        # One bucket per source PDF, with chunk count and how many chunks were
+        # classified as prohibitions — a genuinely useful corpus summary.
+        res = client.search(
+            index=rx_config.IDX_GAZETTES, size=0,
+            aggs={'files': {
+                'terms': {'field': 'source_file', 'size': 100},
+                'aggs': {
+                    'regulatory': {'filter': {'terms': {'ban_status': ['banned', 'restricted']}}},
+                    'gazettes': {'cardinality': {'field': 'gazette_id'}},
+                    'salts': {'cardinality': {'field': 'drugs'}},
+                },
+            }},
+        )
+        documents = [{
+            'document_id': bucket['key'],
+            'title': bucket['key'],
+            'name': bucket['key'],
+            'chunks': bucket['doc_count'],
+            'regulatory_chunks': bucket['regulatory']['doc_count'],
+            'gazette_ids': bucket['gazettes']['value'],
+            'distinct_salts': bucket['salts']['value'],
+            'index': rx_config.IDX_GAZETTES,
+        } for bucket in res['aggregations']['files']['buckets']]
+        return _cors_json(documents)
+    except Exception as exc:
+        print(f'[DOCS] Elasticsearch aggregation failed: {exc}')
+        return _cors_json([], 200)
+
+
+# The regulatory corpus is deliberately read-only through the web UI.
+#
+# These endpoints used to proxy deletes to the retired NCERT service. Rather
+# than repoint them at Elasticsearch, they now refuse: gazette notifications are
+# the evidence that every audit entry cites, and letting a web visitor delete
+# them would break the auditability the whole design rests on. Corpus changes go
+# through scripts/ingest_gazettes.py, on the server, by an operator.
+
+_CORPUS_READONLY = {
+    'error': 'The regulatory corpus is read-only.',
+    'detail': ('Gazette documents are cited by entries in the immutable audit '
+               'trail. Deleting them would orphan those citations. Corpus '
+               'changes are made server-side via scripts/ingest_gazettes.py.'),
+}
 
 
 @app.route('/api/delete-document', methods=['POST', 'DELETE', 'OPTIONS'])
@@ -795,15 +952,7 @@ def api_list_documents():
 def api_delete_document():
     if request.method == 'OPTIONS':
         return _cors_preflight()
-    data = request.get_json(force=True)
-    doc_id = data.get('documentId')
-    if not doc_id:
-        return jsonify({'error': 'No documentId'}), 400
-    try:
-        res = requests.post('https://medical.lehana.in/ncert/api/documents/delete', json={'documentId': doc_id}, timeout=30)
-        return _cors_json(res.json(), res.status_code)
-    except Exception as e:
-        return _cors_json({'error': str(e)}, 500)
+    return _cors_json(_CORPUS_READONLY, 403)
 
 
 @app.route('/api/delete-all-documents', methods=['DELETE', 'POST', 'OPTIONS'])
@@ -811,11 +960,7 @@ def api_delete_document():
 def api_delete_all_documents():
     if request.method == 'OPTIONS':
         return _cors_preflight()
-    try:
-        res = requests.delete('https://medical.lehana.in/ncert/api/documents/all', timeout=60)
-        return _cors_json(res.json(), res.status_code)
-    except Exception as e:
-        return _cors_json({'error': str(e)}, 500)
+    return _cors_json(_CORPUS_READONLY, 403)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

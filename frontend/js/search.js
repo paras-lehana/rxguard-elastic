@@ -87,6 +87,9 @@ async function performSearch(query) {
       content: answer,
       timestamp: Date.now(),
       source: source,
+      // Structured verdict from the API. The badge must never be inferred from
+      // the answer prose — see detectDrugStatus in utils.js.
+      status: data.status || null,
       citations: citations,
       metadata: {
         tier: data.tier,

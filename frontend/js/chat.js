@@ -220,7 +220,9 @@ function createMessageElement(msg) {
   if (msg.role === 'user') {
     wrapper.innerHTML = `<div class="msg-bubble">${escapeHtml(msg.content)}</div>`;
   } else if (msg.role === 'assistant') {
-    const status = detectDrugStatus(msg.content);
+    // Prefer the API's structured verdict; fall back to text detection only
+    // for legacy messages stored before the API returned a status.
+    const status = msg.status || detectDrugStatus(msg.content);
     const statusBadge = status ? `<span class="status-badge status-${status}">${getStatusEmoji(status)} ${status.toUpperCase()}</span>` : '';
     let badgeText = '🔬 AI Analysis';
     if (msg.source === 'aws-bedrock' || msg.source === 'kb') badgeText = '🔬 AWS Bedrock KB';
@@ -266,7 +268,14 @@ function createMessageElement(msg) {
 }
 
 function getStatusEmoji(status) {
-  const map = { banned: '🚫', approved: '✅', restricted: '⚠️', controlled: '🔒' };
+  // Keys must cover every value /api/search can return: banned, restricted,
+  // allowed, unknown. A missing key renders a bare word with no icon.
+  const map = {
+    banned: '🚫', prohibited: '🚫',
+    restricted: '⚠️', controlled: '🔒',
+    allowed: '✅', approved: '✅', permitted: '✅',
+    unknown: '⚪',
+  };
   return map[status] || '';
 }
 
