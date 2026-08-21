@@ -126,7 +126,7 @@ def _generate_bedrock(system, user, json_mode=False, max_tokens=2048,
 def converse_with_tools(system, user, tools, tool_impls, max_turns=4,
                         temperature=0.2):
     """
-    Bedrock tool-use loop — the mechanism behind the RxGuard agents.
+    Bedrock tool-use loop — the mechanism behind the PharmAI agents.
 
     `tools` is a list of Bedrock toolSpec dicts; `tool_impls` maps tool name to
     a callable. The model decides which retrieval tools to call and in what

@@ -2,7 +2,7 @@
 Interaction Agent — drug interaction and banned-FDC detection.
 ==============================================================
 
-The clinical core of RxGuard, and the part that answers the challenge topic.
+The clinical core of PharmAI, and the part that answers the challenge topic.
 
 Most interaction checkers answer one question: do these two molecules interact
 pharmacologically? In India that misses the more urgent one. A fixed-dose
@@ -107,7 +107,7 @@ BRAND_TO_SALT = {
     'sofarin': 'warfarin',
 }
 
-SYSTEM_PROMPT = """You are RxGuard, a pharmacovigilance analyst for the Indian market.
+SYSTEM_PROMPT = """You are PharmAI, a pharmacovigilance analyst for the Indian market.
 
 You are given retrieved evidence: CDSCO gazette passages and curated interaction
 records. Classify the interaction between the two drugs using ONLY that evidence.
@@ -277,7 +277,7 @@ def detect_interaction(drug_a_raw, drug_b_raw, actor='anonymous'):
         return result
 
     if not elastic_service.es_available():
-        result['error'] = ('Elasticsearch is unavailable — RxGuard will not '
+        result['error'] = ('Elasticsearch is unavailable — PharmAI will not '
                            'issue a verdict without retrieved evidence.')
         return result
 

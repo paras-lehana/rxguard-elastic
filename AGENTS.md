@@ -1,4 +1,4 @@
-# AGENTS.md — PharmAI / RxGuard Portal
+# AGENTS.md — PharmAI Portal
 
 Project-specific operating rules. **Read this before touching anything here.**
 It overrides the global platform rules where they conflict.

@@ -1,5 +1,5 @@
 """
-RxGuard service layer — Elastic-core, Bedrock-native drug interaction detection.
+PharmAI service layer — Elastic-core, Bedrock-native drug interaction detection.
 ==============================================================================
 
 Added for the Elastic + AWS hackathon. The pre-existing PharmAI portal

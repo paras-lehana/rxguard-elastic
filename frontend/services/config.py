@@ -1,5 +1,5 @@
 """
-RxGuard configuration — single source of truth for every service module.
+PharmAI configuration — single source of truth for every service module.
 =======================================================================
 
 Reads from the environment so that flipping the LLM provider from the demo

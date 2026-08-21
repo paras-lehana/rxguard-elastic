@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>RxGuard - Idea Submission</title>
+<title>PharmAI - Idea Submission</title>
 <style>
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -122,9 +122,9 @@
 <!-- ═══════════════════════════ PAGE 1 ═══════════════════════════ -->
 <div class="page">
   <div class="kicker">Idea Submission · Healthcare and Insurance Intelligence</div>
-  <h1>RxGuard</h1>
+  <h1>PharmAI</h1>
   <div class="tagline">Drug interaction detection that knows Indian drug law</div>
-  <div class="meta">Built on Elasticsearch and AWS &nbsp;·&nbsp; Working prototype live at <b>medical.lehana.in/pharmai</b> &nbsp;·&nbsp; Code at <b>github.com/Akum030/elastic_drugs</b></div>
+  <div class="meta">Built on Elasticsearch and AWS &nbsp;·&nbsp; Live at <b>medical.lehana.in/pharmai</b> &nbsp;·&nbsp; Demo video <b>youtu.be/e1QXBwDv_ms</b> &nbsp;·&nbsp; Code <b>github.com/Akum030/elastic_drugs</b></div>
 
   <h2>The blind spot every existing tool shares</h2>
   <p class="lead">Ask any drug interaction checker about Nimesulide and Paracetamol. It will tell you they are fine together. Both molecules are legal, and both sit on every pharmacy shelf in India. What no app will tell you is that their fixed-dose combination has been <strong>banned by CDSCO since 2016</strong>.</p>
@@ -132,14 +132,14 @@
   <p>India prohibits dozens of fixed-dose combinations every year. The information exists. It is simply unreachable at the moment of decision. That gap is our product.</p>
 
   <h2>What we built</h2>
-  <p>RxGuard screens every drug pair through <strong>two lenses at once</strong>. The clinical lens asks whether the molecules interact. The regulatory lens asks whether this exact combination is legal to sell in India. A pair can pass the first and fail the second, and that is precisely the case every existing tool misses.</p>
+  <p>PharmAI screens every drug pair through <strong>two lenses at once</strong>. The clinical lens asks whether the molecules interact. The regulatory lens asks whether this exact combination is legal to sell in India. A pair can pass the first and fail the second, and that is precisely the case every existing tool misses.</p>
   <div class="pullquote">One rule anchors the whole design. <strong>The AI never answers from memory.</strong> Every verdict is reasoned only over what Elasticsearch retrieves from the indexed gazette corpus, and every answer must cite the exact notification it rests on.</div>
   <p>Ask about Nimesulide and Paracetamol and the answer is concrete. Banned, notification S.O. 712(E), dated 10.03.2016, traceable back to the source row in the government document, typos and all. If the evidence is not in the corpus, the system says so plainly instead of guessing. For a drug safety tool, an honest "unknown" is a feature, not a failure.</p>
   <p>It also meets users where they actually are. Type "Nimulid" and "Crocin 650" the way a real pharmacist would, and brands resolve to salts before anything is looked up. Hand it a FHIR bundle from a hospital record and it screens the entire medication list pairwise, because the dangerous pair is usually the one nobody thought to ask about. Speak to it in Hindi. Photograph a handwritten prescription and let it read the drugs off the page.</p>
   <p>And every single verdict is written to an <strong>append-only, hash-chained audit ledger</strong> inside Elasticsearch before the user ever sees it. We tested that claim by deliberately tampering with a stored record. Verification caught the edit and named the exact entry. That property is what turns an AI answer into evidence a claims adjudicator or a regulator can actually rely on.</p>
 
   <div class="footer">
-    <span><b>RxGuard</b> · Idea Submission</span>
+    <span><b>PharmAI</b> · Idea Submission</span>
     <span>Page 1 of 2</span>
   </div>
 </div>
@@ -166,7 +166,7 @@
 
     <!-- Portal -->
     <rect x="255" y="150" width="170" height="110" rx="10" fill="#ffffff" stroke="#37485c" stroke-width="2"/>
-    <text x="340" y="182" text-anchor="middle" font-size="15" font-weight="bold" fill="#10212e">RxGuard Portal</text>
+    <text x="340" y="182" text-anchor="middle" font-size="15" font-weight="bold" fill="#10212e">PharmAI Portal</text>
     <text x="340" y="203" text-anchor="middle" font-size="12" fill="#3d4a5c">Flask + gunicorn</text>
     <text x="340" y="222" text-anchor="middle" font-size="12" fill="#3d4a5c">live, mobile-friendly</text>
     <text x="340" y="241" text-anchor="middle" font-size="12" fill="#3d4a5c">Indic voice + OCR</text>
@@ -237,13 +237,13 @@
     <div class="stat"><b>40</b><span>cited interaction pairs, 33 mined from the corpus</span></div>
     <div class="stat"><b>100%</b><span>of verdicts hash-chained and verifiable via API</span></div>
   </div>
-  <p>The live prototype answers on mobile with Hindi voice input. Every number above can be checked against the running system through its public health, corpus and audit endpoints.</p>
+  <p>The live prototype answers on mobile with Hindi voice input, and a recorded walkthrough is at youtu.be/e1QXBwDv_ms. Every number above can be checked against the running system through its public health, corpus and audit endpoints.</p>
 
   <h2>Where this goes</h2>
   <p>Pharmacy chains need exactly this at the point of sale. Insurers need the audit trail for claims adjudication. And the approach generalises. Any country whose drug law lives in unstructured documents can be onboarded by pointing our ingestion agent at its regulator's archive.</p>
 
   <div class="footer">
-    <span>Live demo <b>medical.lehana.in/pharmai</b> &nbsp;·&nbsp; Code <b>github.com/Akum030/elastic_drugs</b></span>
+    <span>Live <b>medical.lehana.in/pharmai</b> · Video <b>youtu.be/e1QXBwDv_ms</b> · Code <b>github.com/Akum030/elastic_drugs</b></span>
     <span>Page 2 of 2</span>
   </div>
 </div>

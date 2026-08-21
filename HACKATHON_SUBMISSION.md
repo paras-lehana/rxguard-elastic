@@ -1,4 +1,4 @@
-# RxGuard — Regulatory-Aware Drug Interaction Detection
+# PharmAI — Regulatory-Aware Drug Interaction Detection
 
 **Challenge topic:** Healthcare & Insurance Intelligence — *drug interaction detection*
 **Core technologies:** Elasticsearch (retrieval) · AWS Bedrock (reasoning + embeddings)
@@ -43,7 +43,7 @@ checking. In this market it *is* the interaction checking.
 
 ## 2. The Solution
 
-**RxGuard screens every drug pair through two lenses simultaneously:
+**PharmAI screens every drug pair through two lenses simultaneously:
 pharmacological interaction and Indian regulatory status.**
 
 A verdict is never generated from model memory. Elasticsearch retrieves the

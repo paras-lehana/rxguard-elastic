@@ -41,7 +41,7 @@ SARVAM_API_KEY = os.getenv('SARVAM_API_KEY', '')
 PHARMA_INSIGHT_URL = os.getenv('PHARMA_INSIGHT_URL', '')
 SARVAM_BASE = 'https://api.sarvam.ai'
 
-# ─── RxGuard service layer (Elastic core + AWS Bedrock reasoning) ────────────
+# ─── PharmAI service layer (Elastic core + AWS Bedrock reasoning) ────────────
 # Imported defensively: if a dependency is missing the portal must still serve
 # its Sarvam voice and OCR features rather than fail to boot.
 try:
@@ -59,13 +59,13 @@ try:
 except Exception as _exc:  # pragma: no cover - import-time guard
     RXGUARD_AVAILABLE = False
     RXGUARD_IMPORT_ERROR = str(_exc)
-    print(f"⚠️  RxGuard service layer unavailable: {_exc}")
+    print(f"⚠️  PharmAI service layer unavailable: {_exc}")
 
 
 def _rxguard_required():
     """Uniform 503 when the Elastic/Bedrock layer could not be imported."""
     return _cors_json({
-        'error': 'RxGuard service layer unavailable',
+        'error': 'PharmAI service layer unavailable',
         'detail': RXGUARD_IMPORT_ERROR,
     }, 503)
 
@@ -319,7 +319,7 @@ def favicon():
 #  ROUTES — Search API (2-tier)
 # ══════════════════════════════════════════════════════════════════════════════
 
-RXGUARD_SEARCH_PROMPT = """You are RxGuard, a drug safety assistant for the Indian market.
+RXGUARD_SEARCH_PROMPT = """You are PharmAI, a drug safety assistant for the Indian market.
 
 Answer using ONLY the retrieved CDSCO gazette passages supplied below. Cite the
 passage ids you rely on, in square brackets, inline.
@@ -1097,7 +1097,7 @@ def health():
     """
     payload = {
         'status': 'healthy',
-        'service': 'PharmAI / RxGuard Portal',
+        'service': 'PharmAI Portal',
         'version': '3.0',
         'timestamp': time.time(),
         'features': [
@@ -1167,7 +1167,7 @@ if __name__ == '__main__':
     # app unreachable from Traefik. HOST stays overridable for bare-metal runs.
     host = os.getenv('HOST', '0.0.0.0')
 
-    print(f"🚀 PharmAI / RxGuard Portal v3.0 starting on {host}:{port}")
+    print(f"🚀 PharmAI Portal v3.0 starting on {host}:{port}")
     if RXGUARD_AVAILABLE:
         es = elastic_service.cluster_info()
         llm = llm_provider.provider_report()
@@ -1184,7 +1184,7 @@ if __name__ == '__main__':
         print(f"   Embeddings: {embeddings.backend_report()['local_onnx']} local, "
               f"dim={rx_config.EMBED_DIM}")
     else:
-        print(f"   ⚠️  RxGuard layer DOWN: {RXGUARD_IMPORT_ERROR}")
+        print(f"   ⚠️  PharmAI layer DOWN: {RXGUARD_IMPORT_ERROR}")
     print(f"   Sarvam (voice/OCR only): "
           f"{'configured' if SARVAM_API_KEY else '⚠️  NOT configured'}")
     app.run(debug=debug, host=host, port=port)

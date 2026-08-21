@@ -1,5 +1,5 @@
 """
-Elasticsearch — the retrieval core of RxGuard.
+Elasticsearch — the retrieval core of PharmAI.
 =============================================
 
 Every question the platform answers is grounded in an Elasticsearch hit. There

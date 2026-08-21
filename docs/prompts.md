@@ -1,4 +1,4 @@
-# Prompt Log — PharmAI / RxGuard Portal
+# Prompt Log — PharmAI Portal
 
 > **Purpose**: Indexed record of all prompts, decisions, and outcomes for this project.
 > **Last updated**: 2026-08-21 (second pass)
@@ -266,7 +266,7 @@ at idea stage.
 
 **Metadata**:
 - **Type**: Documentation
-- **Files Changed**: 2 (docs/submission/RxGuard_Idea_Submission.{html,pdf})
+- **Files Changed**: 2 (docs/submission/PharmAI_Idea_Submission.{html,pdf})
 - **Project**: pharmai_portal
 
 ### Original Prompt

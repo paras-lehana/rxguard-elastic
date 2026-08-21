@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create the RxGuard Elasticsearch indices and seed the interaction knowledge base.
+Create the PharmAI Elasticsearch indices and seed the interaction knowledge base.
 ===============================================================================
 
 Idempotent: existing indices are left alone unless --recreate is passed.

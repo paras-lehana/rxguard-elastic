@@ -1,4 +1,4 @@
-# 💊 PharmAI / RxGuard — Regulatory-Aware Drug Interaction Detection
+# 💊 PharmAI — Regulatory-Aware Drug Interaction Detection
 
 ![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.17-005571?logo=elasticsearch&logoColor=white)
 ![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock%20%7C%20Titan%20%7C%20Kendra-FF9900?logo=amazonaws&logoColor=white)
@@ -11,7 +11,7 @@
 > regulatory law — because that knowledge only exists in un-indexed government
 > PDFs. **Nimesulide + Paracetamol** is a banned fixed-dose combination in India,
 > yet both molecules are individually legal and no international database flags
-> the pair. RxGuard screens both lenses at once, grounded in Elasticsearch and
+> the pair. PharmAI screens both lenses at once, grounded in Elasticsearch and
 > reasoned over by AWS Bedrock, with every verdict written to a hash-chained
 > audit trail.
 
