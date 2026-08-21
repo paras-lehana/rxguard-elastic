@@ -10,6 +10,7 @@
 | 3 | 2026-08-21 | 14:05 | Close out deferred items | Refactor | ✅ Done | [→](#2026-08-21-1405---close-out-deferred-items) |
 | 4 | 2026-08-21 | 19:05 | Submission form answers + Akum030 repo push | Documentation | ✅ Done | [→](#2026-08-21-1905---submission-form-answers--akum030-repo-push) |
 | 5 | 2026-08-21 | 20:20 | Idea-submission PDF + pitch | Documentation | ✅ Done | [→](#2026-08-21-2020---idea-submission-pdf--pitch) |
+| 6 | 2026-08-21 | 21:05 | Rename to PharmAI + video link | Refactor | ✅ Done | — |
 
 ---
 
@@ -280,5 +281,25 @@ exactly 2 pages, zero semicolons in the rendered prose, key terms
 extracted text. Pushed to both repos. The Akum030 push had already landed the
 previous session (main=63864cf) via the invite watcher, so no token was needed
 — told the user not to share one.
+
+<br/>
+
+---
+
+## [2026-08-21 21:05] - Rename to PharmAI + video link
+
+**Metadata**: Type: Refactor · Project: pharmai_portal · Branch: elastic-hackathon
+
+### Original Prompt
+> change the word RxGuard into PharmAI... wherever you have RxGuard change it, and tell me again where to include the git repo link and the youtube link (video: youtu.be/e1QXBwDv_ms)
+
+### Response Summary
+Renamed the brand word in every prose surface (PDF, README, HACKATHON_SUBMISSION,
+AGENTS.md, docstrings, prompts, SERVICES.md headings) — verified zero remnants in
+rendered PDF text. Kept infra identifiers (rxguard-es, rxguard-* indices) since
+they are live infrastructure. PDF regenerated as PharmAI_Idea_Submission.pdf with
+the video link in three places. Both repos updated. Per user instruction, skipped
+further live-portal verification (a pre-interrupt check had already shown the
+renamed service name and green ES).
 
 <br/>

@@ -101,6 +101,19 @@
 
 ---
 
+---
+
+## Session: 2026-08-21 (late) — Rename to PharmAI + video link
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 30 | Rename RxGuard → PharmAI everywhere | ✅ Done | All prose, docs, prompts, PDF. Infra identifiers (`rxguard-es`, `rxguard-*` indices, `RXGUARD_AVAILABLE`) kept — live infrastructure, not brand-facing |
+| 31 | Add YouTube demo link | ✅ Done | youtu.be/e1QXBwDv_ms in PDF header, traction section and footer |
+| 32 | Re-render + re-push PDF | ✅ Done | `PharmAI_Idea_Submission.pdf` — 2 pages, 0 semicolons, 0 RxGuard remnants. Both repos (rxguard `131ed2d`, akum `50956f2`) |
+
+
+---
+
 ## 🕐 Agent Deferred
 
 > Items scoped but not completed — carried forward until explicitly resolved.
