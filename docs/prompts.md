@@ -9,6 +9,7 @@
 | 2 | 2026-08-21 | 12:45 | Recast onto Elastic + AWS for hackathon | Feature | ⚠️ Partial | [→](#2026-08-21-1245---recast-onto-elastic--aws-for-hackathon) |
 | 3 | 2026-08-21 | 14:05 | Close out deferred items | Refactor | ✅ Done | [→](#2026-08-21-1405---close-out-deferred-items) |
 | 4 | 2026-08-21 | 19:05 | Submission form answers + Akum030 repo push | Documentation | ✅ Done | [→](#2026-08-21-1905---submission-form-answers--akum030-repo-push) |
+| 5 | 2026-08-21 | 20:20 | Idea-submission PDF + pitch | Documentation | ✅ Done | [→](#2026-08-21-2020---idea-submission-pdf--pitch) |
 
 ---
 
@@ -256,5 +257,28 @@ commits all dated 2026-08-21, baseline disclosed as prior work). Delivered the f
 (theme, title, solution description, tech stack) in a natural founder voice,
 using the "plan to use" wording of the form so the Bedrock claim stays accurate
 at idea stage.
+
+<br/>
+
+---
+
+## [2026-08-21 20:20] - Idea-submission PDF + pitch
+
+**Metadata**:
+- **Type**: Documentation
+- **Files Changed**: 2 (docs/submission/RxGuard_Idea_Submission.{html,pdf})
+- **Project**: pharmai_portal
+
+### Original Prompt
+> assume everything is working fine and accordingly whatever we have made so we need to pitch them in humanly written way and they must get impress because our idea is very much potential full... don't use ";" in writing the text... give me the best pitch ever... and coming to my Akum030 git thing, i can't add the collaborator but i can give you the token if you need but i need you to give me this repo freshly
+
+### Response Summary
+Wrote the 1–2 page idea document as print HTML with an inline SVG architecture
+diagram and rendered it to PDF with headless Chrome. Verified mechanically:
+exactly 2 pages, zero semicolons in the rendered prose, key terms
+(Elasticsearch, FHIR, Nimesulide, CDSCO, Bedrock) spell-checked against
+extracted text. Pushed to both repos. The Akum030 push had already landed the
+previous session (main=63864cf) via the invite watcher, so no token was needed
+— told the user not to share one.
 
 <br/>

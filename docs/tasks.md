@@ -89,6 +89,18 @@
 
 ---
 
+---
+
+## Session: 2026-08-21 (night) — Idea-submission PDF
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 28 | 1–2 page idea PDF with architecture diagram | ✅ Done | `docs/submission/RxGuard_Idea_Submission.pdf` — 2 pages exactly, inline SVG diagram, founder voice, verified zero semicolons and key-term spellings against rendered text. Pushed to both repos |
+| 29 | Akum030 repo "freshly" | ✅ Done | Already delivered last session (main=63864cf) — no token needed, WRITE access held. PDF commit added (8f086ba) |
+
+
+---
+
 ## 🕐 Agent Deferred
 
 > Items scoped but not completed — carried forward until explicitly resolved.
