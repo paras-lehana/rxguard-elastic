@@ -72,6 +72,23 @@
 
 ---
 
+---
+
+## Session: 2026-08-21 (evening) — Submission form + Akum030 repo
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 26 | Push today's commits to Akum030/elastic_drugs | 🔄 In Progress | Clean history built (1 disclosed baseline + 4 real commits) in /root/backups/pharmai/subm-tree, branch `submission`. Blocked on collaborator access (paras-lehana has READ). Auto-push watcher armed for 45 min |
+| 27 | Write idea-submission form answers | ✅ Done | Theme, title, solution description, tech stack — founder voice, delivered in chat |
+
+**Log**:
+- Repo Akum030/elastic_drugs: exists, empty, public, viewerPermission=READ
+- Built orphan `submission` branch: a4e6465 baseline + 4 cherry-picks (9958575..63864cf)
+- Push rejected; background watcher polls invites every 25s, auto-accepts + pushes
+
+
+---
+
 ## 🕐 Agent Deferred
 
 > Items scoped but not completed — carried forward until explicitly resolved.
