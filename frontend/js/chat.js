@@ -231,15 +231,32 @@ function createMessageElement(msg) {
 
     let citationsHtml = '';
     if (msg.citations && msg.citations.length > 0) {
+      // Each card names its notification and opens the source PDF at the cited
+      // page. Cards used to render as an unlabelled "Document" because the API
+      // fields (gazette_id, source_file, page) never matched the template's
+      // c.docName — a citation you cannot read or click is not a citation.
+      const banEmoji = { banned: '🚫', restricted: '⚠️' };
       citationsHtml = `
         <div class="msg-citations">
-          <div class="citation-label">Sources</div>
-          ${msg.citations.map((c, i) => `
-            <div class="citation-item">
-              <span class="citation-num">${i + 1}</span>
-              <span class="citation-text"><span class="citation-doc">${escapeHtml(c.docName || 'Document')}</span>${c.excerpt ? ': ' + escapeHtml(c.excerpt.slice(0, 100)) + '...' : ''}</span>
-            </div>
-          `).join('')}
+          <div class="citation-label">Sources — click to open the gazette at the cited page</div>
+          ${msg.citations.map((c, i) => {
+            const label = c.label || c.gazette_id || c.docName || c.source_file || 'Document';
+            const detail = [c.source_file, c.page ? 'p.' + c.page : null]
+              .filter(Boolean).join(' · ');
+            const status = banEmoji[c.ban_status] || '';
+            const inner = `
+              <span class="citation-num">${c.n || i + 1}</span>
+              <span class="citation-text">
+                <span class="citation-doc">${status} ${escapeHtml(label)}</span>
+                ${detail ? ' — ' + escapeHtml(detail) : ''}
+                ${c.excerpt ? '<br><span style="opacity:.75">' + escapeHtml(c.excerpt.slice(0, 110)) + '…</span>' : ''}
+              </span>`;
+            if (c.url) {
+              const href = apiUrl('/' + c.url) + (c.page ? '#page=' + c.page : '');
+              return `<a class="citation-item" href="${href}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;cursor:pointer">${inner}</a>`;
+            }
+            return `<div class="citation-item">${inner}</div>`;
+          }).join('')}
         </div>
       `;
     }
@@ -263,6 +280,13 @@ function createMessageElement(msg) {
   } else if (msg.role === 'system') {
     wrapper.innerHTML = `<div class="msg-bubble">${escapeHtml(msg.content)}</div>`;
   }
+
+  // Citation links inside the answer body leave for a PDF — open them in a new
+  // tab so the conversation is not navigated away from.
+  wrapper.querySelectorAll('.msg-content a').forEach((a) => {
+    a.target = '_blank';
+    a.rel = 'noopener';
+  });
 
   return wrapper;
 }

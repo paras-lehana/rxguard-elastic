@@ -27,6 +27,7 @@ from flask import (Flask, render_template_string, request, redirect, jsonify,
 import os
 import requests
 import json
+import re
 from werkzeug.utils import secure_filename
 import time
 
@@ -306,6 +307,29 @@ def serve_js(filename):
     return _serve_asset('js', filename, 'application/javascript')
 
 
+@app.route('/gazette/<path:filename>')
+@app.route('/pharmai/gazette/<path:filename>')
+def serve_gazette(filename):
+    """
+    Serve a gazette PDF from the corpus so citations resolve to primary evidence.
+
+    This is what turns a citation from decoration into proof: clicking a source
+    opens the actual government notification in the browser's PDF viewer, and
+    the #page= fragment the UI appends lands on the cited page. Whitelisted to
+    basenames ending in .pdf inside the corpus directory — no traversal, no
+    other file types.
+    """
+    if not RXGUARD_AVAILABLE:
+        return _rxguard_required()
+    name = os.path.basename(filename)
+    if not name.lower().endswith('.pdf'):
+        return jsonify({'error': 'only gazette PDFs are served here'}), 404
+    directory = os.path.abspath(rx_config.GAZETTE_CORPUS_DIR)
+    if not os.path.isfile(os.path.join(directory, name)):
+        return jsonify({'error': 'gazette not found'}), 404
+    return send_from_directory(directory, name, mimetype='application/pdf')
+
+
 @app.route('/favicon.ico')
 @app.route('/pharmai/favicon.ico')
 def favicon():
@@ -341,6 +365,12 @@ specific subject, `status` is "unknown" — even when the passages discuss bans 
 other drugs or other combinations. This field drives a prominent badge in the
 user interface, so a wrong value actively misinforms a pharmacist.
 
+If the subject is a single drug whose restrictions apply only to specific
+formulations, age groups or combinations — for example a drug banned for
+children or banned only inside certain fixed-dose combinations — use status
+"restricted" and open the answer with a one-line summary of what is and is not
+allowed, before any list.
+
 If the evidence establishes a prohibition on the subject in ANY dosage form,
 `status` is "banned". Note the formulation limits in `answer`, but do not
 downgrade `status` to "unknown" because other formulations are unaddressed — a
@@ -371,6 +401,23 @@ def search_elastic_grounded(query, actor='anonymous'):
     # citation.
     candidates = elastic_service.hybrid_search(
         rx_config.IDX_GAZETTES, query, size=24)
+
+    # Salt-filtered leg for queries that name a known drug. A one-word query
+    # like "nimesulide" ranks generic FDC tables above the single-ingredient
+    # restriction chunks, so the answer used to claim the corpus said nothing
+    # about the drug itself while listing nine of its banned combinations.
+    # Exact keyword retrieval on the salt guarantees that evidence is present.
+    from services.gazette_ingest import KNOWN_SALTS
+    normalized_query = interaction_agent.normalize_drug(query)
+    salts = [t for t in normalized_query.split() if t in KNOWN_SALTS][:3]
+    salted = []
+    for salt in salts:
+        salted.extend(elastic_service.ban_status_for(salt, size=4))
+    if salted:
+        seen_ids = {h['_id'] for h in salted}
+        candidates = salted + [h for h in candidates
+                               if h['_id'] not in seen_ids]
+
     if not candidates:
         return None
 
@@ -391,6 +438,33 @@ def search_elastic_grounded(query, actor='anonymous'):
         for h in hits
     )
     doc_ids = [f"gazette:{h['_id']}" for h in hits]
+
+    # Numbered, human-readable, clickable citations. Each carries the public
+    # URL of its source PDF so "S.O.712(E) · p.8" opens the real notification
+    # at the cited page — the difference between a source card and proof.
+    citations = []
+    token_to_ref = {}
+    for n, h in enumerate(hits, start=1):
+        source_file = h.get('source_file') or ''
+        page = h.get('page')
+        url = f'gazette/{source_file}' if source_file else None
+        label = h.get('gazette_id') or source_file or 'gazette'
+        citations.append({
+            'n': n,
+            'id': f"gazette:{h['_id']}",
+            'label': label,
+            'gazette_id': h.get('gazette_id'),
+            'source_file': source_file,
+            'page': page,
+            'ban_status': h.get('ban_status'),
+            'url': url,
+            'excerpt': (h.get('text') or '')[:140],
+            'score': round(h.get('_score', 0), 5),
+        })
+        public = (f'/pharmai/gazette/{source_file}#page={page}'
+                  if source_file else '')
+        token_to_ref[f"[gazette:{h['_id']}]"] = (
+            f'[[{n}]]({public})' if public else f'[{n}]')
 
     try:
         generation = llm_provider.generate(
@@ -413,6 +487,15 @@ def search_elastic_grounded(query, actor='anonymous'):
     if status not in ('banned', 'restricted', 'allowed', 'unknown'):
         status = 'unknown'
 
+    # The model cites with raw [gazette:<chunk-id>] tokens because those are
+    # unambiguous to generate. Raw tokens are noise to a reader, so each one is
+    # rewritten as a numbered link that opens the source PDF at the cited page.
+    # A token that matches no retrieved document is dropped rather than shown —
+    # it would be a citation to nothing.
+    for token, ref in token_to_ref.items():
+        answer_text = answer_text.replace(token, ref)
+    answer_text = re.sub(r'\[gazette:[^\]]{1,120}\]', '', answer_text)
+
     entry = audit_service.append(
         event_type='gazette_search', subject=query[:200],
         request_payload={'query': query},
@@ -424,14 +507,7 @@ def search_elastic_grounded(query, actor='anonymous'):
         'source': 'elasticsearch+' + generation.provider,
         'answer': answer_text,
         'status': status,
-        'citations': [{
-            'id': f"gazette:{h['_id']}",
-            'gazette_id': h.get('gazette_id'),
-            'source_file': h.get('source_file'),
-            'page': h.get('page'),
-            'ban_status': h.get('ban_status'),
-            'score': round(h.get('_score', 0), 5),
-        } for h in hits],
+        'citations': citations,
         'retrieval': {
             'engine': 'elasticsearch',
             'strategy': 'hybrid BM25 + kNN, reciprocal rank fusion',
@@ -657,7 +733,26 @@ def _render_verdict_markdown(verdict):
 
     cited = verdict.get('cited_evidence_ids') or []
     if cited:
-        lines += ['### 📚 Evidence', *(f'- `{cid}`' for cid in cited), '']
+        # Resolve each cited id back to the evidence item it names so the
+        # reader sees "S.O.712(E) · file · p.8" linked to the actual PDF page,
+        # not an internal chunk id.
+        by_id = {e['id']: e for e in verdict.get('evidence', [])}
+        lines.append('### 📚 Evidence')
+        for cid in cited:
+            item = by_id.get(cid, {})
+            if cid.startswith('gazette:') and item.get('source_file'):
+                label = item.get('gazette_id') or item['source_file']
+                page = item.get('page')
+                href = f"/pharmai/gazette/{item['source_file']}"
+                href += f'#page={page}' if page else ''
+                detail = f"{item['source_file']}" + (f' · p.{page}' if page else '')
+                lines.append(f'- [{label} · {detail}]({href})')
+            elif cid.startswith('interaction:'):
+                pair = cid.split(':', 1)[1].replace('|', ' + ')
+                lines.append(f'- Interaction knowledge base: {pair}')
+            else:
+                lines.append(f'- {cid}')
+        lines.append('')
 
     retrieval = verdict.get('retrieval', {})
     audit = verdict.get('audit', {})
