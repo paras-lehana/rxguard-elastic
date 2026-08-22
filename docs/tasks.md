@@ -114,6 +114,25 @@
 
 ---
 
+---
+
+## Session: 2026-08-22 — Fix vague search output
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 33 | Source cards said only "Document", unclickable | ✅ Done | API fields never matched template's c.docName. Cards now show 🚫 S.O. number · file · page · excerpt, and link to `/gazette/<file>#page=N` |
+| 34 | Raw [gazette:...] tokens in prose | ✅ Done | Rewritten server-side into numbered [n] links, unresolvable tokens dropped |
+| 35 | "nimesulide" answered UNKNOWN beside 9 bans | ✅ Done | Salt-filtered retrieval leg + scoped-restriction prompt rule → ⚠️ RESTRICTED with one-line allowed/banned summary first |
+| 36 | Serve gazette PDFs | ✅ Done | New route, basename+.pdf whitelist, corpus mounted read-only into container at host path |
+
+**Log**:
+- Found template/API field mismatch (c.docName vs gazette_id) — cards were structurally blank
+- First deploy 404'd on PDFs: corpus dir was a host path not mounted in the container. Added ro mount at identical path
+- Browser-verified: RESTRICTED badge, labelled clickable sources, 0 raw tokens. Commits: rxguard 5029d1d, akum dcb120d
+
+
+---
+
 ## 🕐 Agent Deferred
 
 > Items scoped but not completed — carried forward until explicitly resolved.

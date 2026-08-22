@@ -11,6 +11,7 @@
 | 4 | 2026-08-21 | 19:05 | Submission form answers + Akum030 repo push | Documentation | ✅ Done | [→](#2026-08-21-1905---submission-form-answers--akum030-repo-push) |
 | 5 | 2026-08-21 | 20:20 | Idea-submission PDF + pitch | Documentation | ✅ Done | [→](#2026-08-21-2020---idea-submission-pdf--pitch) |
 | 6 | 2026-08-21 | 21:05 | Rename to PharmAI + video link | Refactor | ✅ Done | — |
+| 7 | 2026-08-22 | 01:20 | Fix vague search output — clickable citations | Bug Fix | ✅ Done | — |
 
 ---
 
@@ -301,5 +302,27 @@ they are live infrastructure. PDF regenerated as PharmAI_Idea_Submission.pdf wit
 the video link in three places. Both repos updated. Per user instruction, skipped
 further live-portal verification (a pre-interrupt check had already shown the
 renamed service name and green ES).
+
+<br/>
+
+---
+
+## [2026-08-22 01:20] - Fix vague search output — clickable citations
+
+**Metadata**: Type: Bug Fix · Files: app.py, chat.js, index.html, docker-compose (mount) · Branch: elastic-hackathon
+
+### Original Prompt
+> when im searching like nimesluide... i can't even see what's this document is or even click. i think this output should be clean enough and more efficient... currently it feels like some vague output
+
+### Response Summary
+Three fixes. Source cards were structurally blank (API sent gazette_id/
+source_file/page, template read c.docName) — now labelled with S.O. number,
+file, page, ban emoji and excerpt, and each card links to /gazette/<file>#page=N
+serving the actual notification PDF (whitelisted basenames, corpus mounted
+read-only into the container). Raw [gazette:...] tokens in the prose are
+rewritten server-side into numbered links. Single-drug queries gained a
+salt-filtered retrieval leg plus a scoped-restriction prompt rule, so
+"nimesulide" now returns RESTRICTED with a one-line allowed/banned summary
+instead of UNKNOWN beside a list of nine bans. Browser-verified live.
 
 <br/>
